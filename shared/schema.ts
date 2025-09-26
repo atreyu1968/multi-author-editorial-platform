@@ -66,6 +66,12 @@ export const siteSettings = pgTable("site_settings", {
   value: text("value").notNull(),
 });
 
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  username: text("username").notNull().unique(),
+  password: text("password").notNull(),
+});
+
 export const insertAuthorSchema = createInsertSchema(authors).omit({
   id: true,
 });
@@ -91,6 +97,10 @@ export const insertSiteSettingsSchema = createInsertSchema(siteSettings).omit({
   id: true,
 });
 
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+});
+
 export type Author = typeof authors.$inferSelect;
 export type InsertAuthor = z.infer<typeof insertAuthorSchema>;
 
@@ -108,3 +118,6 @@ export type InsertNewsletter = z.infer<typeof insertNewsletterSchema>;
 
 export type SiteSettings = typeof siteSettings.$inferSelect;
 export type InsertSiteSettings = z.infer<typeof insertSiteSettingsSchema>;
+
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;

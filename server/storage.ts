@@ -10,9 +10,12 @@ import {
   type Newsletter,
   type InsertNewsletter,
   type SiteSettings,
-  type InsertSiteSettings
+  type InsertSiteSettings,
+  type User,
+  type InsertUser
 } from "@shared/schema";
 import { randomUUID } from "crypto";
+import session from "express-session";
 
 export interface IStorage {
   // Author methods
@@ -53,7 +56,20 @@ export interface IStorage {
   getSiteSettingByKey(key: string): Promise<SiteSettings | undefined>;
   createSiteSetting(setting: InsertSiteSettings): Promise<SiteSettings>;
   updateSiteSetting(key: string, value: string): Promise<SiteSettings | undefined>;
+
+  // User methods
+  getUser(id: string): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+
+  // Session store for authentication
+  sessionStore: session.Store;
 }
+
+// Reference: javascript_auth_all_persistance integration
+import createMemoryStore from "memorystore";
+
+const MemoryStore = createMemoryStore(session);
 
 export class MemStorage implements IStorage {
   private authors: Map<string, Author>;
@@ -62,6 +78,8 @@ export class MemStorage implements IStorage {
   private testimonials: Map<string, Testimonial>;
   private newsletters: Map<string, Newsletter>;
   private siteSettings: Map<string, SiteSettings>;
+  private users: Map<string, User>;
+  sessionStore: session.Store;
 
   constructor() {
     this.authors = new Map();
@@ -70,6 +88,12 @@ export class MemStorage implements IStorage {
     this.testimonials = new Map();
     this.newsletters = new Map();
     this.siteSettings = new Map();
+    this.users = new Map();
+    
+    // Initialize session store
+    this.sessionStore = new MemoryStore({
+      checkPeriod: 86400000, // prune expired entries every 24h
+    });
     
     // Initialize with sample data
     this.initializeSampleData();
@@ -347,6 +371,22 @@ export class MemStorage implements IStorage {
     const updatedSetting = { ...existingSetting, value };
     this.siteSettings.set(existingSetting.id, updatedSetting);
     return updatedSetting;
+  }
+
+  // User methods
+  async getUser(id: string): Promise<User | undefined> {
+    return this.users.get(id);
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(user => user.username === username);
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const id = randomUUID();
+    const user: User = { ...insertUser, id };
+    this.users.set(id, user);
+    return user;
   }
 }
 

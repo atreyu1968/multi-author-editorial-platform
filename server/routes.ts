@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { setupAuth } from "./auth";
 import { 
   insertAuthorSchema,
   insertBookSeriesSchema,
@@ -11,6 +12,10 @@ import {
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Reference: javascript_auth_all_persistance integration
+  // Setup authentication routes: /api/register, /api/login, /api/logout, /api/user
+  setupAuth(app);
+
   // Author routes
   app.get("/api/author", async (req, res) => {
     try {
