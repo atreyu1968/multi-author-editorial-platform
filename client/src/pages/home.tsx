@@ -5,10 +5,18 @@ import StandaloneBooks from "@/components/standalone-books";
 import AuthorBio from "@/components/author-bio";
 import Testimonials from "@/components/testimonials";
 import Newsletter from "@/components/newsletter";
+import { SEOHead, generateStructuredData } from "@/components/seo/seo-head";
 
 export default function Home() {
   return (
     <div className="bg-background text-foreground font-sans">
+      <SEOHead
+        title="María González - Autora de Novelas Románticas y Suspenso"
+        description="Descubre las cautivadoras novelas de María González. Desde romances apasionados hasta misterios que te mantendrán despierto toda la noche. Explora mis series y libros independientes."
+        keywords={["novelas románticas", "thriller", "suspenso", "ficción", "bestseller", "autora española"]}
+        ogType="website"
+        structuredData={generateStructuredData.website()}
+      />
       <Navigation />
       <HeroSection />
       <BookSeries />
