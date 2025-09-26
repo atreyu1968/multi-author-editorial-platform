@@ -59,21 +59,9 @@ export function setupAuth(app: Express) {
     done(null, user);
   });
 
+  // Registration disabled for security - admin accounts created server-side
   app.post("/api/register", async (req, res, next) => {
-    const existingUser = await storage.getUserByUsername(req.body.username);
-    if (existingUser) {
-      return res.status(400).send("Username already exists");
-    }
-
-    const user = await storage.createUser({
-      ...req.body,
-      password: await hashPassword(req.body.password),
-    });
-
-    req.login(user, (err) => {
-      if (err) return next(err);
-      res.status(201).json(user);
-    });
+    return res.status(403).json({ message: "Registration is disabled. Contact administrator." });
   });
 
   app.post("/api/login", passport.authenticate("local"), (req, res) => {

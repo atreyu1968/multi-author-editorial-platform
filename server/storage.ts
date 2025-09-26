@@ -14,8 +14,18 @@ import {
   type User,
   type InsertUser
 } from "@shared/schema";
-import { randomUUID } from "crypto";
+import { randomUUID, scrypt, randomBytes, scryptSync } from "crypto";
+import { promisify } from "util";
 import session from "express-session";
+
+const scryptAsync = promisify(scrypt);
+
+// Helper function for password hashing
+async function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString("hex")}.${salt}`;
+}
 
 export interface IStorage {
   // Author methods
@@ -213,6 +223,36 @@ export class MemStorage implements IStorage {
       const testimonialId = randomUUID();
       this.testimonials.set(testimonialId, { id: testimonialId, ...testimonial });
     });
+
+    // Create default admin user (registration disabled for security)
+    this.initializeDefaultAdmin();
+  }
+
+  private initializeDefaultAdmin() {
+    // Create default admin user with secure credentials from environment
+    // Use strong default that requires immediate change
+    const adminUsername = process.env.ADMIN_USERNAME || "admin";
+    const adminPassword = process.env.ADMIN_PASSWORD || `admin_${randomUUID().slice(0, 8)}`;
+    
+    if (!process.env.ADMIN_PASSWORD) {
+      console.log("⚠️  SECURITY: No ADMIN_PASSWORD set. Generated temporary password:", adminPassword);
+      console.log("⚠️  CHANGE THIS IMMEDIATELY after first login!");
+    }
+    
+    const adminId = randomUUID();
+    const hashedPassword = this.hashPasswordSync(adminPassword);
+    const adminUser: User = {
+      id: adminId,
+      username: adminUsername,
+      password: hashedPassword,
+    };
+    this.users.set(adminId, adminUser);
+  }
+
+  private hashPasswordSync(password: string): string {
+    const salt = randomBytes(16).toString("hex");
+    const buf = scryptSync(password, salt, 64);
+    return `${buf.toString("hex")}.${salt}`;
   }
 
   // Author methods

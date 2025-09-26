@@ -11,6 +11,14 @@ import {
   insertSiteSettingsSchema
 } from "@shared/schema";
 
+// Authentication middleware to protect admin routes
+function requireAuth(req: any, res: any, next: any) {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  next();
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Reference: javascript_auth_all_persistance integration
   // Setup authentication routes: /api/register, /api/login, /api/logout, /api/user
@@ -26,7 +34,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/author", async (req, res) => {
+  app.put("/api/author", requireAuth, async (req, res) => {
     try {
       const validatedAuthor = insertAuthorSchema.parse(req.body);
       const author = await storage.updateAuthor(validatedAuthor);
@@ -59,7 +67,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/book-series", async (req, res) => {
+  app.post("/api/book-series", requireAuth, async (req, res) => {
     try {
       const validatedSeries = insertBookSeriesSchema.parse(req.body);
       const series = await storage.createBookSeries(validatedSeries);
@@ -69,7 +77,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/book-series/:id", async (req, res) => {
+  app.put("/api/book-series/:id", requireAuth, async (req, res) => {
     try {
       const validatedSeries = insertBookSeriesSchema.partial().parse(req.body);
       const series = await storage.updateBookSeries(req.params.id, validatedSeries);
@@ -83,7 +91,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/book-series/:id", async (req, res) => {
+  app.delete("/api/book-series/:id", requireAuth, async (req, res) => {
     try {
       const deleted = await storage.deleteBookSeries(req.params.id);
       if (!deleted) {
@@ -96,8 +104,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Book routes
-  app.get("/api/books", async (req, res) => {
+  // Book routes (admin-only endpoint for all books including drafts)
+  app.get("/api/books", requireAuth, async (req, res) => {
     try {
       const books = await storage.getBooks();
       res.json(books);
@@ -137,7 +145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/books", async (req, res) => {
+  app.post("/api/books", requireAuth, async (req, res) => {
     try {
       const validatedBook = insertBookSchema.parse(req.body);
       const book = await storage.createBook(validatedBook);
@@ -147,7 +155,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/books/:id", async (req, res) => {
+  app.put("/api/books/:id", requireAuth, async (req, res) => {
     try {
       const validatedBook = insertBookSchema.partial().parse(req.body);
       const book = await storage.updateBook(req.params.id, validatedBook);
@@ -161,7 +169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/books/:id", async (req, res) => {
+  app.delete("/api/books/:id", requireAuth, async (req, res) => {
     try {
       const deleted = await storage.deleteBook(req.params.id);
       if (!deleted) {
@@ -174,8 +182,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Testimonial routes
-  app.get("/api/testimonials", async (req, res) => {
+  // Testimonial routes (admin-only endpoint for all testimonials)
+  app.get("/api/testimonials", requireAuth, async (req, res) => {
     try {
       const testimonials = await storage.getTestimonials();
       res.json(testimonials);
@@ -193,7 +201,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/testimonials", async (req, res) => {
+  app.post("/api/testimonials", requireAuth, async (req, res) => {
     try {
       const validatedTestimonial = insertTestimonialSchema.parse(req.body);
       const testimonial = await storage.createTestimonial(validatedTestimonial);
@@ -203,7 +211,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/testimonials/:id", async (req, res) => {
+  app.put("/api/testimonials/:id", requireAuth, async (req, res) => {
     try {
       const validatedTestimonial = insertTestimonialSchema.partial().parse(req.body);
       const testimonial = await storage.updateTestimonial(req.params.id, validatedTestimonial);
@@ -217,7 +225,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/testimonials/:id", async (req, res) => {
+  app.delete("/api/testimonials/:id", requireAuth, async (req, res) => {
     try {
       const deleted = await storage.deleteTestimonial(req.params.id);
       if (!deleted) {
@@ -231,7 +239,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Newsletter routes
-  app.get("/api/newsletter", async (req, res) => {
+  app.get("/api/newsletter", requireAuth, async (req, res) => {
     try {
       const subscribers = await storage.getNewsletterSubscribers();
       res.json(subscribers);
@@ -273,7 +281,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/settings", async (req, res) => {
+  app.post("/api/settings", requireAuth, async (req, res) => {
     try {
       const validatedSetting = insertSiteSettingsSchema.parse(req.body);
       const setting = await storage.createSiteSetting(validatedSetting);
@@ -283,7 +291,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/settings/:key", async (req, res) => {
+  app.put("/api/settings/:key", requireAuth, async (req, res) => {
     try {
       const { value } = req.body;
       if (typeof value !== "string") {
