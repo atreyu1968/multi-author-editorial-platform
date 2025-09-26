@@ -37,8 +37,8 @@ export default function BookManagement() {
       genre: "",
       price: 0,
       amazonUrl: "",
-      seriesId: null,
-      orderInSeries: null,
+      seriesId: "none",
+      orderInSeries: undefined,
       isStandalone: false,
       isPublished: true,
     },
@@ -131,7 +131,7 @@ export default function BookManagement() {
     return matchesSearch && matchesGenre;
   });
 
-  const genres = Array.from(new Set(books.map(book => book.genre)));
+  const genres = Array.from(new Set(books.map(book => book.genre).filter(genre => genre && genre.trim() !== "")));
 
   const handleDeleteBook = (bookId: string) => {
     if (window.confirm("¿Estás seguro de que quieres eliminar este libro?")) {
@@ -141,7 +141,18 @@ export default function BookManagement() {
 
   const handleOpenAddModal = () => {
     setEditingBook(null);
-    form.reset();
+    form.reset({
+      title: "",
+      description: "",
+      coverImage: "",
+      genre: "",
+      price: 0,
+      amazonUrl: "",
+      seriesId: "none",
+      orderInSeries: undefined,
+      isStandalone: false,
+      isPublished: true,
+    });
     setIsModalOpen(true);
   };
 
@@ -154,8 +165,8 @@ export default function BookManagement() {
       genre: book.genre,
       price: book.price || 0,
       amazonUrl: book.amazonUrl || "",
-      seriesId: book.seriesId,
-      orderInSeries: book.orderInSeries,
+      seriesId: book.seriesId || "none",
+      orderInSeries: book.orderInSeries || undefined,
       isStandalone: book.isStandalone || false,
       isPublished: book.isPublished || true,
     });
@@ -163,10 +174,16 @@ export default function BookManagement() {
   };
 
   const handleSubmit = (data: BookFormData) => {
+    // Convert "none" back to null for seriesId
+    const processedData = {
+      ...data,
+      seriesId: data.seriesId === "none" ? null : data.seriesId,
+    };
+    
     if (editingBook) {
-      updateBookMutation.mutate({ id: editingBook.id, data });
+      updateBookMutation.mutate({ id: editingBook.id, data: processedData });
     } else {
-      createBookMutation.mutate(data);
+      createBookMutation.mutate(processedData);
     }
   };
 
@@ -345,7 +362,8 @@ export default function BookManagement() {
                       <Textarea 
                         placeholder="Descripción del libro"
                         data-testid="textarea-book-description"
-                        {...field} 
+                        {...field}
+                        value={field.value || ""} 
                       />
                     </FormControl>
                     <FormMessage />
@@ -364,7 +382,8 @@ export default function BookManagement() {
                         <Input 
                           placeholder="https://..."
                           data-testid="input-book-cover"
-                          {...field} 
+                          {...field}
+                          value={field.value || ""} 
                         />
                       </FormControl>
                       <FormMessage />
@@ -384,7 +403,7 @@ export default function BookManagement() {
                           step="0.01"
                           placeholder="0.00"
                           data-testid="input-book-price"
-                          {...field}
+                          value={field.value || 0}
                           onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                         />
                       </FormControl>
@@ -404,7 +423,8 @@ export default function BookManagement() {
                       <Input 
                         placeholder="https://amazon.com/..."
                         data-testid="input-book-amazon"
-                        {...field} 
+                        {...field}
+                        value={field.value || ""} 
                       />
                     </FormControl>
                     <FormMessage />
@@ -425,7 +445,7 @@ export default function BookManagement() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">Libro independiente</SelectItem>
+                        <SelectItem value="none">Libro independiente</SelectItem>
                         {series.map((serie) => (
                           <SelectItem key={serie.id} value={serie.id}>
                             {serie.title}
@@ -450,7 +470,7 @@ export default function BookManagement() {
                           type="number"
                           placeholder="1, 2, 3..."
                           data-testid="input-book-order"
-                          {...field}
+                          value={field.value || ""}
                           onChange={(e) => field.onChange(parseInt(e.target.value) || null)}
                         />
                       </FormControl>
@@ -467,7 +487,7 @@ export default function BookManagement() {
                       <FormItem className="flex flex-row items-center space-x-3 space-y-0">
                         <FormControl>
                           <Switch
-                            checked={field.value}
+                            checked={field.value || false}
                             onCheckedChange={field.onChange}
                             data-testid="switch-book-standalone"
                           />
@@ -484,7 +504,7 @@ export default function BookManagement() {
                       <FormItem className="flex flex-row items-center space-x-3 space-y-0">
                         <FormControl>
                           <Switch
-                            checked={field.value}
+                            checked={field.value || false}
                             onCheckedChange={field.onChange}
                             data-testid="switch-book-published"
                           />

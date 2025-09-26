@@ -72,6 +72,20 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
 });
 
+export const blogPosts = pgTable("blog_posts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  excerpt: text("excerpt").notNull(),
+  featuredImage: text("featured_image"),
+  category: text("category").notNull(),
+  tags: text("tags").array(),
+  isPublished: boolean("is_published").default(false),
+  publishedAt: text("published_at"),
+  createdAt: text("created_at").default(sql`current_timestamp`),
+  updatedAt: text("updated_at").default(sql`current_timestamp`),
+});
+
 export const insertAuthorSchema = createInsertSchema(authors).omit({
   id: true,
 });
@@ -101,6 +115,12 @@ export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
 });
 
+export const insertBlogPostSchema = createInsertSchema(blogPosts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type Author = typeof authors.$inferSelect;
 export type InsertAuthor = z.infer<typeof insertAuthorSchema>;
 
@@ -121,3 +141,6 @@ export type InsertSiteSettings = z.infer<typeof insertSiteSettingsSchema>;
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+
+export type BlogPost = typeof blogPosts.$inferSelect;
+export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;

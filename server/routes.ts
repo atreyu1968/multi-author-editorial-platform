@@ -8,7 +8,8 @@ import {
   insertBookSchema,
   insertTestimonialSchema,
   insertNewsletterSchema,
-  insertSiteSettingsSchema
+  insertSiteSettingsSchema,
+  insertBlogPostSchema
 } from "@shared/schema";
 
 // Authentication middleware to protect admin routes
@@ -306,6 +307,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(setting);
     } catch (error) {
       res.status(500).json({ message: "Failed to update setting" });
+    }
+  });
+
+  // Blog Post routes
+  app.get("/api/blog-posts", requireAuth, async (req, res) => {
+    try {
+      const posts = await storage.getBlogPosts();
+      res.json(posts);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get blog posts" });
+    }
+  });
+
+  app.get("/api/blog-posts/published", async (req, res) => {
+    try {
+      const posts = await storage.getPublishedBlogPosts();
+      res.json(posts);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get published blog posts" });
+    }
+  });
+
+  app.get("/api/blog-posts/:id", async (req, res) => {
+    try {
+      const post = await storage.getBlogPostById(req.params.id);
+      if (!post) {
+        res.status(404).json({ message: "Blog post not found" });
+        return;
+      }
+      // Only return published posts unless admin is authenticated
+      if (!post.isPublished && !req.isAuthenticated()) {
+        res.status(404).json({ message: "Blog post not found" });
+        return;
+      }
+      res.json(post);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get blog post" });
+    }
+  });
+
+  app.post("/api/blog-posts", requireAuth, async (req, res) => {
+    try {
+      const validatedPost = insertBlogPostSchema.parse(req.body);
+      const post = await storage.createBlogPost(validatedPost);
+      res.status(201).json(post);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid blog post data" });
+    }
+  });
+
+  app.put("/api/blog-posts/:id", requireAuth, async (req, res) => {
+    try {
+      const validatedPost = insertBlogPostSchema.parse(req.body);
+      const post = await storage.updateBlogPost(req.params.id, validatedPost);
+      if (!post) {
+        res.status(404).json({ message: "Blog post not found" });
+        return;
+      }
+      res.json(post);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid blog post data" });
+    }
+  });
+
+  app.delete("/api/blog-posts/:id", requireAuth, async (req, res) => {
+    try {
+      const success = await storage.deleteBlogPost(req.params.id);
+      if (!success) {
+        res.status(404).json({ message: "Blog post not found" });
+        return;
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete blog post" });
     }
   });
 

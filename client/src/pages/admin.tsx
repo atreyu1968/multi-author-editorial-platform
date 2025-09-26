@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { ArrowLeft, Home, BookOpen, Users, User, Star, Settings } from "lucide-react";
+import { ArrowLeft, Home, BookOpen, Users, User, Star, Settings, FileText } from "lucide-react";
 import AdminDashboard from "@/components/admin/admin-dashboard";
 import BookManagement from "@/components/admin/book-management";
 import SeriesManagement from "@/components/admin/series-management";
 import BioManagement from "@/components/admin/bio-management";
 import TestimonialManagement from "@/components/admin/testimonial-management";
 import SettingsManagement from "@/components/admin/settings-management";
+import BlogManagement from "@/components/admin/blog-management";
 
-type AdminSection = 'dashboard' | 'books' | 'series' | 'bio' | 'testimonials' | 'settings';
+type AdminSection = 'dashboard' | 'books' | 'series' | 'bio' | 'testimonials' | 'blog' | 'settings';
 
 export default function Admin() {
   const [currentSection, setCurrentSection] = useState<AdminSection>('dashboard');
@@ -25,6 +26,8 @@ export default function Admin() {
         return <BioManagement />;
       case 'testimonials':
         return <TestimonialManagement />;
+      case 'blog':
+        return <BlogManagement />;
       case 'settings':
         return <SettingsManagement />;
       default:
@@ -105,6 +108,18 @@ export default function Admin() {
             >
               <Star className="h-5 w-5" />
               Testimonios
+            </button>
+            <button 
+              onClick={() => setCurrentSection('blog')}
+              className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
+                currentSection === 'blog' 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'hover:bg-primary hover:text-primary-foreground'
+              }`}
+              data-testid="nav-blog"
+            >
+              <FileText className="h-5 w-5" />
+              Blog
             </button>
             <button 
               onClick={() => setCurrentSection('settings')}

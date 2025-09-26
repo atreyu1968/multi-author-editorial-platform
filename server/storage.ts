@@ -12,7 +12,9 @@ import {
   type SiteSettings,
   type InsertSiteSettings,
   type User,
-  type InsertUser
+  type InsertUser,
+  type BlogPost,
+  type InsertBlogPost
 } from "@shared/schema";
 import { randomUUID, scrypt, randomBytes, scryptSync } from "crypto";
 import { promisify } from "util";
@@ -72,6 +74,14 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
 
+  // Blog Post methods
+  getBlogPosts(): Promise<BlogPost[]>;
+  getPublishedBlogPosts(): Promise<BlogPost[]>;
+  getBlogPostById(id: string): Promise<BlogPost | undefined>;
+  createBlogPost(post: InsertBlogPost): Promise<BlogPost>;
+  updateBlogPost(id: string, post: Partial<InsertBlogPost>): Promise<BlogPost | undefined>;
+  deleteBlogPost(id: string): Promise<boolean>;
+
   // Session store for authentication
   sessionStore: session.Store;
 }
@@ -89,6 +99,7 @@ export class MemStorage implements IStorage {
   private newsletters: Map<string, Newsletter>;
   private siteSettings: Map<string, SiteSettings>;
   private users: Map<string, User>;
+  private blogPosts: Map<string, BlogPost>;
   sessionStore: session.Store;
 
   constructor() {
@@ -99,6 +110,7 @@ export class MemStorage implements IStorage {
     this.newsletters = new Map();
     this.siteSettings = new Map();
     this.users = new Map();
+    this.blogPosts = new Map();
     
     // Initialize session store
     this.sessionStore = new MemoryStore({
@@ -222,6 +234,50 @@ export class MemStorage implements IStorage {
     testimonials.forEach(testimonial => {
       const testimonialId = randomUUID();
       this.testimonials.set(testimonialId, { id: testimonialId, ...testimonial });
+    });
+
+    // Create sample blog posts
+    const blogPosts = [
+      {
+        title: "Mi proceso creativo: Cómo nace una nueva historia",
+        content: "Escribir es un viaje fascinante que comienza mucho antes de poner las primeras palabras en papel. Mi proceso creativo siempre empieza con una pregunta: ¿qué pasaría si...? Esta simple interrogante ha sido la semilla de todas mis novelas.\n\nCuando una idea me atrapa, comienzo por desarrollar los personajes. Para mí, son ellos quienes conducen la historia, no al revés. Paso días, a veces semanas, conociendo a mis protagonistas: sus miedos, sus sueños, sus contradicciones. Solo cuando puedo verlos claramente en mi mente, cuando sé cómo reaccionarían en cualquier situación, comienzo a escribir.\n\nEl primer borrador siempre es terrible. Es mi regla número uno: permítete escribir mal al principio. La magia está en la reescritura, en pulir cada frase hasta que brille con luz propia.",
+        excerpt: "Descubre los secretos detrás de la creación de mis novelas y cómo los personajes cobran vida en mi mente antes de llegar al papel.",
+        featuredImage: "https://images.unsplash.com/photo-1455390582262-044cdead277a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400",
+        category: "Proceso Creativo",
+        tags: ["escritura", "creatividad", "personajes"],
+        isPublished: true,
+        publishedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
+      },
+      {
+        title: "Próximamente: Nueva serie \"Misterios de Medianoche\"",
+        content: "Estoy emocionada de anunciar que estoy trabajando en una nueva serie que espero les fascine tanto como a mí me está fascinando escribirla. \"Misterios de Medianoche\" será una trilogía de suspenso psicológico que explora los límites entre la realidad y la pesadilla.\n\nLa protagonista, Elena Vega, es una psicóloga forense que comienza a experimentar sueños vívidos sobre crímenes que aún no han ocurrido. ¿Son premoniciones? ¿Coincidencias? ¿O hay algo más siniestro en juego?\n\nLa serie estará ambientada en una ciudad ficticia donde los límites entre el día y la noche, entre lo consciente y lo inconsciente, se difuminan peligrosamente. Cada libro podrá leerse de forma independiente, pero juntos contarán una historia más amplia sobre el poder de la mente humana.\n\nEspero tener el primer libro listo para finales de este año. ¡Manténganse atentos para más actualizaciones!",
+        excerpt: "Una nueva trilogía de suspenso psicológico está en camino. Conoce a Elena Vega y adéntrate en un mundo donde los sueños pueden predecir el futuro.",
+        featuredImage: "https://images.unsplash.com/photo-1519904981063-b0cf448d479e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400",
+        category: "Noticias",
+        tags: ["nueva serie", "suspenso", "psicológico"],
+        isPublished: true,
+        publishedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+      },
+      {
+        title: "Consejos para escritores emergentes",
+        content: "A menudo recibo mensajes de lectores que también aspiran a ser escritores. Siempre me emociona saber que mis historias han inspirado a otros a crear las suyas propias. Aquí comparto algunos consejos que hubiera querido recibir cuando empecé:\n\n1. **Lee vorazmente**: Un buen escritor es ante todo un buen lector. Lee en tu género, pero también fuera de él. Cada libro es una lección magistral.\n\n2. **Escribe todos los días**: Aunque sean solo 200 palabras. La consistencia es más importante que la cantidad.\n\n3. **No edites mientras escribes el primer borrador**: Deja que las ideas fluyan. Ya habrá tiempo para pulir.\n\n4. **Encuentra tu voz**: No trates de sonar como otro escritor. Tu perspectiva única es tu mayor fortaleza.\n\n5. **Acepta la crítica constructiva**: Un buen editor o beta reader vale su peso en oro.\n\nRecuerda: cada escritor publicado fue una vez un principiante que no se rindió. ¡Tu historia merece ser contada!",
+        excerpt: "Consejos prácticos para quienes están comenzando su viaje en el mundo de la escritura, desde la importancia de leer hasta encontrar tu voz única.",
+        featuredImage: "https://images.unsplash.com/photo-1471107340929-a87cd0f5b5f3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400",
+        category: "Consejos",
+        tags: ["escritura", "consejos", "principiantes"],
+        isPublished: false,
+      }
+    ];
+
+    blogPosts.forEach(post => {
+      const postId = randomUUID();
+      const now = new Date().toISOString();
+      this.blogPosts.set(postId, { 
+        id: postId, 
+        ...post,
+        createdAt: post.publishedAt || now,
+        updatedAt: post.publishedAt || now,
+      });
     });
 
     // Create default admin user (registration disabled for security)
@@ -356,7 +412,14 @@ export class MemStorage implements IStorage {
 
   async createTestimonial(insertTestimonial: InsertTestimonial): Promise<Testimonial> {
     const id = randomUUID();
-    const testimonial: Testimonial = { ...insertTestimonial, id, authorPhoto: insertTestimonial.authorPhoto || null, isFeatured: insertTestimonial.isFeatured || null, isPublished: insertTestimonial.isPublished || null };
+    const testimonial: Testimonial = { 
+      ...insertTestimonial, 
+      id, 
+      authorPhoto: insertTestimonial.authorPhoto || null, 
+      isFeatured: insertTestimonial.isFeatured || null, 
+      isPublished: insertTestimonial.isPublished || null,
+      rating: insertTestimonial.rating || 5
+    };
     this.testimonials.set(id, testimonial);
     return testimonial;
   }
@@ -427,6 +490,66 @@ export class MemStorage implements IStorage {
     const user: User = { ...insertUser, id };
     this.users.set(id, user);
     return user;
+  }
+
+  // Blog Post methods
+  async getBlogPosts(): Promise<BlogPost[]> {
+    return Array.from(this.blogPosts.values()).sort((a, b) => {
+      const aDate = new Date(a.createdAt || 0);
+      const bDate = new Date(b.createdAt || 0);
+      return bDate.getTime() - aDate.getTime();
+    });
+  }
+
+  async getPublishedBlogPosts(): Promise<BlogPost[]> {
+    const posts = Array.from(this.blogPosts.values())
+      .filter(post => post.isPublished)
+      .sort((a, b) => {
+        const aDate = new Date(a.publishedAt || a.createdAt || 0);
+        const bDate = new Date(b.publishedAt || b.createdAt || 0);
+        return bDate.getTime() - aDate.getTime();
+      });
+    return posts;
+  }
+
+  async getBlogPostById(id: string): Promise<BlogPost | undefined> {
+    return this.blogPosts.get(id);
+  }
+
+  async createBlogPost(insertPost: InsertBlogPost): Promise<BlogPost> {
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    const post: BlogPost = { 
+      ...insertPost, 
+      id, 
+      createdAt: now,
+      updatedAt: now,
+      publishedAt: insertPost.isPublished === true ? now : null,
+      isPublished: insertPost.isPublished || false,
+      featuredImage: insertPost.featuredImage || null,
+      tags: insertPost.tags || null,
+    };
+    this.blogPosts.set(id, post);
+    return post;
+  }
+
+  async updateBlogPost(id: string, insertPost: Partial<InsertBlogPost>): Promise<BlogPost | undefined> {
+    const existingPost = this.blogPosts.get(id);
+    if (!existingPost) return undefined;
+    
+    const now = new Date().toISOString();
+    const updatedPost: BlogPost = { 
+      ...existingPost, 
+      ...insertPost,
+      updatedAt: now,
+      publishedAt: insertPost.isPublished === true && !existingPost.publishedAt ? now : existingPost.publishedAt,
+    };
+    this.blogPosts.set(id, updatedPost);
+    return updatedPost;
+  }
+
+  async deleteBlogPost(id: string): Promise<boolean> {
+    return this.blogPosts.delete(id);
   }
 }
 
