@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Link } from "wouter";
 import type { BookSeries, Book } from "@shared/schema";
 
 export default function BookSeries() {
@@ -61,18 +62,30 @@ export default function BookSeries() {
                         {seriesBooks.length} {seriesBooks.length === 1 ? 'libro' : 'libros'}
                       </Badge>
                     </div>
-                    {serie.amazonUrl && (
-                      <Button 
-                        className="bg-primary text-primary-foreground hover:bg-primary/90 transition-all transform hover:scale-105"
-                        asChild
-                        data-testid={`button-amazon-${serie.id}`}
-                      >
-                        <a href={serie.amazonUrl} target="_blank" rel="noopener noreferrer">
-                          <ShoppingCart className="h-4 w-4 mr-2" />
-                          Ver en Amazon
-                        </a>
-                      </Button>
-                    )}
+                    <div className="flex flex-wrap gap-3">
+                      <Link href={`/serie/${serie.id}`}>
+                        <Button 
+                          variant="outline"
+                          className="transition-all transform hover:scale-105"
+                          data-testid={`button-view-series-${serie.id}`}
+                        >
+                          <ArrowRight className="h-4 w-4 mr-2" />
+                          Ver serie completa
+                        </Button>
+                      </Link>
+                      {serie.amazonUrl && (
+                        <Button 
+                          className="bg-primary text-primary-foreground hover:bg-primary/90 transition-all transform hover:scale-105"
+                          asChild
+                          data-testid={`button-amazon-${serie.id}`}
+                        >
+                          <a href={serie.amazonUrl} target="_blank" rel="noopener noreferrer">
+                            <ShoppingCart className="h-4 w-4 mr-2" />
+                            Ver en Amazon
+                          </a>
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     {seriesBooks.slice(0, 4).map((book) => (

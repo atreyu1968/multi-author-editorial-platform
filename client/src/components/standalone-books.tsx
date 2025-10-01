@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Link } from "wouter";
 import type { Book } from "@shared/schema";
 
 export default function StandaloneBooks() {
@@ -42,16 +43,28 @@ export default function StandaloneBooks() {
                   <p className="text-muted-foreground mb-4 leading-relaxed">
                     {book.description || "Una historia emocionante que no querrás dejar de leer."}
                   </p>
-                  <div className="flex flex-wrap gap-2 mb-4">
+                  <div className="flex flex-wrap gap-2 mb-6">
                     <Badge className="bg-accent/20 text-accent-foreground">{book.genre}</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
                     {book.price && (
-                      <span className="text-2xl font-bold text-primary">€{book.price.toFixed(2)}</span>
+                      <Badge className="bg-primary text-primary-foreground text-lg px-3 py-1">
+                        €{book.price.toFixed(2)}
+                      </Badge>
                     )}
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Link href={`/libro/${book.id}`}>
+                      <Button 
+                        variant="outline"
+                        className="w-full transition-all transform hover:scale-105"
+                        data-testid={`button-view-book-${book.id}`}
+                      >
+                        <BookOpen className="h-4 w-4 mr-2" />
+                        Ver detalles
+                      </Button>
+                    </Link>
                     {book.amazonUrl && (
                       <Button 
-                        className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                        className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
                         asChild
                         data-testid={`button-buy-${book.id}`}
                       >

@@ -10,7 +10,8 @@ import Admin from "@/pages/admin";
 import AuthPage from "@/pages/auth-page";
 import BlogList from "@/pages/blog";
 import BlogPost from "@/pages/blog-post";
-import BookDetail from "@/pages/book-detail";
+import BookLanding from "@/pages/book-landing";
+import SeriesLanding from "@/pages/series-landing";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -20,7 +21,8 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <Route path="/blog" component={BlogList} />
       <Route path="/blog/:id" component={BlogPost} />
-      <Route path="/libro/:id" component={BookDetail} />
+      <Route path="/libro/:id" component={BookLanding} />
+      <Route path="/serie/:id" component={SeriesLanding} />
       <ProtectedRoute path="/admin" component={Admin} />
       <Route component={NotFound} />
     </Switch>

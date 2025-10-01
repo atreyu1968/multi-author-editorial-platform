@@ -26,6 +26,13 @@ export const bookSeries = pgTable("book_series", {
   genre: text("genre").notNull(),
   amazonUrl: text("amazon_url"),
   isActive: boolean("is_active").default(true),
+  // Landing page fields
+  landingHeroImage: text("landing_hero_image"),
+  landingTagline: text("landing_tagline"),
+  landingWorldDescription: text("landing_world_description"),
+  landingCharacters: text("landing_characters"),
+  landingReadingOrder: text("landing_reading_order"),
+  landingThemes: text("landing_themes").array(),
 });
 
 export const books = pgTable("books", {
@@ -40,6 +47,15 @@ export const books = pgTable("books", {
   orderInSeries: integer("order_in_series"),
   isStandalone: boolean("is_standalone").default(false),
   isPublished: boolean("is_published").default(true),
+  // Landing page fields
+  landingHeroImage: text("landing_hero_image"),
+  landingTagline: text("landing_tagline"),
+  landingSynopsis: text("landing_synopsis"),
+  landingFeatures: text("landing_features").array(),
+  landingQuotes: text("landing_quotes").array(),
+  landingCTA: text("landing_cta"),
+  landingGallery: text("landing_gallery").array(),
+  landingAwards: text("landing_awards").array(),
 });
 
 export const testimonials = pgTable("testimonials", {

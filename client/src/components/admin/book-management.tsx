@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Edit, Trash2, Search } from "lucide-react";
+import { Plus, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
@@ -41,6 +42,14 @@ export default function BookManagement() {
       orderInSeries: undefined,
       isStandalone: false,
       isPublished: true,
+      landingHeroImage: "",
+      landingTagline: "",
+      landingSynopsis: "",
+      landingFeatures: [],
+      landingQuotes: [],
+      landingCTA: "",
+      landingGallery: [],
+      landingAwards: [],
     },
   });
 
@@ -152,6 +161,14 @@ export default function BookManagement() {
       orderInSeries: undefined,
       isStandalone: false,
       isPublished: true,
+      landingHeroImage: "",
+      landingTagline: "",
+      landingSynopsis: "",
+      landingFeatures: [],
+      landingQuotes: [],
+      landingCTA: "",
+      landingGallery: [],
+      landingAwards: [],
     });
     setIsModalOpen(true);
   };
@@ -169,12 +186,19 @@ export default function BookManagement() {
       orderInSeries: book.orderInSeries || undefined,
       isStandalone: book.isStandalone || false,
       isPublished: book.isPublished || true,
+      landingHeroImage: book.landingHeroImage || "",
+      landingTagline: book.landingTagline || "",
+      landingSynopsis: book.landingSynopsis || "",
+      landingFeatures: book.landingFeatures || [],
+      landingQuotes: book.landingQuotes || [],
+      landingCTA: book.landingCTA || "",
+      landingGallery: book.landingGallery || [],
+      landingAwards: book.landingAwards || [],
     });
     setIsModalOpen(true);
   };
 
   const handleSubmit = (data: BookFormData) => {
-    // Convert "none" back to null for seriesId
     const processedData = {
       ...data,
       seriesId: data.seriesId === "none" ? null : data.seriesId,
@@ -304,9 +328,8 @@ export default function BookManagement() {
         </CardContent>
       </Card>
 
-      {/* Book Add/Edit Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle data-testid="dialog-title-book">
               {editingBook ? "Editar Libro" : "Agregar Libro"}
@@ -314,209 +337,393 @@ export default function BookManagement() {
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Título *</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Título del libro"
-                          data-testid="input-book-title"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <Tabs defaultValue="basic" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="basic">Información Básica</TabsTrigger>
+                  <TabsTrigger value="landing">Landing Page</TabsTrigger>
+                </TabsList>
                 
-                <FormField
-                  control={form.control}
-                  name="genre"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Género *</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Género del libro"
-                          data-testid="input-book-genre"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                <TabsContent value="basic" className="space-y-6 mt-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Título *</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="Título del libro"
+                              data-testid="input-book-title"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="genre"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Género *</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="Género del libro"
+                              data-testid="input-book-genre"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Descripción</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Descripción del libro"
-                        data-testid="textarea-book-description"
-                        {...field}
-                        value={field.value || ""} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="coverImage"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>URL de Portada</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="https://..."
-                          data-testid="input-book-cover"
-                          {...field}
-                          value={field.value || ""} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="price"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Precio</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                          data-testid="input-book-price"
-                          value={field.value || 0}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="amazonUrl"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>URL de Amazon</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="https://amazon.com/..."
-                        data-testid="input-book-amazon"
-                        {...field}
-                        value={field.value || ""} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="seriesId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Serie</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""}>
-                      <FormControl>
-                        <SelectTrigger data-testid="select-book-series">
-                          <SelectValue placeholder="Selecciona una serie (opcional)" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">Libro independiente</SelectItem>
-                        {series.map((serie) => (
-                          <SelectItem key={serie.id} value={serie.id}>
-                            {serie.title}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="orderInSeries"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Orden en Serie</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number"
-                          placeholder="1, 2, 3..."
-                          data-testid="input-book-order"
-                          value={field.value || ""}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || null)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="flex items-center space-x-6">
                   <FormField
                     control={form.control}
-                    name="isStandalone"
+                    name="description"
                     render={({ field }) => (
-                      <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                      <FormItem>
+                        <FormLabel>Descripción</FormLabel>
                         <FormControl>
-                          <Switch
-                            checked={field.value || false}
-                            onCheckedChange={field.onChange}
-                            data-testid="switch-book-standalone"
+                          <Textarea 
+                            placeholder="Descripción del libro"
+                            data-testid="textarea-book-description"
+                            {...field}
+                            value={field.value || ""} 
                           />
                         </FormControl>
-                        <FormLabel>Libro independiente</FormLabel>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="coverImage"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>URL de Portada</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="https://..."
+                              data-testid="input-book-cover"
+                              {...field}
+                              value={field.value || ""} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="price"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Precio</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              data-testid="input-book-price"
+                              value={field.value || 0}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="amazonUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>URL de Amazon</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="https://amazon.com/..."
+                            data-testid="input-book-amazon"
+                            {...field}
+                            value={field.value || ""} 
+                          />
+                        </FormControl>
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
 
                   <FormField
                     control={form.control}
-                    name="isPublished"
+                    name="seriesId"
                     render={({ field }) => (
-                      <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <Switch
-                            checked={field.value || false}
-                            onCheckedChange={field.onChange}
-                            data-testid="switch-book-published"
-                          />
-                        </FormControl>
-                        <FormLabel>Publicado</FormLabel>
+                      <FormItem>
+                        <FormLabel>Serie</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-book-series">
+                              <SelectValue placeholder="Selecciona una serie (opcional)" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">Libro independiente</SelectItem>
+                            {series.map((serie) => (
+                              <SelectItem key={serie.id} value={serie.id}>
+                                {serie.title}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
-                </div>
-              </div>
 
-              <div className="flex justify-end gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="orderInSeries"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Orden en Serie</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number"
+                              placeholder="1, 2, 3..."
+                              data-testid="input-book-order"
+                              value={field.value || ""}
+                              onChange={(e) => field.onChange(parseInt(e.target.value) || null)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="flex items-center space-x-6">
+                      <FormField
+                        control={form.control}
+                        name="isStandalone"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <Switch
+                                checked={field.value || false}
+                                onCheckedChange={field.onChange}
+                                data-testid="switch-book-standalone"
+                              />
+                            </FormControl>
+                            <FormLabel>Libro independiente</FormLabel>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="isPublished"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <Switch
+                                checked={field.value || false}
+                                onCheckedChange={field.onChange}
+                                data-testid="switch-book-published"
+                              />
+                            </FormControl>
+                            <FormLabel>Publicado</FormLabel>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="landing" className="space-y-6 mt-6">
+                  <FormField
+                    control={form.control}
+                    name="landingHeroImage"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Imagen Hero</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="https://..."
+                            {...field}
+                            value={field.value || ""} 
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Imagen de fondo para la sección hero de la landing page
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="landingTagline"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Eslogan</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="Un eslogan atractivo..."
+                            {...field}
+                            value={field.value || ""} 
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Frase destacada que aparecerá en la landing page
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="landingSynopsis"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Sinopsis Extendida</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Una sinopsis más detallada del libro..."
+                            rows={6}
+                            {...field}
+                            value={field.value || ""} 
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Versión más detallada de la sinopsis para la landing page
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="landingCTA"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Call To Action</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="Comprar ahora en Amazon"
+                            {...field}
+                            value={field.value || ""} 
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Texto del botón de acción principal
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="landingFeatures"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Características Destacadas</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Una característica por línea..."
+                            rows={4}
+                            value={(field.value as string[] || []).join('\n')}
+                            onChange={(e) => field.onChange(e.target.value.split('\n').filter(line => line.trim()))}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Una característica o aspecto destacado por línea
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="landingQuotes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Citas Memorables</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Una cita por línea..."
+                            rows={4}
+                            value={(field.value as string[] || []).join('\n')}
+                            onChange={(e) => field.onChange(e.target.value.split('\n').filter(line => line.trim()))}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Citas o extractos destacados del libro (una por línea)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="landingGallery"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Galería de Imágenes</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="https://imagen1.jpg&#10;https://imagen2.jpg&#10;https://imagen3.jpg"
+                            rows={4}
+                            value={(field.value as string[] || []).join('\n')}
+                            onChange={(e) => field.onChange(e.target.value.split('\n').filter(line => line.trim()))}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          URLs de imágenes para la galería (una por línea)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="landingAwards"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Premios y Reconocimientos</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Premio al mejor libro del año&#10;Finalista en..."
+                            rows={4}
+                            value={(field.value as string[] || []).join('\n')}
+                            onChange={(e) => field.onChange(e.target.value.split('\n').filter(line => line.trim()))}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Premios o reconocimientos recibidos (uno por línea)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </TabsContent>
+              </Tabs>
+
+              <div className="flex justify-end gap-3 pt-6 border-t">
                 <Button 
                   type="button" 
                   variant="outline" 
@@ -526,15 +733,11 @@ export default function BookManagement() {
                   Cancelar
                 </Button>
                 <Button 
-                  type="submit" 
+                  type="submit"
                   disabled={createBookMutation.isPending || updateBookMutation.isPending}
-                  data-testid="button-submit-book"
+                  data-testid="button-save-book"
                 >
-                  {createBookMutation.isPending || updateBookMutation.isPending ? (
-                    "Guardando..."
-                  ) : (
-                    editingBook ? "Actualizar Libro" : "Crear Libro"
-                  )}
+                  {editingBook ? "Actualizar" : "Crear"}
                 </Button>
               </div>
             </form>
