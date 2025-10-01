@@ -63,12 +63,18 @@ async function seedDatabase() {
   });
   console.log("✅ Author created");
 
-  // Create book series
+  // Create book series with landing page data
   const [detectiveSeries] = await db.insert(bookSeries).values({
     title: "Serie Detective Luna",
     description: "Una serie de thriller psicológico que sigue a la detective Sofía Luna mientras resuelve casos complejos en Barcelona. Misterio, suspense y giros inesperados en cada entrega.",
     genre: "Thriller/Misterio",
     amazonUrl: "https://www.amazon.com/detective-luna-series",
+    landingHeroImage: "https://images.unsplash.com/photo-1532012197267-da84d127e765?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=600",
+    landingTagline: "En las sombras de Barcelona, una detective busca la verdad... y descubre que algunos secretos nunca deberían revelarse",
+    landingWorldDescription: "Barcelona se convierte en un personaje más de esta serie ambientada en los rincones más oscuros de la ciudad condal. Desde el laberinto del Barrio Gótico hasta los modernos rascacielos, cada ubicación esconde secretos que Sofía Luna debe desentrañar. La ciudad late con misterio, donde la belleza arquitectónica contrasta con los crímenes más perturbadores.",
+    landingCharacters: "Sofía Luna: Detective brillante con un pasado traumático que la persigue. Impulsiva pero meticulosa, su intuición pocas veces falla. // Inspector Martín Cruz: Mentor y figura paterna de Sofía, guarda secretos que podrían cambiar todo. // Dr. Adrián Vega: Forense con quien Sofía tiene una relación complicada, mezcla de atracción y desconfianza.",
+    landingReadingOrder: "Aunque cada libro puede leerse de forma independiente con su propio misterio resuelto, se recomienda leer en orden para apreciar la evolución de Sofía y los misterios personales que se entrelazan a lo largo de la serie.",
+    landingThemes: ["Justicia y venganza", "Secretos del pasado", "Redención personal", "Corrupción institucional", "Psicología criminal"],
   }).returning();
 
   const [corazonesSeries] = await db.insert(bookSeries).values({
@@ -76,10 +82,16 @@ async function seedDatabase() {
     description: "Una trilogía romántica contemporánea que explora las complejidades del amor moderno. Tres historias entrelazadas de pasión, pérdida y redención.",
     genre: "Romance Contemporáneo",
     amazonUrl: "https://www.amazon.com/corazones-trilogy",
+    landingHeroImage: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=600",
+    landingTagline: "Tres historias, tres corazones rotos, una segunda oportunidad para el amor verdadero",
+    landingWorldDescription: "Ambientada en el vibrante Madrid contemporáneo, esta trilogía sigue las vidas entrelazadas de tres amigos que navegan por el amor, la pérdida y la redención. Desde las terrazas soleadas de Malasaña hasta las elegantes galerías de Salamanca, cada locación refleja las emociones y transformaciones de los protagonistas.",
+    landingCharacters: "Emma Torres: Arquitecta soñadora que teme arriesgar su amistad por amor. // Laura Mendoza: Abogada fuerte e independiente, cicatrices emocionales ocultan su verdadero yo. // Daniel Ruiz: Chef apasionado que debe elegir entre su carrera internacional y el amor de su vida.",
+    landingReadingOrder: "Aunque cada libro se centra en una pareja diferente, los personajes se entrelazan a lo largo de toda la trilogía. Para disfrutar completamente de las conexiones y referencias cruzadas, se recomienda leer en orden secuencial.",
+    landingThemes: ["Amor y amistad", "Segunda oportunidades", "Perdón y sanación", "Miedo al compromiso", "Autoconocimiento"],
   }).returning();
   console.log("✅ Book series created");
 
-  // Create books for Detective Luna series
+  // Create books for Detective Luna series with landing page data
   await db.insert(books).values([
     {
       title: "Sombras en la Niebla",
@@ -92,6 +104,30 @@ async function seedDatabase() {
       orderInSeries: 1,
       isStandalone: false,
       isPublished: true,
+      landingHeroImage: "https://images.unsplash.com/photo-1532012197267-da84d127e765?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=600",
+      landingTagline: "En el laberinto del Barrio Gótico, las sombras guardan secretos mortales",
+      landingSynopsis: "La detective Sofía Luna pensaba que había dejado atrás su oscuro pasado. Pero cuando una serie de jóvenes desaparecen misteriosamente en el corazón del Barrio Gótico de Barcelona, se ve obligada a enfrentarse a los demonios que ha intentado enterrar durante años. Cada pista la acerca más a una verdad aterradora: el asesino conoce su secreto más oscuro.\n\nMientras la niebla envuelve las antiguas calles de piedra y las víctimas siguen acumulándose, Sofía debe decidir hasta dónde está dispuesta a llegar para detener al culpable. ¿Qué sacrificará para encontrar la verdad? Y cuando finalmente la encuentre, ¿podrá vivir con las consecuencias?",
+      landingFeatures: [
+        "Una trama llena de giros inesperados que te mantendrá adivinando hasta el final",
+        "Ambientación detallada en el misterioso Barrio Gótico de Barcelona",
+        "Personajes profundos con secretos oscuros y motivaciones complejas",
+        "Perfecto equilibrio entre suspense psicológico y thriller de acción"
+      ],
+      landingQuotes: [
+        "Algunas sombras nunca desaparecen, solo esperan el momento perfecto para regresar",
+        "En Barcelona, hasta las piedras antiguas guardan secretos. Y algunos deberían permanecer enterrados",
+        "La verdad no siempre nos libera. A veces, nos condena"
+      ],
+      landingCTA: "Descubre el misterio en Amazon",
+      landingGallery: [
+        "https://images.unsplash.com/photo-1532012197267-da84d127e765?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=600",
+        "https://images.unsplash.com/photo-1519904981063-b0cf448d479e?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=600",
+        "https://images.unsplash.com/photo-1544947950-fa07a98d237f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=600"
+      ],
+      landingAwards: [
+        "Finalista - Premio Mejor Thriller 2022",
+        "Selección del Mes - Club de Lectura El Corte Inglés"
+      ],
     },
     {
       title: "Ecos del Silencio",
@@ -104,10 +140,27 @@ async function seedDatabase() {
       orderInSeries: 2,
       isStandalone: false,
       isPublished: true,
+      landingHeroImage: "https://images.unsplash.com/photo-1519904981063-b0cf448d479e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=600",
+      landingTagline: "El silencio más peligroso es el que esconde la verdad",
+      landingSynopsis: "Cuando su mejor amiga y colega, la periodista Ana Vidal, desaparece mientras investigaba una serie de suicidios sospechosos, Sofía Luna sabe que el tiempo es oro. Pero lo que descubre la lleva por un camino que nunca imaginó: una red de corrupción que alcanza los niveles más altos del poder.\n\nCada eco del pasado la acerca más al presente. Cada silencio esconde una mentira. Y mientras Sofía corre contra reloj para encontrar a su amiga, descubre que algunos secretos tienen un precio demasiado alto... incluso para la verdad.",
+      landingFeatures: [
+        "Continuación directa con más profundidad en el pasado de Sofía",
+        "Thriller político que expone las sombras del poder",
+        "Ritmo trepidante que no da respiro",
+        "Giro final devastador que cambia todo"
+      ],
+      landingQuotes: [
+        "El silencio puede ser ensordecedor cuando esconde gritos que nunca se pronunciaron",
+        "Hay verdades que, una vez descubiertas, no pueden olvidarse",
+        "En el juego del poder, la lealtad es la moneda más peligrosa"
+      ],
+      landingCTA: "Continúa la saga en Amazon",
+      landingGallery: [],
+      landingAwards: ["Premio Letras Negras 2023 - Mejor Thriller"],
     },
   ]);
 
-  // Create books for Corazones trilogy
+  // Create books for Corazones trilogy with landing page data
   await db.insert(books).values([
     {
       title: "Corazones en Fuga",
@@ -120,6 +173,23 @@ async function seedDatabase() {
       orderInSeries: 1,
       isStandalone: false,
       isPublished: true,
+      landingHeroImage: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=600",
+      landingTagline: "A veces el amor está más cerca de lo que piensas... y eso lo hace más aterrador",
+      landingSynopsis: "Emma Torres y Marcos han sido mejores amigos desde la universidad. Él conoce todos sus secretos, ella conoce todos los suyos. O eso creían. Una noche de verano, una copa de vino de más y una confesión inesperada lo cambian todo.\n\nAhora Emma debe decidir: ¿arriesgar la amistad más importante de su vida por la posibilidad del amor verdadero? ¿O huir antes de que sea demasiado tarde? Pero los corazones en fuga rara vez encuentran paz, y pronto descubrirá que no puedes escapar de tus sentimientos... ni de tu destino.",
+      landingFeatures: [
+        "Romance de amigos a amantes con química irresistible",
+        "Personajes realistas con miedos y esperanzas auténticas",
+        "Ambientación en el Madrid contemporáneo vibrante y romántico",
+        "Humor, ternura y pasión en perfectas dosis"
+      ],
+      landingQuotes: [
+        "Lo más aterrador del amor verdadero es que siempre estuvo allí, esperando ser reconocido",
+        "A veces huimos no porque no amemos, sino porque amamos demasiado",
+        "El riesgo más grande no es perder un amor... es nunca haberlo intentado"
+      ],
+      landingCTA: "Comienza la trilogía en Amazon",
+      landingGallery: [],
+      landingAwards: [],
     },
     {
       title: "Corazones Rotos",
@@ -132,10 +202,27 @@ async function seedDatabase() {
       orderInSeries: 2,
       isStandalone: false,
       isPublished: true,
+      landingHeroImage: "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=600",
+      landingTagline: "Los corazones rotos pueden sanar... pero las cicatrices cuentan historias",
+      landingSynopsis: "Laura Mendoza construyó murallas alrededor de su corazón después de que Diego la traicionara hace cinco años. Ahora es una abogada exitosa que no necesita a nadie. Pero cuando Diego regresa a Madrid pidiendo una segunda oportunidad, todas sus defensas comienzan a tambalearse.\n\nÉl ha cambiado. Ella también. Pero, ¿es suficiente? Entre secretos no revelados, dolor no sanado y una atracción que nunca murió, Laura debe decidir si algunos corazones rotos merecen ser reparados... o si es más sabio dejarlos en el pasado donde pertenecen.",
+      landingFeatures: [
+        "Segunda oportunidad llena de tensión emocional",
+        "Exploración profunda del perdón y la sanación",
+        "Química explosiva entre protagonistas complejos",
+        "Entrelazado con la historia de Emma y Marcos"
+      ],
+      landingQuotes: [
+        "El perdón no es olvidar. Es recordar sin dolor",
+        "Las cicatrices nos recuerdan que sobrevivimos",
+        "El amor verdadero merece una segunda oportunidad... o quizás una primera vez hecha bien"
+      ],
+      landingCTA: "Continúa con el libro 2 en Amazon",
+      landingGallery: [],
+      landingAwards: [],
     },
   ]);
 
-  // Create standalone books
+  // Create standalone books with landing page data
   await db.insert(books).values([
     {
       title: "La Última Carta",
@@ -148,6 +235,23 @@ async function seedDatabase() {
       orderInSeries: null,
       isStandalone: true,
       isPublished: true,
+      landingHeroImage: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=600",
+      landingTagline: "A través del tiempo y las palabras, dos almas encuentran su destino",
+      landingSynopsis: "1942. Elena escribe cartas a un soldado en el frente que nunca conoció pero que siente en su alma. 2024. María descubre un baúl antiguo con cartas de amor que nunca fueron enviadas.\n\nDos mujeres separadas por casi un siglo, unidas por el poder de las palabras y el amor eterno. Mientras María lee las cartas de Elena, comienza a experimentar visiones, sueños y sentimientos que no son suyos. ¿Es posible que el amor trascienda el tiempo? ¿Puede una carta no enviada encontrar finalmente a su destinatario?\n\nUna novela epistolar que te hará creer en el destino, en las segundas oportunidades y en el poder imperecedero del amor verdadero.",
+      landingFeatures: [
+        "Formato epistolar único que alterna entre dos épocas",
+        "Romance histórico con elementos de realismo mágico",
+        "Investigación meticulosa de la España de los años 40",
+        "Historia de amor que trasciende el tiempo"
+      ],
+      landingQuotes: [
+        "Hay palabras que esperan décadas para ser leídas por los ojos correctos",
+        "El tiempo puede separar cuerpos, pero nunca almas destinadas a encontrarse",
+        "Cada carta es una botella al mar del tiempo, esperando llegar a puerto"
+      ],
+      landingCTA: "Descubre esta historia atemporal",
+      landingGallery: [],
+      landingAwards: ["Mejor Romance Histórico 2023 - Premios Letras de España"],
     },
     {
       title: "Susurros en la Oscuridad",
@@ -160,6 +264,23 @@ async function seedDatabase() {
       orderInSeries: null,
       isStandalone: true,
       isPublished: true,
+      landingHeroImage: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=600",
+      landingTagline: "Cuando la mente es el laberinto, ¿cómo encuentras la salida?",
+      landingSynopsis: "La Dra. Elena Vega es una psiquiatra forense reconocida, especializada en tratar a pacientes con trastornos disociativos. Pero cuando comienza a escuchar susurros que nadie más oye y a experimentar lapsos de memoria, su mundo perfectamente ordenado comienza a desmoronarse.\n\n¿Está desarrollando los mismos síntomas que sus pacientes? ¿O hay algo más siniestro en juego? Mientras investiga su propia cordura, Elena descubre que uno de sus pacientes no es quien dice ser... y que su propia mente podría guardar secretos que su consciencia se niega a recordar.\n\nUn thriller psicológico que te hará cuestionar la naturaleza de la realidad, la memoria y la identidad misma.",
+      landingFeatures: [
+        "Thriller psicológico con giros mentales impredecibles",
+        "Exploración fascinante de la psique humana",
+        "Protagonista compleja que lucha contra su propia mente",
+        "Final que recontextualiza toda la historia"
+      ],
+      landingQuotes: [
+        "La mente humana es el mayor misterio... y el peor enemigo",
+        "A veces los susurros en la oscuridad son ecos de verdades que preferimos olvidar",
+        "Cuando ya no puedes confiar en tu propia mente, ¿en quién puedes confiar?"
+      ],
+      landingCTA: "Adéntrate en la oscuridad",
+      landingGallery: [],
+      landingAwards: ["Top 10 Thrillers del Año - La Vanguardia", "Selección Especial - Festival Getafe Negro"],
     },
   ]);
   console.log("✅ Books created");
