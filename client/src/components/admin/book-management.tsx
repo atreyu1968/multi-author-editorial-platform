@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -18,6 +18,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertBookSchema } from "@shared/schema";
 import { z } from "zod";
 import type { Book, BookSeries } from "@shared/schema";
+import { ObjectUploader } from "@/components/ObjectUploader";
+import type { UploadResult } from "@uppy/core";
 
 type BookFormData = z.infer<typeof insertBookSchema>;
 
@@ -127,6 +129,41 @@ export default function BookManagement() {
       });
     },
   });
+
+  // Helper functions for image upload
+  const handleGetUploadParameters = async () => {
+    const response = await apiRequest("POST", "/api/objects/upload", {});
+    const data = await response.json();
+    return {
+      method: "PUT" as const,
+      url: data.uploadURL,
+    };
+  };
+
+  const handleImageUploadComplete = async (fieldName: keyof BookFormData, result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+    if (result.successful && result.successful.length > 0) {
+      const uploadedFile = result.successful[0];
+      const imageURL = uploadedFile.uploadURL;
+      
+      try {
+        const response = await apiRequest("POST", "/api/images/upload", { imageURL });
+        const data = await response.json();
+        
+        form.setValue(fieldName, data.objectPath);
+        
+        toast({
+          title: "Imagen subida",
+          description: "La imagen ha sido subida exitosamente.",
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Error al procesar la imagen subida.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
 
   const getSeriesTitle = (seriesId: string | null) => {
     if (!seriesId) return "Independiente";
@@ -407,15 +444,29 @@ export default function BookManagement() {
                       name="coverImage"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>URL de Portada</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="https://..."
-                              data-testid="input-book-cover"
-                              {...field}
-                              value={field.value || ""} 
-                            />
-                          </FormControl>
+                          <FormLabel>Portada (400×600px, máx 500 KB)</FormLabel>
+                          <div className="flex gap-2">
+                            <FormControl>
+                              <Input 
+                                placeholder="https://... o /objects/..."
+                                data-testid="input-book-cover"
+                                {...field}
+                                value={field.value || ""} 
+                                className="flex-1"
+                              />
+                            </FormControl>
+                            <ObjectUploader
+                              maxNumberOfFiles={1}
+                              maxFileSize={524288}
+                              allowedFileTypes={['image/jpeg', 'image/png', 'image/webp']}
+                              onGetUploadParameters={handleGetUploadParameters}
+                              onComplete={(result) => handleImageUploadComplete('coverImage', result)}
+                              buttonClassName="shrink-0"
+                            >
+                              <Upload className="h-4 w-4 mr-2" />
+                              Subir
+                            </ObjectUploader>
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -553,14 +604,28 @@ export default function BookManagement() {
                     name="landingHeroImage"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Imagen Hero</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="https://..."
-                            {...field}
-                            value={field.value || ""} 
-                          />
-                        </FormControl>
+                        <FormLabel>Imagen Hero (1920×600px, máx 1 MB)</FormLabel>
+                        <div className="flex gap-2">
+                          <FormControl>
+                            <Input 
+                              placeholder="https://... o /objects/..."
+                              {...field}
+                              value={field.value || ""} 
+                              className="flex-1"
+                            />
+                          </FormControl>
+                          <ObjectUploader
+                            maxNumberOfFiles={1}
+                            maxFileSize={1048576}
+                            allowedFileTypes={['image/jpeg', 'image/png', 'image/webp']}
+                            onGetUploadParameters={handleGetUploadParameters}
+                            onComplete={(result) => handleImageUploadComplete('landingHeroImage', result)}
+                            buttonClassName="shrink-0"
+                          >
+                            <Upload className="h-4 w-4 mr-2" />
+                            Subir
+                          </ObjectUploader>
+                        </div>
                         <FormDescription>
                           Imagen de fondo para la sección hero de la landing page
                         </FormDescription>
