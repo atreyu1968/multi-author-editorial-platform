@@ -26,6 +26,7 @@ export const bookSeries = pgTable("book_series", {
   genre: text("genre").notNull(),
   amazonUrl: text("amazon_url"),
   isActive: boolean("is_active").default(true),
+  cardBackgroundImage: text("card_background_image"),
   // Landing page fields
   landingHeroImage: text("landing_hero_image"),
   landingTagline: text("landing_tagline"),

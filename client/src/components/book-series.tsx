@@ -47,8 +47,20 @@ export default function BookSeries() {
           
           return (
             <div key={serie.id} className="mb-20 last:mb-0" data-testid={`series-${serie.id}`}>
-              <Card className="bg-card rounded-2xl shadow-xl overflow-hidden border border-border">
-                <div className="grid lg:grid-cols-2 gap-8 p-8 lg:p-12">
+              <Card className="rounded-2xl shadow-xl overflow-hidden border border-border relative">
+                {/* Imagen de fondo con gradiente */}
+                {serie.cardBackgroundImage && (
+                  <div className="absolute inset-0 z-0">
+                    <img 
+                      src={serie.cardBackgroundImage} 
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/85 to-transparent"></div>
+                  </div>
+                )}
+                
+                <div className={`grid lg:grid-cols-2 gap-8 p-8 lg:p-12 relative z-10 ${!serie.cardBackgroundImage ? 'bg-card' : ''}`}>
                   <div>
                     <h3 className="text-3xl font-serif font-bold text-primary mb-4">
                       {serie.title}

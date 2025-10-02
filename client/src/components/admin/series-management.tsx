@@ -36,6 +36,7 @@ export default function SeriesManagement() {
       genre: "",
       amazonUrl: "",
       isActive: true,
+      cardBackgroundImage: "",
       landingHeroImage: "",
       landingTagline: "",
       landingWorldDescription: "",
@@ -167,6 +168,7 @@ export default function SeriesManagement() {
       genre: "",
       amazonUrl: "",
       isActive: true,
+      cardBackgroundImage: "",
       landingHeroImage: "",
       landingTagline: "",
       landingWorldDescription: "",
@@ -185,6 +187,7 @@ export default function SeriesManagement() {
       genre: serie.genre,
       amazonUrl: serie.amazonUrl || "",
       isActive: serie.isActive || true,
+      cardBackgroundImage: serie.cardBackgroundImage || "",
       landingHeroImage: serie.landingHeroImage || "",
       landingTagline: serie.landingTagline || "",
       landingWorldDescription: serie.landingWorldDescription || "",
@@ -380,6 +383,42 @@ export default function SeriesManagement() {
                       )}
                     />
                   </div>
+
+                  <FormField
+                    control={form.control}
+                    name="cardBackgroundImage"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Imagen de Fondo de Tarjeta (1920×600px, máx 1 MB)</FormLabel>
+                        <div className="flex gap-2">
+                          <FormControl>
+                            <Input 
+                              placeholder="https://... o /objects/..."
+                              {...field}
+                              value={field.value || ""} 
+                              className="flex-1"
+                              data-testid="input-series-card-background"
+                            />
+                          </FormControl>
+                          <ObjectUploader
+                            maxNumberOfFiles={1}
+                            maxFileSize={1048576}
+                            allowedFileTypes={['image/jpeg', 'image/png', 'image/webp']}
+                            onGetUploadParameters={handleGetUploadParameters}
+                            onComplete={(result) => handleImageUploadComplete('cardBackgroundImage', result)}
+                            buttonClassName="shrink-0"
+                          >
+                            <Upload className="h-4 w-4 mr-2" />
+                            Subir
+                          </ObjectUploader>
+                        </div>
+                        <FormDescription>
+                          Imagen de fondo para la tarjeta de la serie en la página principal (degradado de izquierda a derecha)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   <FormField
                     control={form.control}
