@@ -2,9 +2,14 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { Menu, X, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import type { Author } from "@shared/schema";
 
 export default function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { data: author } = useQuery<Author>({
+    queryKey: ["/api/author"]
+  });
 
   return (
     <nav className="bg-card/80 backdrop-blur-md border-b border-border sticky top-0 z-50">
@@ -12,7 +17,7 @@ export default function Navigation() {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <div className="text-2xl font-serif font-bold text-primary">
-              María González
+              {author?.name || "Cargando..."}
             </div>
           </div>
           <div className="hidden md:flex items-center space-x-8">

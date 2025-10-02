@@ -6,13 +6,19 @@ import AuthorBio from "@/components/author-bio";
 import Testimonials from "@/components/testimonials";
 import Newsletter from "@/components/newsletter";
 import { SEOHead, generateStructuredData } from "@/components/seo/seo-head";
+import { useQuery } from "@tanstack/react-query";
+import type { Author } from "@shared/schema";
 
 export default function Home() {
+  const { data: author } = useQuery<Author>({
+    queryKey: ["/api/author"]
+  });
+
   return (
     <div className="bg-background text-foreground font-sans">
       <SEOHead
-        title="María González - Autora de Novelas Románticas y Suspenso"
-        description="Descubre las cautivadoras novelas de María González. Desde romances apasionados hasta misterios que te mantendrán despierto toda la noche. Explora mis series y libros independientes."
+        title={`${author?.name || "María González"} - Autora de Novelas Románticas y Suspenso`}
+        description={`Descubre las cautivadoras novelas de ${author?.name || "María González"}. Desde romances apasionados hasta misterios que te mantendrán despierto toda la noche. Explora mis series y libros independientes.`}
         keywords={["novelas románticas", "thriller", "suspenso", "ficción", "bestseller", "autora española"]}
         ogType="website"
         structuredData={generateStructuredData.website()}
@@ -31,7 +37,7 @@ export default function Home() {
           <div className="grid md:grid-cols-3 gap-8">
             <div>
               <div className="text-2xl font-serif font-bold text-primary mb-4">
-                María González
+                {author?.name || "Cargando..."}
               </div>
               <p className="text-muted-foreground mb-4">
                 Autora bestseller especializada en romance, thriller y fantasía. 
@@ -71,7 +77,7 @@ export default function Home() {
             </div>
           </div>
           <div className="border-t border-border mt-8 pt-8 text-center text-muted-foreground">
-            <p>&copy; 2024 María González. Todos los derechos reservados.</p>
+            <p>&copy; 2024 {author?.name || "María González"}. Todos los derechos reservados.</p>
           </div>
         </div>
       </footer>
