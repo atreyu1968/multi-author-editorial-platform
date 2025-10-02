@@ -11,6 +11,8 @@ import {
   insertSiteSettingsSchema,
   insertBlogPostSchema
 } from "@shared/schema";
+// Referenced from blueprint:javascript_object_storage
+import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 
 // Authentication middleware to protect admin routes
 function requireAuth(req: any, res: any, next: any) {
@@ -381,6 +383,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete blog post" });
+    }
+  });
+
+  // Object Storage routes
+  // Referenced from blueprint:javascript_object_storage
+  
+  // Endpoint to serve uploaded images (public access for landing pages)
+  app.get("/objects/:objectPath(*)", async (req, res) => {
+    const objectStorageService = new ObjectStorageService();
+    try {
+      const objectFile = await objectStorageService.getObjectEntityFile(
+        req.path,
+      );
+      objectStorageService.downloadObject(objectFile, res);
+    } catch (error) {
+      console.error("Error accessing object:", error);
+      if (error instanceof ObjectNotFoundError) {
+        return res.sendStatus(404);
+      }
+      return res.sendStatus(500);
+    }
+  });
+
+  // Endpoint to get upload URL (protected - admin only)
+  app.post("/api/objects/upload", requireAuth, async (req, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Error getting upload URL:", error);
+      res.status(500).json({ error: "Failed to get upload URL" });
+    }
+  });
+
+  // Endpoint to save uploaded image reference (protected - admin only)
+  app.post("/api/images/upload", requireAuth, async (req, res) => {
+    if (!req.body.imageURL) {
+      return res.status(400).json({ error: "imageURL is required" });
+    }
+
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
+        req.body.imageURL,
+        {
+          owner: "admin",
+          visibility: "public", // Public so landing pages can display images
+        },
+      );
+
+      res.status(200).json({
+        objectPath: objectPath,
+      });
+    } catch (error) {
+      console.error("Error setting image:", error);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 
