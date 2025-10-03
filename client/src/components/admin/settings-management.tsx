@@ -1,24 +1,31 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
-import { Save } from "lucide-react";
+import { Save, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { SiteSettings, Newsletter } from "@shared/schema";
+import { ObjectUploader } from "@/components/ObjectUploader";
+import type { UploadResult } from "@uppy/core";
 
 interface SettingsFormData {
   heroTitle: string;
   heroSubtitle: string;
   contactEmail: string;
   freeBookTitle: string;
+  freeBookFile: string;
+  freeBookFormat: string;
+  freeBookDescription: string;
   emailProvider: string;
+  emailFromName: string;
+  emailFromAddress: string;
   instagramUrl: string;
   twitterUrl: string;
   facebookUrl: string;
@@ -43,7 +50,12 @@ export default function SettingsManagement() {
       heroSubtitle: "",
       contactEmail: "",
       freeBookTitle: "Primeros Encuentros",
-      emailProvider: "MailChimp",
+      freeBookFile: "",
+      freeBookFormat: "PDF",
+      freeBookDescription: "",
+      emailProvider: "Resend",
+      emailFromName: "",
+      emailFromAddress: "",
       instagramUrl: "",
       twitterUrl: "",
       facebookUrl: "",
@@ -63,7 +75,12 @@ export default function SettingsManagement() {
       heroSubtitle: settingsMap.heroSubtitle || "",
       contactEmail: settingsMap.contactEmail || "",
       freeBookTitle: settingsMap.freeBookTitle || "Primeros Encuentros",
-      emailProvider: settingsMap.emailProvider || "MailChimp",
+      freeBookFile: settingsMap.freeBookFile || "",
+      freeBookFormat: settingsMap.freeBookFormat || "PDF",
+      freeBookDescription: settingsMap.freeBookDescription || "",
+      emailProvider: settingsMap.emailProvider || "Resend",
+      emailFromName: settingsMap.emailFromName || "",
+      emailFromAddress: settingsMap.emailFromAddress || "",
       instagramUrl: settingsMap.instagramUrl || "",
       twitterUrl: settingsMap.twitterUrl || "",
       facebookUrl: settingsMap.facebookUrl || "",
@@ -104,6 +121,41 @@ export default function SettingsManagement() {
 
   const onSubmit = (data: SettingsFormData) => {
     updateSettingsMutation.mutate(data);
+  };
+
+  // Helper functions for file upload
+  const handleGetUploadParameters = async () => {
+    const response = await apiRequest("POST", "/api/objects/upload", {});
+    const data = await response.json();
+    return {
+      method: "PUT" as const,
+      url: data.uploadURL,
+    };
+  };
+
+  const handleFileUploadComplete = async (fieldName: keyof SettingsFormData, result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+    if (result.successful && result.successful.length > 0) {
+      const uploadedFile = result.successful[0];
+      const fileURL = uploadedFile.uploadURL;
+      
+      try {
+        const response = await apiRequest("POST", "/api/images/upload", { imageURL: fileURL });
+        const data = await response.json();
+        
+        form.setValue(fieldName, data.objectPath);
+        
+        toast({
+          title: "Archivo subido",
+          description: "El archivo ha sido subido exitosamente.",
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Error al procesar el archivo subido.",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   return (
@@ -285,48 +337,174 @@ export default function SettingsManagement() {
         <TabsContent value="newsletter">
           <Card>
             <CardHeader>
-              <CardTitle>Newsletter</CardTitle>
+              <CardTitle>Newsletter y Libro de Regalo</CardTitle>
             </CardHeader>
             <CardContent>
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" data-testid="newsletter-settings-form">
-                  <FormField
-                    control={form.control}
-                    name="freeBookTitle"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Libro Gratuito</FormLabel>
-                        <FormControl>
-                          <Input {...field} data-testid="input-free-book-title" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="emailProvider"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Proveedor de Email</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6" data-testid="newsletter-settings-form">
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-lg">Libro de Regalo</h4>
+                    
+                    <FormField
+                      control={form.control}
+                      name="freeBookTitle"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Título del Libro</FormLabel>
                           <FormControl>
-                            <SelectTrigger data-testid="select-email-provider">
-                              <SelectValue />
-                            </SelectTrigger>
+                            <Input {...field} placeholder="Ej: Primeros Encuentros" data-testid="input-free-book-title" />
                           </FormControl>
-                          <SelectContent>
-                            <SelectItem value="MailChimp">MailChimp</SelectItem>
-                            <SelectItem value="ConvertKit">ConvertKit</SelectItem>
-                            <SelectItem value="EmailOctopus">EmailOctopus</SelectItem>
-                            <SelectItem value="MailerLite">MailerLite</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                          <FormDescription>
+                            El nombre del libro que se enviará como regalo de bienvenida
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="freeBookFile"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Archivo del Libro (PDF/EPUB, máx 10 MB)</FormLabel>
+                          <div className="flex gap-2">
+                            <FormControl>
+                              <Input 
+                                placeholder="https://... o /objects/..."
+                                {...field}
+                                value={field.value || ""} 
+                                className="flex-1"
+                                data-testid="input-free-book-file"
+                              />
+                            </FormControl>
+                            <ObjectUploader
+                              maxNumberOfFiles={1}
+                              maxFileSize={10485760}
+                              allowedFileTypes={['application/pdf', 'application/epub+zip']}
+                              onGetUploadParameters={handleGetUploadParameters}
+                              onComplete={(result) => handleFileUploadComplete('freeBookFile', result)}
+                              buttonClassName="shrink-0"
+                            >
+                              <Upload className="h-4 w-4 mr-2" />
+                              Subir
+                            </ObjectUploader>
+                          </div>
+                          <FormDescription>
+                            Sube el archivo del libro que se enviará por email
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="freeBookFormat"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Formato del Libro</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger data-testid="select-book-format">
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="PDF">PDF</SelectItem>
+                              <SelectItem value="EPUB">EPUB</SelectItem>
+                              <SelectItem value="MOBI">MOBI</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="freeBookDescription"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Descripción del Libro</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              {...field} 
+                              placeholder="Una breve historia romántica que te atrapará desde la primera página..."
+                              rows={3}
+                              data-testid="textarea-book-description"
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Esta descripción aparecerá en el email de bienvenida
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="border-t pt-6 space-y-4">
+                    <h4 className="font-semibold text-lg">Configuración de Email</h4>
+                    
+                    <FormField
+                      control={form.control}
+                      name="emailProvider"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Proveedor de Email</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger data-testid="select-email-provider">
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="Resend">Resend</SelectItem>
+                              <SelectItem value="SendGrid">SendGrid</SelectItem>
+                              <SelectItem value="MailChimp">MailChimp</SelectItem>
+                              <SelectItem value="ConvertKit">ConvertKit</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="emailFromName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nombre del Remitente</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Ej: María González" data-testid="input-email-from-name" />
+                          </FormControl>
+                          <FormDescription>
+                            El nombre que aparecerá como remitente del email
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="emailFromAddress"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email del Remitente</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="email" placeholder="Ej: hola@mariagonzalez.com" data-testid="input-email-from-address" />
+                          </FormControl>
+                          <FormDescription>
+                            La dirección de email desde la que se enviarán los mensajes
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
                   <Button 
                     type="submit" 
@@ -335,7 +513,7 @@ export default function SettingsManagement() {
                     data-testid="button-save-newsletter"
                   >
                     <Save className="h-4 w-4 mr-2" />
-                    {updateSettingsMutation.isPending ? "Guardando..." : "Guardar Newsletter"}
+                    {updateSettingsMutation.isPending ? "Guardando..." : "Guardar Configuración"}
                   </Button>
                 </form>
               </Form>
