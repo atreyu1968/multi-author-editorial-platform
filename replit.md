@@ -88,3 +88,10 @@ Preferred communication style: Simple, everyday language.
 - **Replit** integration with development plugins
 - **Runtime error overlay** for development debugging
 - **Hot module replacement** through Vite
+
+### Email and Newsletter System
+- **Email Service** - Custom email service supporting multiple providers (Resend, SendGrid)
+- **Welcome Email Automation** - Automatic welcome email with free book delivery upon newsletter subscription
+- **File Upload System** - Replit Object Storage integration for hosting free book files (PDF, EPUB)
+- **Configuration** - Admin panel for managing book files, email settings, and provider credentials
+- **Note**: Email integration not using Replit connectors - requires EMAIL_API_KEY secret for the selected provider
