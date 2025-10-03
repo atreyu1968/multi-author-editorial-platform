@@ -34,6 +34,13 @@ export const bookSeries = pgTable("book_series", {
   landingCharacters: text("landing_characters"),
   landingReadingOrder: text("landing_reading_order"),
   landingThemes: text("landing_themes").array(),
+  // Promotional content (optional)
+  promoConceptMap: text("promo_concept_map"),
+  promoFamilyTree: text("promo_family_tree"),
+  promoPressNotes: text("promo_press_notes").array(),
+  promoAdditionalMedia: text("promo_additional_media").array(),
+  promoSpotifyPlaylist: text("promo_spotify_playlist"),
+  promoYoutubeBooktrailer: text("promo_youtube_booktrailer"),
 });
 
 export const books = pgTable("books", {
@@ -57,6 +64,13 @@ export const books = pgTable("books", {
   landingCTA: text("landing_cta"),
   landingGallery: text("landing_gallery").array(),
   landingAwards: text("landing_awards").array(),
+  // Promotional content (optional)
+  promoConceptMap: text("promo_concept_map"),
+  promoFamilyTree: text("promo_family_tree"),
+  promoPressNotes: text("promo_press_notes").array(),
+  promoAdditionalMedia: text("promo_additional_media").array(),
+  promoSpotifyPlaylist: text("promo_spotify_playlist"),
+  promoYoutubeBooktrailer: text("promo_youtube_booktrailer"),
 });
 
 export const testimonials = pgTable("testimonials", {
