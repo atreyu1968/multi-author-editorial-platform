@@ -23,6 +23,22 @@ function requireAuth(req: any, res: any, next: any) {
   next();
 }
 
+// Validation helpers
+function isValidUrl(url: string): boolean {
+  if (!url) return true; // Empty strings are allowed (for clearing settings)
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function isValidHexColor(color: string): boolean {
+  if (!color) return true; // Empty strings are allowed
+  return /^#[0-9A-Fa-f]{6}$/.test(color);
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Reference: javascript_auth_all_persistance integration
   // Setup authentication routes: /api/register, /api/login, /api/logout, /api/user
@@ -342,11 +358,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/settings/:key", requireAuth, async (req, res) => {
     try {
       const { value } = req.body;
+      const key = req.params.key;
+      
       if (typeof value !== "string") {
         res.status(400).json({ message: "Value must be a string" });
         return;
       }
-      const setting = await storage.upsertSiteSetting(req.params.key, value);
+      
+      // Validate URLs for logo and favicon
+      if (key === "logoUrl" || key === "faviconUrl") {
+        if (value && !isValidUrl(value)) {
+          res.status(400).json({ message: "Invalid URL format" });
+          return;
+        }
+      }
+      
+      // Validate color values
+      if (key === "primaryColor" || key === "secondaryColor" || key === "accentColor" || 
+          key === "backgroundColor" || key === "textColor") {
+        if (value && !isValidHexColor(value)) {
+          res.status(400).json({ message: "Invalid color format. Must be a valid hex color (e.g., #FF5733)" });
+          return;
+        }
+      }
+      
+      const setting = await storage.upsertSiteSetting(key, value);
       res.json(setting);
     } catch (error) {
       res.status(500).json({ message: "Failed to upsert setting" });

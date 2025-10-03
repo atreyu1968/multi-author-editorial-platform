@@ -216,17 +216,43 @@ export default function SettingsManagement() {
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (data: SettingsFormData) => {
-      const promises = Object.entries(data).map(async ([key, value]) => {
-        const response = await apiRequest("PUT", `/api/settings/${key}`, { value });
-        return response.json();
-      });
-      return Promise.all(promises);
+      const results = await Promise.allSettled(
+        Object.entries(data).map(async ([key, value]) => {
+          try {
+            const response = await apiRequest("PUT", `/api/settings/${key}`, { value });
+            const result = await response.json();
+            return { key, status: 'success', data: result };
+          } catch (error: any) {
+            return { key, status: 'error', error: error.message || 'Failed to update' };
+          }
+        })
+      );
+      
+      const successes = results.filter(r => r.status === 'fulfilled' && r.value.status === 'success');
+      const failures = results.filter(r => r.status === 'fulfilled' && r.value.status === 'error');
+      
+      if (failures.length > 0 && successes.length === 0) {
+        throw new Error('All settings failed to update');
+      }
+      
+      return { successes, failures };
     },
-    onSuccess: () => {
-      toast({
-        title: "Configuración guardada",
-        description: "Los cambios han sido guardados exitosamente.",
-      });
+    onSuccess: (result) => {
+      const { successes, failures } = result;
+      
+      if (failures.length > 0) {
+        toast({
+          title: "Configuración parcialmente guardada",
+          description: `${successes.length} configuraciones guardadas, ${failures.length} fallaron.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Configuración guardada",
+          description: "Los cambios han sido guardados exitosamente.",
+        });
+      }
+      
       queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
     },
     onError: () => {

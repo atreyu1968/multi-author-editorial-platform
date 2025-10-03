@@ -19,14 +19,18 @@ export function DynamicTheme({ children }: DynamicThemeProps) {
 
   useEffect(() => {
     const faviconUrl = settingsMap.faviconUrl;
+    let link = document.querySelector("link[rel='icon']") as HTMLLinkElement;
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.head.appendChild(link);
+    }
+    
     if (faviconUrl) {
-      let link = document.querySelector("link[rel='icon']") as HTMLLinkElement;
-      if (!link) {
-        link = document.createElement('link');
-        link.rel = 'icon';
-        document.head.appendChild(link);
-      }
       link.href = faviconUrl;
+    } else {
+      // Restore default favicon if removed
+      link.href = '/favicon.ico';
     }
   }, [settingsMap.faviconUrl]);
 

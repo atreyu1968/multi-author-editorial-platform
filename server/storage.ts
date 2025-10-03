@@ -491,13 +491,7 @@ export class MemStorage implements IStorage {
 
   async upsertSiteSetting(key: string, value: string): Promise<SiteSettings> {
     const existingSetting = Array.from(this.siteSettings.values()).find(s => s.key === key);
-    if (existingSetting) {
-      const updatedSetting = { ...existingSetting, value };
-      this.siteSettings.set(existingSetting.id, updatedSetting);
-      return updatedSetting;
-    }
-    
-    const id = randomUUID();
+    const id = existingSetting?.id || randomUUID();
     const setting: SiteSettings = { id, key, value };
     this.siteSettings.set(id, setting);
     return setting;
