@@ -43,6 +43,12 @@ export default function SeriesManagement() {
       landingCharacters: "",
       landingReadingOrder: "",
       landingThemes: [],
+      promoConceptMap: "",
+      promoFamilyTree: "",
+      promoPressNotes: [],
+      promoAdditionalMedia: [],
+      promoSpotifyPlaylist: "",
+      promoYoutubeBooktrailer: "",
     },
   });
 
@@ -175,6 +181,12 @@ export default function SeriesManagement() {
       landingCharacters: "",
       landingReadingOrder: "",
       landingThemes: [],
+      promoConceptMap: "",
+      promoFamilyTree: "",
+      promoPressNotes: [],
+      promoAdditionalMedia: [],
+      promoSpotifyPlaylist: "",
+      promoYoutubeBooktrailer: "",
     });
     setIsModalOpen(true);
   };
@@ -194,6 +206,12 @@ export default function SeriesManagement() {
       landingCharacters: serie.landingCharacters || "",
       landingReadingOrder: serie.landingReadingOrder || "",
       landingThemes: serie.landingThemes || [],
+      promoConceptMap: serie.promoConceptMap || "",
+      promoFamilyTree: serie.promoFamilyTree || "",
+      promoPressNotes: serie.promoPressNotes || [],
+      promoAdditionalMedia: serie.promoAdditionalMedia || [],
+      promoSpotifyPlaylist: serie.promoSpotifyPlaylist || "",
+      promoYoutubeBooktrailer: serie.promoYoutubeBooktrailer || "",
     });
     setIsModalOpen(true);
   };
@@ -302,9 +320,10 @@ export default function SeriesManagement() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
               <Tabs defaultValue="basic" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="basic">Información Básica</TabsTrigger>
                   <TabsTrigger value="landing">Landing Page</TabsTrigger>
+                  <TabsTrigger value="promo" data-testid="tab-promo-series">Contenido Promocional</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="basic" className="space-y-6 mt-6">
@@ -577,6 +596,149 @@ export default function SeriesManagement() {
                         </FormControl>
                         <FormDescription>
                           Temas o conceptos principales explorados en la serie (uno por línea)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </TabsContent>
+
+                <TabsContent value="promo" className="space-y-6 mt-6">
+                  <div className="bg-muted/30 p-4 rounded-lg mb-6">
+                    <p className="text-sm text-muted-foreground">
+                      Agrega contenido promocional adicional para enriquecer la experiencia de tus lectores. 
+                      Todos estos campos son opcionales.
+                    </p>
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="promoConceptMap"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Mapa Conceptual</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="URL del mapa conceptual (ej: enlace a imagen o PDF interactivo)"
+                            data-testid="input-promo-concept-map-series"
+                            {...field}
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Enlace a un mapa conceptual del mundo, la historia o los conceptos de la serie
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="promoFamilyTree"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Árbol Genealógico</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="URL del árbol genealógico (ej: enlace a imagen o diagrama interactivo)"
+                            data-testid="input-promo-family-tree-series"
+                            {...field}
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Enlace a un árbol genealógico de los personajes de la serie
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="promoYoutubeBooktrailer"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Booktrailer de YouTube</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="URL del video de YouTube (ej: https://www.youtube.com/watch?v=...)"
+                            data-testid="input-promo-youtube-series"
+                            {...field}
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Enlace a un booktrailer o video promocional de la serie en YouTube
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="promoSpotifyPlaylist"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Lista de Reproducción de Spotify</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="URL de la playlist de Spotify (ej: https://open.spotify.com/playlist/...)"
+                            data-testid="input-promo-spotify-series"
+                            {...field}
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Enlace a una playlist de Spotify que acompaña la lectura de la serie
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="promoPressNotes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Notas de Prensa</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Enlace 1&#10;Enlace 2&#10;Enlace 3"
+                            rows={4}
+                            data-testid="textarea-promo-press-notes-series"
+                            value={(field.value as string[] || []).join('\n')}
+                            onChange={(e) => field.onChange(e.target.value.split('\n').filter(line => line.trim()))}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Enlaces a notas de prensa, reseñas o artículos sobre la serie (uno por línea)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="promoAdditionalMedia"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Material Gráfico Adicional</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="URL de imagen 1&#10;URL de imagen 2&#10;URL de PDF o infografía"
+                            rows={4}
+                            data-testid="textarea-promo-additional-media-series"
+                            value={(field.value as string[] || []).join('\n')}
+                            onChange={(e) => field.onChange(e.target.value.split('\n').filter(line => line.trim()))}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Enlaces a ilustraciones, infografías, mapas u otro material visual de la serie (uno por línea)
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
