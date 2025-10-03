@@ -255,6 +255,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedSubscriber = insertNewsletterSchema.parse(req.body);
       const subscriber = await storage.createNewsletterSubscriber(validatedSubscriber);
+      
+      // Try to send welcome email with free book
+      try {
+        const settings = await storage.getSiteSettings();
+        const settingsMap = settings.reduce((acc, setting) => {
+          acc[setting.key] = setting.value;
+          return acc;
+        }, {} as Record<string, string>);
+
+        // Check if email is configured
+        const emailApiKey = process.env.EMAIL_API_KEY;
+        const emailProvider = settingsMap.emailProvider || 'Resend';
+        const freeBookFile = settingsMap.freeBookFile;
+        const freeBookTitle = settingsMap.freeBookTitle || 'Libro de Regalo';
+        const freeBookDescription = settingsMap.freeBookDescription || 'Disfruta de este libro exclusivo como regalo de bienvenida.';
+        const emailFromName = settingsMap.emailFromName || 'Newsletter';
+        const emailFromAddress = settingsMap.emailFromAddress || 'noreply@example.com';
+
+        if (emailApiKey && freeBookFile) {
+          const { emailService } = await import('./email-service.js');
+          emailService.configure(emailProvider, emailApiKey);
+          
+          // Construct full download URL
+          const baseUrl = process.env.REPL_SLUG 
+            ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
+            : 'http://localhost:5000';
+          const downloadUrl = freeBookFile.startsWith('http') 
+            ? freeBookFile 
+            : `${baseUrl}${freeBookFile}`;
+
+          await emailService.sendWelcomeEmail(
+            validatedSubscriber.email,
+            validatedSubscriber.name,
+            freeBookTitle,
+            freeBookDescription,
+            downloadUrl,
+            { name: emailFromName, email: emailFromAddress }
+          );
+        }
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError);
+        // Don't fail the subscription if email fails
+      }
+
       res.status(201).json(subscriber);
     } catch (error) {
       res.status(400).json({ message: "Invalid newsletter data" });
