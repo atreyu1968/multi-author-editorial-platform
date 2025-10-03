@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { ArrowLeft, Home, BookOpen, Users, User, Star, Settings, FileText } from "lucide-react";
+import { ArrowLeft, Home, BookOpen, Users, User, Star, Settings, FileText, HelpCircle } from "lucide-react";
 import AdminDashboard from "@/components/admin/admin-dashboard";
 import BookManagement from "@/components/admin/book-management";
 import SeriesManagement from "@/components/admin/series-management";
@@ -8,8 +8,9 @@ import BioManagement from "@/components/admin/bio-management";
 import TestimonialManagement from "@/components/admin/testimonial-management";
 import SettingsManagement from "@/components/admin/settings-management";
 import BlogManagement from "@/components/admin/blog-management";
+import HelpInstructions from "@/components/admin/help-instructions";
 
-type AdminSection = 'dashboard' | 'books' | 'series' | 'bio' | 'testimonials' | 'blog' | 'settings';
+type AdminSection = 'dashboard' | 'books' | 'series' | 'bio' | 'testimonials' | 'blog' | 'settings' | 'help';
 
 export default function Admin() {
   const [currentSection, setCurrentSection] = useState<AdminSection>('dashboard');
@@ -30,6 +31,8 @@ export default function Admin() {
         return <BlogManagement />;
       case 'settings':
         return <SettingsManagement />;
+      case 'help':
+        return <HelpInstructions />;
       default:
         return <AdminDashboard />;
     }
@@ -132,6 +135,18 @@ export default function Admin() {
             >
               <Settings className="h-5 w-5" />
               Configuración
+            </button>
+            <button 
+              onClick={() => setCurrentSection('help')}
+              className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
+                currentSection === 'help' 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'hover:bg-primary hover:text-primary-foreground'
+              }`}
+              data-testid="nav-help"
+            >
+              <HelpCircle className="h-5 w-5" />
+              Ayuda e Instrucciones
             </button>
           </nav>
         </div>
