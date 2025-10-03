@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { BookOpen, Users, User, Star, Settings, FileText, Mail, QrCode, Image, Upload } from "lucide-react";
+import { BookOpen, Users, User, Star, Settings, FileText, Mail, QrCode, Image, Upload, Sparkles } from "lucide-react";
 
 export default function HelpInstructions() {
   return (
@@ -325,6 +325,115 @@ export default function HelpInstructions() {
                 <li>Usa formatos JPG para fotografías y PNG para gráficos con transparencia</li>
                 <li>Mantén la consistencia en el estilo visual de tus imágenes</li>
                 <li>Asegúrate de tener los derechos de uso de las imágenes</li>
+              </ul>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="promotional" className="border rounded-lg px-4">
+          <AccordionTrigger className="hover:no-underline" data-testid="accordion-promotional">
+            <div className="flex items-center gap-3">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <span className="text-lg font-semibold">Contenido Promocional Adicional</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="space-y-4 pt-4">
+            <div>
+              <h4 className="font-semibold mb-2">¿Qué es el contenido promocional?</h4>
+              <p className="text-muted-foreground mb-3">
+                El contenido promocional adicional te permite enriquecer la experiencia de tus lectores 
+                con material complementario que profundiza en el mundo de tus libros y series. 
+                Todo este contenido es opcional y aparece en una sección especial de las landing pages.
+              </p>
+            </div>
+
+            <div className="border-t pt-4">
+              <h4 className="font-semibold mb-2">Tipos de contenido que puedes agregar:</h4>
+              <div className="space-y-3 text-muted-foreground">
+                <div>
+                  <p className="font-medium text-foreground">🗺️ Mapa Conceptual:</p>
+                  <p className="text-sm ml-6">
+                    Enlace a un diagrama visual del mundo de tu historia, estructura de la trama o conceptos clave. 
+                    Ideal para fantasía, ciencia ficción o tramas complejas.
+                  </p>
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">👥 Árbol Genealógico:</p>
+                  <p className="text-sm ml-6">
+                    Enlace a un diagrama de las relaciones entre personajes. Perfecto para sagas familiares 
+                    o historias con múltiples generaciones.
+                  </p>
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">📰 Notas de Prensa:</p>
+                  <p className="text-sm ml-6">
+                    Enlaces a reseñas, artículos o entrevistas sobre tu obra. Puedes agregar múltiples enlaces, 
+                    uno por línea.
+                  </p>
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">🎨 Material Gráfico:</p>
+                  <p className="text-sm ml-6">
+                    Enlaces a ilustraciones, infografías, mapas u otro contenido visual relacionado con tu obra. 
+                    Acepta múltiples enlaces, uno por línea.
+                  </p>
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">🎵 Playlist de Spotify:</p>
+                  <p className="text-sm ml-6">
+                    Enlace a una lista de reproducción musical que acompaña la lectura de tu libro o serie. 
+                    Crea ambiente y conexión emocional con los lectores.
+                  </p>
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">🎬 Booktrailer de YouTube:</p>
+                  <p className="text-sm ml-6">
+                    Enlace a un video promocional de tu libro o serie. Perfecto para captar la atención 
+                    de nuevos lectores.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t pt-4">
+              <h4 className="font-semibold mb-2">Cómo agregar contenido promocional:</h4>
+              <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
+                <li>Edita un libro o serie existente</li>
+                <li>Ve a la pestaña "Contenido Promocional"</li>
+                <li>Completa solo los campos que tengas disponibles (todos son opcionales)</li>
+                <li>Para campos de múltiples enlaces (notas de prensa, material gráfico):
+                  <ul className="list-disc list-inside ml-6 mt-1">
+                    <li>Escribe cada URL en una línea separada</li>
+                    <li>No es necesario numerar los enlaces</li>
+                  </ul>
+                </li>
+                <li>Guarda los cambios</li>
+              </ol>
+            </div>
+
+            <div className="border-t pt-4">
+              <h4 className="font-semibold mb-2">Visualización en las landing pages:</h4>
+              <p className="text-muted-foreground mb-2">
+                El contenido promocional aparece en una sección especial llamada "Contenido Adicional" 
+                en las páginas de libros y series.
+              </p>
+              <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                <li>Solo se muestra si has agregado al menos un tipo de contenido</li>
+                <li>Cada tipo aparece en una tarjeta visual con su propio ícono</li>
+                <li>Los enlaces se abren en una nueva pestaña para no interrumpir la navegación</li>
+                <li>El diseño es responsive y se adapta a todos los dispositivos</li>
+              </ul>
+            </div>
+
+            <div className="border-t pt-4">
+              <h4 className="font-semibold mb-2">Consejos y mejores prácticas:</h4>
+              <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                <li>No es necesario completar todos los campos, solo los que aporten valor</li>
+                <li>Asegúrate de que los enlaces sean permanentes y no se borren con el tiempo</li>
+                <li>Para playlists, considera crear listas públicas en Spotify</li>
+                <li>Los booktrailers deben ser concisos (30-90 segundos idealmente)</li>
+                <li>Actualiza el contenido cuando tengas nuevas reseñas o material</li>
+                <li>Usa herramientas gratuitas como Canva o Lucidchart para crear mapas y árboles</li>
               </ul>
             </div>
           </AccordionContent>
