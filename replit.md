@@ -105,3 +105,22 @@ Preferred communication style: Simple, everyday language.
   - Copy-to-clipboard functionality for landing page URLs
   - Integration in admin panel under "QR y Enlaces" tab
   - Suggested use cases: end of printed books, promotional materials, social media, author bio
+
+### Promotional Content System
+- **Additional Content for Books and Series** - Optional promotional materials to enrich reader experience
+- **Content Types**:
+  - **Concept Maps** - Visual diagrams of story world, themes, or plot structure
+  - **Family Trees** - Character relationship diagrams and genealogies
+  - **Press Notes** - Links to reviews, articles, and media coverage
+  - **Additional Media** - Illustrations, infographics, maps, and visual materials
+  - **Spotify Playlists** - Curated music to accompany reading
+  - **YouTube Booktrailers** - Video promotions and teasers
+- **Admin Management**:
+  - Dedicated "Contenido Promocional" tab in book and series management
+  - All fields are optional and can be added/removed as needed
+  - Support for multiple links (press notes, media) via array fields
+- **Public Display**:
+  - Conditional "Contenido Adicional" section on landing pages
+  - Visual cards with icons for each content type
+  - External links open in new tabs for better UX
+  - Only displays when at least one promotional field has content
