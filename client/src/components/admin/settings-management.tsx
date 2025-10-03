@@ -65,28 +65,30 @@ export default function SettingsManagement() {
 
   // Load settings into form when data is available
   React.useEffect(() => {
-    const settingsMap = settings.reduce((acc, setting) => {
-      acc[setting.key] = setting.value;
-      return acc;
-    }, {} as Record<string, string>);
+    if (settings.length > 0) {
+      const settingsMap = settings.reduce((acc, setting) => {
+        acc[setting.key] = setting.value;
+        return acc;
+      }, {} as Record<string, string>);
 
-    form.reset({
-      heroTitle: settingsMap.heroTitle || "",
-      heroSubtitle: settingsMap.heroSubtitle || "",
-      contactEmail: settingsMap.contactEmail || "",
-      freeBookTitle: settingsMap.freeBookTitle || "Primeros Encuentros",
-      freeBookFile: settingsMap.freeBookFile || "",
-      freeBookFormat: settingsMap.freeBookFormat || "PDF",
-      freeBookDescription: settingsMap.freeBookDescription || "",
-      emailProvider: settingsMap.emailProvider || "Resend",
-      emailFromName: settingsMap.emailFromName || "",
-      emailFromAddress: settingsMap.emailFromAddress || "",
-      instagramUrl: settingsMap.instagramUrl || "",
-      twitterUrl: settingsMap.twitterUrl || "",
-      facebookUrl: settingsMap.facebookUrl || "",
-      amazonUrl: settingsMap.amazonUrl || ""
-    });
-  }, [settings, form]);
+      form.reset({
+        heroTitle: settingsMap.heroTitle || "",
+        heroSubtitle: settingsMap.heroSubtitle || "",
+        contactEmail: settingsMap.contactEmail || "",
+        freeBookTitle: settingsMap.freeBookTitle || "Primeros Encuentros",
+        freeBookFile: settingsMap.freeBookFile || "",
+        freeBookFormat: settingsMap.freeBookFormat || "PDF",
+        freeBookDescription: settingsMap.freeBookDescription || "",
+        emailProvider: settingsMap.emailProvider || "Resend",
+        emailFromName: settingsMap.emailFromName || "",
+        emailFromAddress: settingsMap.emailFromAddress || "",
+        instagramUrl: settingsMap.instagramUrl || "",
+        twitterUrl: settingsMap.twitterUrl || "",
+        facebookUrl: settingsMap.facebookUrl || "",
+        amazonUrl: settingsMap.amazonUrl || ""
+      });
+    }
+  }, [settings]);
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (data: SettingsFormData) => {
