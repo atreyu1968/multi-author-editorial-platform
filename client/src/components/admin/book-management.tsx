@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Edit, Trash2, Upload } from "lucide-react";
+import { Plus, Edit, Trash2, Upload, Copy, Download, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,6 +20,7 @@ import { z } from "zod";
 import type { Book, BookSeries } from "@shared/schema";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import type { UploadResult } from "@uppy/core";
+import QRCode from "qrcode";
 
 type BookFormData = z.infer<typeof insertBookSchema>;
 
@@ -28,6 +29,7 @@ export default function BookManagement() {
   const [selectedGenre, setSelectedGenre] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -170,6 +172,65 @@ export default function BookManagement() {
     const serie = series.find(s => s.id === seriesId);
     return serie?.title || "Serie desconocida";
   };
+
+  // QR Code and Landing Page URL functions
+  const getBookLandingPageUrl = (bookId: string) => {
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/libro/${bookId}`;
+  };
+
+  const generateQRCode = async (bookId: string) => {
+    const url = getBookLandingPageUrl(bookId);
+    try {
+      const qrDataUrl = await QRCode.toDataURL(url, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+      setQrCodeDataUrl(qrDataUrl);
+    } catch (error) {
+      console.error('Error generating QR code:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo generar el código QR",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const copyLandingPageUrl = () => {
+    if (!editingBook) return;
+    const url = getBookLandingPageUrl(editingBook.id);
+    navigator.clipboard.writeText(url);
+    toast({
+      title: "Enlace copiado",
+      description: "La URL de la landing page se ha copiado al portapapeles.",
+    });
+  };
+
+  const downloadQRCode = () => {
+    if (!qrCodeDataUrl || !editingBook) return;
+    const link = document.createElement('a');
+    link.download = `qr-${editingBook.title.toLowerCase().replace(/\s+/g, '-')}.png`;
+    link.href = qrCodeDataUrl;
+    link.click();
+    toast({
+      title: "QR descargado",
+      description: "El código QR se ha descargado exitosamente.",
+    });
+  };
+
+  // Generate QR code when editing book changes
+  useEffect(() => {
+    if (editingBook) {
+      generateQRCode(editingBook.id);
+    } else {
+      setQrCodeDataUrl("");
+    }
+  }, [editingBook]);
 
   const filteredBooks = books.filter(book => {
     const matchesSearch = book.title.toLowerCase().includes(searchTerm.toLowerCase());
@@ -375,9 +436,10 @@ export default function BookManagement() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
               <Tabs defaultValue="basic" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="basic">Información Básica</TabsTrigger>
                   <TabsTrigger value="landing">Landing Page</TabsTrigger>
+                  <TabsTrigger value="qr" disabled={!editingBook} data-testid="tab-qr">QR y Enlaces</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="basic" className="space-y-6 mt-6">
@@ -785,6 +847,93 @@ export default function BookManagement() {
                       </FormItem>
                     )}
                   />
+                </TabsContent>
+
+                <TabsContent value="qr" className="space-y-6 mt-6">
+                  {editingBook && (
+                    <div className="space-y-6">
+                      <div className="bg-muted/30 p-6 rounded-lg">
+                        <h4 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                          <QrCode className="h-5 w-5" />
+                          Código QR y Enlace de Landing Page
+                        </h4>
+                        <p className="text-sm text-muted-foreground mb-6">
+                          Usa estos recursos para promocionar tu libro. Puedes incluir el código QR al final del libro impreso o en materiales promocionales.
+                        </p>
+
+                        <div className="grid md:grid-cols-2 gap-6">
+                          {/* QR Code Display */}
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h5 className="font-medium">Código QR</h5>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={downloadQRCode}
+                                disabled={!qrCodeDataUrl}
+                                data-testid="button-download-qr"
+                              >
+                                <Download className="h-4 w-4 mr-2" />
+                                Descargar QR
+                              </Button>
+                            </div>
+                            <div className="bg-white p-4 rounded-lg border-2 border-border flex items-center justify-center">
+                              {qrCodeDataUrl ? (
+                                <img 
+                                  src={qrCodeDataUrl} 
+                                  alt="QR Code" 
+                                  className="w-64 h-64"
+                                  data-testid="qr-code-image"
+                                />
+                              ) : (
+                                <div className="w-64 h-64 flex items-center justify-center text-muted-foreground">
+                                  Generando QR...
+                                </div>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Este código QR lleva directamente a la landing page del libro
+                            </p>
+                          </div>
+
+                          {/* URL Display and Copy */}
+                          <div className="space-y-4">
+                            <h5 className="font-medium">Enlace de la Landing Page</h5>
+                            <div className="space-y-3">
+                              <div className="p-4 bg-muted rounded-lg border border-border">
+                                <p className="text-sm font-mono break-all" data-testid="landing-page-url">
+                                  {getBookLandingPageUrl(editingBook.id)}
+                                </p>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full"
+                                onClick={copyLandingPageUrl}
+                                data-testid="button-copy-url"
+                              >
+                                <Copy className="h-4 w-4 mr-2" />
+                                Copiar Enlace
+                              </Button>
+                            </div>
+
+                            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                              <h6 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                                💡 Sugerencias de uso
+                              </h6>
+                              <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                                <li>• Incluye el QR en la última página de tu libro</li>
+                                <li>• Comparte el enlace en redes sociales</li>
+                                <li>• Agrega el QR a materiales promocionales</li>
+                                <li>• Usa el enlace en tu biografía de autor</li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </TabsContent>
               </Tabs>
 
