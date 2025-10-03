@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
-import { Save, Upload } from "lucide-react";
+import { Save, Upload, ExternalLink, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +14,7 @@ import { apiRequest } from "@/lib/queryClient";
 import type { SiteSettings, Newsletter } from "@shared/schema";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import type { UploadResult } from "@uppy/core";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface SettingsFormData {
   heroTitle: string;
@@ -30,6 +31,108 @@ interface SettingsFormData {
   twitterUrl: string;
   facebookUrl: string;
   amazonUrl: string;
+}
+
+function EmailProviderInstructions({ provider }: { provider: string }) {
+  const instructions: Record<string, { url: string; steps: string[] }> = {
+    "Resend": {
+      url: "https://resend.com/api-keys",
+      steps: [
+        "Crea una cuenta en resend.com",
+        "Ve a 'API Keys' en el dashboard",
+        "Crea una nueva API key",
+        "Copia la key que empieza con 're_'",
+        "Configura el secret EMAIL_API_KEY en Replit con tu API key",
+        "Verifica tu dominio en Resend antes de enviar emails"
+      ]
+    },
+    "SendGrid": {
+      url: "https://app.sendgrid.com/settings/api_keys",
+      steps: [
+        "Crea una cuenta en sendgrid.com",
+        "Ve a Settings → API Keys",
+        "Crea una nueva API key con permisos 'Mail Send'",
+        "Copia la key que empieza con 'SG.'",
+        "Configura el secret EMAIL_API_KEY en Replit con tu API key",
+        "Verifica tu dominio o email del remitente en SendGrid"
+      ]
+    },
+    "Mailchimp": {
+      url: "https://mandrillapp.com/settings/index",
+      steps: [
+        "Crea una cuenta en Mailchimp Transactional (Mandrill)",
+        "Accede a Settings en el dashboard",
+        "Ve a la sección 'API Keys'",
+        "Crea una nueva API key",
+        "Copia la API key generada",
+        "Configura el secret EMAIL_API_KEY en Replit con tu API key",
+        "Agrega y verifica tu dominio de envío"
+      ]
+    },
+    "Brevo": {
+      url: "https://app.brevo.com/settings/keys/api",
+      steps: [
+        "Crea una cuenta en brevo.com (antes Sendinblue)",
+        "Ve a Settings → API Keys",
+        "Crea una nueva API key v3",
+        "Copia la API key generada",
+        "Configura el secret EMAIL_API_KEY en Replit con tu API key",
+        "Verifica tu dominio o email del remitente"
+      ]
+    },
+    "Postmark": {
+      url: "https://account.postmarkapp.com/servers",
+      steps: [
+        "Crea una cuenta en postmarkapp.com",
+        "Crea un nuevo Server o selecciona uno existente",
+        "Ve a 'API Tokens' en el server",
+        "Copia el 'Server API token'",
+        "Configura el secret EMAIL_API_KEY en Replit con el token",
+        "Agrega y verifica tu dominio del remitente"
+      ]
+    },
+    "Mailgun": {
+      url: "https://app.mailgun.com/app/account/security/api_keys",
+      steps: [
+        "Crea una cuenta en mailgun.com",
+        "Ve a Settings → API Keys",
+        "Copia tu 'Private API key'",
+        "Anota también tu dominio de envío (ej: mg.tudominio.com)",
+        "Configura el secret EMAIL_API_KEY en Replit como 'APIKEY:DOMINIO'",
+        "Ejemplo: key-abc123:mg.tudominio.com",
+        "Verifica tu dominio en Mailgun"
+      ]
+    }
+  };
+
+  const config = instructions[provider];
+  if (!config) return null;
+
+  return (
+    <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-900">
+      <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+      <AlertDescription>
+        <div className="space-y-3">
+          <p className="font-semibold text-blue-900 dark:text-blue-100">
+            Configuración de {provider}:
+          </p>
+          <ol className="list-decimal list-inside space-y-1.5 text-sm text-blue-800 dark:text-blue-200">
+            {config.steps.map((step, index) => (
+              <li key={index}>{step}</li>
+            ))}
+          </ol>
+          <a 
+            href={config.url} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+          >
+            Ir a {provider} <ExternalLink className="h-3 w-3" />
+          </a>
+        </div>
+      </AlertDescription>
+    </Alert>
+  );
 }
 
 export default function SettingsManagement() {
@@ -462,16 +565,21 @@ export default function SettingsManagement() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="Resend">Resend</SelectItem>
+                              <SelectItem value="Resend">Resend (Recomendado)</SelectItem>
                               <SelectItem value="SendGrid">SendGrid</SelectItem>
-                              <SelectItem value="MailChimp">MailChimp</SelectItem>
-                              <SelectItem value="ConvertKit">ConvertKit</SelectItem>
+                              <SelectItem value="Mailchimp">Mailchimp Transactional</SelectItem>
+                              <SelectItem value="Brevo">Brevo (Sendinblue)</SelectItem>
+                              <SelectItem value="Postmark">Postmark</SelectItem>
+                              <SelectItem value="Mailgun">Mailgun</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+
+                    {/* Instrucciones dinámicas según el proveedor */}
+                    <EmailProviderInstructions provider={form.watch("emailProvider")} />
 
                     <FormField
                       control={form.control}
