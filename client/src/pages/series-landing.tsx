@@ -11,6 +11,35 @@ import Newsletter from "@/components/newsletter";
 import { SEOHead, generateStructuredData } from "@/components/seo/seo-head";
 import type { BookSeries, Book } from "@shared/schema";
 
+function getYouTubeEmbedUrl(url: string): string {
+  try {
+    const urlObj = new URL(url);
+    let videoId = '';
+    
+    if (urlObj.hostname.includes('youtube.com')) {
+      videoId = urlObj.searchParams.get('v') || '';
+    } else if (urlObj.hostname.includes('youtu.be')) {
+      videoId = urlObj.pathname.slice(1);
+    }
+    
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+  } catch {
+    return url;
+  }
+}
+
+function getSpotifyEmbedUrl(url: string): string {
+  try {
+    const urlObj = new URL(url);
+    if (urlObj.hostname.includes('spotify.com')) {
+      return url.replace('/playlist/', '/embed/playlist/').replace('/track/', '/embed/track/').replace('/album/', '/embed/album/');
+    }
+    return url;
+  } catch {
+    return url;
+  }
+}
+
 export default function SeriesLanding() {
   const [match, params] = useRoute("/serie/:id");
   const seriesId = params?.id;
@@ -255,9 +284,12 @@ export default function SeriesLanding() {
         </section>
 
         {/* Promotional Content */}
-        {(series.promoConceptMap || series.promoFamilyTree || series.promoYoutubeBooktrailer || 
-          series.promoSpotifyPlaylist || (series.promoPressNotes && series.promoPressNotes.length > 0) || 
-          (series.promoAdditionalMedia && series.promoAdditionalMedia.length > 0)) && (
+        {((series.promoConceptMap && series.promoShowConceptMap) || 
+          (series.promoFamilyTree && series.promoShowFamilyTree) || 
+          (series.promoYoutubeBooktrailer && series.promoShowYoutubeBooktrailer) || 
+          (series.promoSpotifyPlaylist && series.promoShowSpotifyPlaylist) || 
+          (series.promoPressNotes && series.promoPressNotes.length > 0 && series.promoShowPressNotes) || 
+          (series.promoAdditionalMedia && series.promoAdditionalMedia.length > 0 && series.promoShowAdditionalMedia)) && (
           <>
             <Separator className="my-12" />
             <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20">
@@ -265,178 +297,157 @@ export default function SeriesLanding() {
                 Contenido Adicional
               </h2>
               
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-                {/* Concept Map */}
-                {series.promoConceptMap && (
-                  <Card className="hover:shadow-lg transition-shadow" data-testid="promo-concept-map-series">
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-4">
-                        <div className="p-3 bg-primary/10 rounded-lg">
-                          <MapPin className="h-6 w-6 text-primary" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-lg mb-2">Mapa Conceptual</h3>
-                          <p className="text-sm text-muted-foreground mb-3">
-                            Explora el mundo y los conceptos de la serie
-                          </p>
-                          <a 
-                            href={series.promoConceptMap} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline text-sm font-medium flex items-center gap-1"
-                          >
-                            Ver mapa <ExternalLink className="h-3 w-3" />
-                          </a>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+              <div className="space-y-8 max-w-6xl mx-auto">
+                {/* YouTube Booktrailer Embed */}
+                {series.promoYoutubeBooktrailer && series.promoShowYoutubeBooktrailer && (
+                  <div className="w-full" data-testid="promo-youtube-series">
+                    <h3 className="text-2xl font-semibold mb-4 text-center">Booktrailer</h3>
+                    <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                      <iframe
+                        className="absolute top-0 left-0 w-full h-full rounded-lg shadow-lg"
+                        src={getYouTubeEmbedUrl(series.promoYoutubeBooktrailer)}
+                        title="YouTube Booktrailer"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  </div>
                 )}
 
-                {/* Family Tree */}
-                {series.promoFamilyTree && (
-                  <Card className="hover:shadow-lg transition-shadow" data-testid="promo-family-tree-series">
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-4">
-                        <div className="p-3 bg-primary/10 rounded-lg">
-                          <Users className="h-6 w-6 text-primary" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-lg mb-2">Árbol Genealógico</h3>
-                          <p className="text-sm text-muted-foreground mb-3">
-                            Descubre las relaciones entre los personajes
-                          </p>
-                          <a 
-                            href={series.promoFamilyTree} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline text-sm font-medium flex items-center gap-1"
-                          >
-                            Ver árbol <ExternalLink className="h-3 w-3" />
-                          </a>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                {/* Spotify Playlist Embed */}
+                {series.promoSpotifyPlaylist && series.promoShowSpotifyPlaylist && (
+                  <div className="w-full" data-testid="promo-spotify-series">
+                    <h3 className="text-2xl font-semibold mb-4 text-center">Playlist de Lectura</h3>
+                    <iframe
+                      className="w-full rounded-lg shadow-lg"
+                      src={getSpotifyEmbedUrl(series.promoSpotifyPlaylist)}
+                      height="352"
+                      allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                      loading="lazy"
+                    />
+                  </div>
                 )}
 
-                {/* YouTube Booktrailer */}
-                {series.promoYoutubeBooktrailer && (
-                  <Card className="hover:shadow-lg transition-shadow" data-testid="promo-youtube-series">
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-4">
-                        <div className="p-3 bg-primary/10 rounded-lg">
-                          <Video className="h-6 w-6 text-primary" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-lg mb-2">Booktrailer</h3>
-                          <p className="text-sm text-muted-foreground mb-3">
-                            Mira el video promocional de la serie
-                          </p>
-                          <a 
-                            href={series.promoYoutubeBooktrailer} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline text-sm font-medium flex items-center gap-1"
-                          >
-                            Ver video <ExternalLink className="h-3 w-3" />
-                          </a>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Spotify Playlist */}
-                {series.promoSpotifyPlaylist && (
-                  <Card className="hover:shadow-lg transition-shadow" data-testid="promo-spotify-series">
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-4">
-                        <div className="p-3 bg-primary/10 rounded-lg">
-                          <Music className="h-6 w-6 text-primary" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-lg mb-2">Playlist de Lectura</h3>
-                          <p className="text-sm text-muted-foreground mb-3">
-                            Música perfecta para acompañar tu lectura de la serie
-                          </p>
-                          <a 
-                            href={series.promoSpotifyPlaylist} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline text-sm font-medium flex items-center gap-1"
-                          >
-                            Escuchar <ExternalLink className="h-3 w-3" />
-                          </a>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Press Notes */}
-                {series.promoPressNotes && series.promoPressNotes.length > 0 && (
-                  <Card className="hover:shadow-lg transition-shadow" data-testid="promo-press-notes-series">
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-4">
-                        <div className="p-3 bg-primary/10 rounded-lg">
-                          <Newspaper className="h-6 w-6 text-primary" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-lg mb-2">Notas de Prensa</h3>
-                          <p className="text-sm text-muted-foreground mb-3">
-                            Lee reseñas y artículos sobre la serie
-                          </p>
-                          <div className="space-y-2">
-                            {series.promoPressNotes.slice(0, 3).map((note, index) => (
-                              <a 
-                                key={index}
-                                href={note} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-primary hover:underline text-sm font-medium flex items-center gap-1"
-                              >
-                                Artículo {index + 1} <ExternalLink className="h-3 w-3" />
-                              </a>
-                            ))}
+                {/* Grid for other promotional content */}
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {/* Concept Map */}
+                  {series.promoConceptMap && series.promoShowConceptMap && (
+                    <Card className="hover:shadow-lg transition-shadow" data-testid="promo-concept-map-series">
+                      <CardContent className="p-6">
+                        <div className="flex items-start gap-4">
+                          <div className="p-3 bg-primary/10 rounded-lg">
+                            <MapPin className="h-6 w-6 text-primary" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-lg mb-2">Mapa Conceptual</h3>
+                            <p className="text-sm text-muted-foreground mb-3">
+                              Explora el mundo y los conceptos de la serie
+                            </p>
+                            <a 
+                              href={series.promoConceptMap} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline text-sm font-medium flex items-center gap-1"
+                            >
+                              Ver mapa <ExternalLink className="h-3 w-3" />
+                            </a>
                           </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+                      </CardContent>
+                    </Card>
+                  )}
 
-                {/* Additional Media */}
-                {series.promoAdditionalMedia && series.promoAdditionalMedia.length > 0 && (
-                  <Card className="hover:shadow-lg transition-shadow" data-testid="promo-additional-media-series">
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-4">
-                        <div className="p-3 bg-primary/10 rounded-lg">
-                          <ImageIcon className="h-6 w-6 text-primary" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-lg mb-2">Material Gráfico</h3>
-                          <p className="text-sm text-muted-foreground mb-3">
-                            Ilustraciones, mapas y material visual de la serie
-                          </p>
-                          <div className="space-y-2">
-                            {series.promoAdditionalMedia.slice(0, 3).map((media, index) => (
-                              <a 
-                                key={index}
-                                href={media} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-primary hover:underline text-sm font-medium flex items-center gap-1"
-                              >
-                                Recurso {index + 1} <ExternalLink className="h-3 w-3" />
-                              </a>
-                            ))}
+                  {/* Family Tree */}
+                  {series.promoFamilyTree && series.promoShowFamilyTree && (
+                    <Card className="hover:shadow-lg transition-shadow" data-testid="promo-family-tree-series">
+                      <CardContent className="p-6">
+                        <div className="flex items-start gap-4">
+                          <div className="p-3 bg-primary/10 rounded-lg">
+                            <Users className="h-6 w-6 text-primary" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-lg mb-2">Árbol Genealógico</h3>
+                            <p className="text-sm text-muted-foreground mb-3">
+                              Descubre las relaciones entre los personajes
+                            </p>
+                            <a 
+                              href={series.promoFamilyTree} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline text-sm font-medium flex items-center gap-1"
+                            >
+                              Ver árbol <ExternalLink className="h-3 w-3" />
+                            </a>
                           </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Press Notes */}
+                  {series.promoPressNotes && series.promoPressNotes.length > 0 && series.promoShowPressNotes && (
+                    <Card className="hover:shadow-lg transition-shadow" data-testid="promo-press-notes-series">
+                      <CardContent className="p-6">
+                        <div className="flex items-start gap-4">
+                          <div className="p-3 bg-primary/10 rounded-lg">
+                            <Newspaper className="h-6 w-6 text-primary" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-lg mb-2">Notas de Prensa</h3>
+                            <p className="text-sm text-muted-foreground mb-3">
+                              Lee reseñas y artículos sobre la serie
+                            </p>
+                            <div className="space-y-2">
+                              {series.promoPressNotes.slice(0, 3).map((note, index) => (
+                                <a 
+                                  key={index}
+                                  href={note} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:underline text-sm font-medium flex items-center gap-1"
+                                >
+                                  Artículo {index + 1} <ExternalLink className="h-3 w-3" />
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Additional Media */}
+                  {series.promoAdditionalMedia && series.promoAdditionalMedia.length > 0 && series.promoShowAdditionalMedia && (
+                    <Card className="hover:shadow-lg transition-shadow" data-testid="promo-additional-media-series">
+                      <CardContent className="p-6">
+                        <div className="flex items-start gap-4">
+                          <div className="p-3 bg-primary/10 rounded-lg">
+                            <ImageIcon className="h-6 w-6 text-primary" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-lg mb-2">Material Gráfico</h3>
+                            <p className="text-sm text-muted-foreground mb-3">
+                              Ilustraciones, mapas y material visual de la serie
+                            </p>
+                            <div className="space-y-2">
+                              {series.promoAdditionalMedia.slice(0, 3).map((media, index) => (
+                                <a 
+                                  key={index}
+                                  href={media} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:underline text-sm font-medium flex items-center gap-1"
+                                >
+                                  Recurso {index + 1} <ExternalLink className="h-3 w-3" />
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
               </div>
             </section>
             <Separator className="my-12" />
