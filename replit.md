@@ -95,3 +95,13 @@ Preferred communication style: Simple, everyday language.
 - **File Upload System** - Replit Object Storage integration for hosting free book files (PDF, EPUB)
 - **Configuration** - Admin panel for managing book files, email settings, and provider credentials
 - **Note**: Email integration not using Replit connectors - requires EMAIL_API_KEY secret for the selected provider
+
+### Marketing and Promotion Tools
+- **QR Code Generation** - Automatic QR code generation for book landing pages using the `qrcode` library
+- **Landing Page Links** - Direct URLs to book landing pages in format `/libro/:id`
+- **QR Code Features**:
+  - Automatic generation when editing a book in admin panel
+  - Downloadable as PNG files for print materials
+  - Copy-to-clipboard functionality for landing page URLs
+  - Integration in admin panel under "QR y Enlaces" tab
+  - Suggested use cases: end of printed books, promotional materials, social media, author bio
