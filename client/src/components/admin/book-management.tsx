@@ -55,11 +55,17 @@ export default function BookManagement() {
       landingGallery: [],
       landingAwards: [],
       promoConceptMap: "",
+      promoShowConceptMap: true,
       promoFamilyTree: "",
+      promoShowFamilyTree: true,
       promoPressNotes: [],
+      promoShowPressNotes: true,
       promoAdditionalMedia: [],
+      promoShowAdditionalMedia: true,
       promoSpotifyPlaylist: "",
+      promoShowSpotifyPlaylist: true,
       promoYoutubeBooktrailer: "",
+      promoShowYoutubeBooktrailer: true,
     },
   });
 
@@ -274,11 +280,17 @@ export default function BookManagement() {
       landingGallery: [],
       landingAwards: [],
       promoConceptMap: "",
+      promoShowConceptMap: true,
       promoFamilyTree: "",
+      promoShowFamilyTree: true,
       promoPressNotes: [],
+      promoShowPressNotes: true,
       promoAdditionalMedia: [],
+      promoShowAdditionalMedia: true,
       promoSpotifyPlaylist: "",
+      promoShowSpotifyPlaylist: true,
       promoYoutubeBooktrailer: "",
+      promoShowYoutubeBooktrailer: true,
     });
     setIsModalOpen(true);
   };
@@ -305,11 +317,17 @@ export default function BookManagement() {
       landingGallery: book.landingGallery || [],
       landingAwards: book.landingAwards || [],
       promoConceptMap: book.promoConceptMap || "",
+      promoShowConceptMap: book.promoShowConceptMap ?? true,
       promoFamilyTree: book.promoFamilyTree || "",
+      promoShowFamilyTree: book.promoShowFamilyTree ?? true,
       promoPressNotes: book.promoPressNotes || [],
+      promoShowPressNotes: book.promoShowPressNotes ?? true,
       promoAdditionalMedia: book.promoAdditionalMedia || [],
+      promoShowAdditionalMedia: book.promoShowAdditionalMedia ?? true,
       promoSpotifyPlaylist: book.promoSpotifyPlaylist || "",
+      promoShowSpotifyPlaylist: book.promoShowSpotifyPlaylist ?? true,
       promoYoutubeBooktrailer: book.promoYoutubeBooktrailer || "",
+      promoShowYoutubeBooktrailer: book.promoShowYoutubeBooktrailer ?? true,
     });
     setIsModalOpen(true);
   };
@@ -872,143 +890,287 @@ export default function BookManagement() {
                   <div className="bg-muted/30 p-4 rounded-lg mb-6">
                     <p className="text-sm text-muted-foreground">
                       Agrega contenido promocional adicional para enriquecer la experiencia de tus lectores. 
-                      Todos estos campos son opcionales.
+                      Todos estos campos son opcionales. Usa los switches para controlar qué contenidos se muestran en la landing page.
                     </p>
                   </div>
 
-                  <FormField
-                    control={form.control}
-                    name="promoConceptMap"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Mapa Conceptual</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="URL del mapa conceptual (ej: enlace a imagen o PDF interactivo)"
-                            data-testid="input-promo-concept-map"
-                            {...field}
-                            value={field.value || ""}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Enlace a un mapa conceptual del mundo, la historia o los conceptos del libro
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="space-y-4 border rounded-lg p-4">
+                    <FormField
+                      control={form.control}
+                      name="promoConceptMap"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Mapa Conceptual</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="URL del mapa conceptual (ej: enlace a imagen o PDF interactivo)"
+                              data-testid="input-promo-concept-map"
+                              {...field}
+                              value={field.value || ""}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Enlace a un mapa conceptual del mundo, la historia o los conceptos del libro
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="promoShowConceptMap"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                          <div className="space-y-0.5">
+                            <FormLabel>Mostrar Mapa Conceptual</FormLabel>
+                            <FormDescription>
+                              Activa para mostrar este contenido en la landing page
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value ?? false}
+                              onCheckedChange={field.onChange}
+                              data-testid="switch-show-concept-map"
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
-                  <FormField
-                    control={form.control}
-                    name="promoFamilyTree"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Árbol Genealógico</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="URL del árbol genealógico (ej: enlace a imagen o diagrama interactivo)"
-                            data-testid="input-promo-family-tree"
-                            {...field}
-                            value={field.value || ""}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Enlace a un árbol genealógico de los personajes
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="space-y-4 border rounded-lg p-4">
+                    <FormField
+                      control={form.control}
+                      name="promoFamilyTree"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Árbol Genealógico</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="URL del árbol genealógico (ej: enlace a imagen o diagrama interactivo)"
+                              data-testid="input-promo-family-tree"
+                              {...field}
+                              value={field.value || ""}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Enlace a un árbol genealógico de los personajes
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="promoShowFamilyTree"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                          <div className="space-y-0.5">
+                            <FormLabel>Mostrar Árbol Genealógico</FormLabel>
+                            <FormDescription>
+                              Activa para mostrar este contenido en la landing page
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value ?? false}
+                              onCheckedChange={field.onChange}
+                              data-testid="switch-show-family-tree"
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
-                  <FormField
-                    control={form.control}
-                    name="promoYoutubeBooktrailer"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Booktrailer de YouTube</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="URL del video de YouTube (ej: https://www.youtube.com/watch?v=...)"
-                            data-testid="input-promo-youtube"
-                            {...field}
-                            value={field.value || ""}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Enlace a un booktrailer o video promocional en YouTube
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="space-y-4 border rounded-lg p-4">
+                    <FormField
+                      control={form.control}
+                      name="promoYoutubeBooktrailer"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Booktrailer de YouTube</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="URL del video de YouTube (ej: https://www.youtube.com/watch?v=...)"
+                              data-testid="input-promo-youtube"
+                              {...field}
+                              value={field.value || ""}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Enlace a un booktrailer o video promocional en YouTube (se mostrará embebido)
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="promoShowYoutubeBooktrailer"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                          <div className="space-y-0.5">
+                            <FormLabel>Mostrar Booktrailer</FormLabel>
+                            <FormDescription>
+                              Activa para mostrar el video embebido en la landing page
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value ?? false}
+                              onCheckedChange={field.onChange}
+                              data-testid="switch-show-youtube"
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
-                  <FormField
-                    control={form.control}
-                    name="promoSpotifyPlaylist"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Lista de Reproducción de Spotify</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="URL de la playlist de Spotify (ej: https://open.spotify.com/playlist/...)"
-                            data-testid="input-promo-spotify"
-                            {...field}
-                            value={field.value || ""}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Enlace a una playlist de Spotify que acompaña la lectura
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="space-y-4 border rounded-lg p-4">
+                    <FormField
+                      control={form.control}
+                      name="promoSpotifyPlaylist"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Lista de Reproducción de Spotify</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="URL de la playlist de Spotify (ej: https://open.spotify.com/playlist/...)"
+                              data-testid="input-promo-spotify"
+                              {...field}
+                              value={field.value || ""}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Enlace a una playlist de Spotify que acompaña la lectura (se mostrará embebida)
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="promoShowSpotifyPlaylist"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                          <div className="space-y-0.5">
+                            <FormLabel>Mostrar Playlist de Spotify</FormLabel>
+                            <FormDescription>
+                              Activa para mostrar la playlist embebida en la landing page
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value ?? false}
+                              onCheckedChange={field.onChange}
+                              data-testid="switch-show-spotify"
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
-                  <FormField
-                    control={form.control}
-                    name="promoPressNotes"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Notas de Prensa</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Enlace 1&#10;Enlace 2&#10;Enlace 3"
-                            rows={4}
-                            data-testid="textarea-promo-press-notes"
-                            value={(field.value as string[] || []).join('\n')}
-                            onChange={(e) => field.onChange(e.target.value.split('\n').filter(line => line.trim()))}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Enlaces a notas de prensa, reseñas o artículos sobre el libro (uno por línea)
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="space-y-4 border rounded-lg p-4">
+                    <FormField
+                      control={form.control}
+                      name="promoPressNotes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Notas de Prensa</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Enlace 1&#10;Enlace 2&#10;Enlace 3"
+                              rows={4}
+                              data-testid="textarea-promo-press-notes"
+                              value={(field.value as string[] || []).join('\n')}
+                              onChange={(e) => field.onChange(e.target.value.split('\n').filter(line => line.trim()))}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Enlaces a notas de prensa, reseñas o artículos sobre el libro (uno por línea)
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="promoShowPressNotes"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                          <div className="space-y-0.5">
+                            <FormLabel>Mostrar Notas de Prensa</FormLabel>
+                            <FormDescription>
+                              Activa para mostrar estos enlaces en la landing page
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value ?? false}
+                              onCheckedChange={field.onChange}
+                              data-testid="switch-show-press-notes"
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
-                  <FormField
-                    control={form.control}
-                    name="promoAdditionalMedia"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Material Gráfico Adicional</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="URL de imagen 1&#10;URL de imagen 2&#10;URL de PDF o infografía"
-                            rows={4}
-                            data-testid="textarea-promo-additional-media"
-                            value={(field.value as string[] || []).join('\n')}
-                            onChange={(e) => field.onChange(e.target.value.split('\n').filter(line => line.trim()))}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Enlaces a ilustraciones, infografías, mapas u otro material visual (uno por línea)
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="space-y-4 border rounded-lg p-4">
+                    <FormField
+                      control={form.control}
+                      name="promoAdditionalMedia"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Material Gráfico Adicional</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="URL de imagen 1&#10;URL de imagen 2&#10;URL de PDF o infografía"
+                              rows={4}
+                              data-testid="textarea-promo-additional-media"
+                              value={(field.value as string[] || []).join('\n')}
+                              onChange={(e) => field.onChange(e.target.value.split('\n').filter(line => line.trim()))}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Enlaces a ilustraciones, infografías, mapas u otro material visual (uno por línea)
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="promoShowAdditionalMedia"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                          <div className="space-y-0.5">
+                            <FormLabel>Mostrar Material Gráfico</FormLabel>
+                            <FormDescription>
+                              Activa para mostrar estos enlaces en la landing page
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value ?? false}
+                              onCheckedChange={field.onChange}
+                              data-testid="switch-show-additional-media"
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="qr" className="space-y-6 mt-6">
