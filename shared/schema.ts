@@ -36,11 +36,17 @@ export const bookSeries = pgTable("book_series", {
   landingThemes: text("landing_themes").array(),
   // Promotional content (optional)
   promoConceptMap: text("promo_concept_map"),
+  promoShowConceptMap: boolean("promo_show_concept_map").default(true),
   promoFamilyTree: text("promo_family_tree"),
+  promoShowFamilyTree: boolean("promo_show_family_tree").default(true),
   promoPressNotes: text("promo_press_notes").array(),
+  promoShowPressNotes: boolean("promo_show_press_notes").default(true),
   promoAdditionalMedia: text("promo_additional_media").array(),
+  promoShowAdditionalMedia: boolean("promo_show_additional_media").default(true),
   promoSpotifyPlaylist: text("promo_spotify_playlist"),
+  promoShowSpotifyPlaylist: boolean("promo_show_spotify_playlist").default(true),
   promoYoutubeBooktrailer: text("promo_youtube_booktrailer"),
+  promoShowYoutubeBooktrailer: boolean("promo_show_youtube_booktrailer").default(true),
 });
 
 export const books = pgTable("books", {
@@ -66,11 +72,17 @@ export const books = pgTable("books", {
   landingAwards: text("landing_awards").array(),
   // Promotional content (optional)
   promoConceptMap: text("promo_concept_map"),
+  promoShowConceptMap: boolean("promo_show_concept_map").default(true),
   promoFamilyTree: text("promo_family_tree"),
+  promoShowFamilyTree: boolean("promo_show_family_tree").default(true),
   promoPressNotes: text("promo_press_notes").array(),
+  promoShowPressNotes: boolean("promo_show_press_notes").default(true),
   promoAdditionalMedia: text("promo_additional_media").array(),
+  promoShowAdditionalMedia: boolean("promo_show_additional_media").default(true),
   promoSpotifyPlaylist: text("promo_spotify_playlist"),
+  promoShowSpotifyPlaylist: boolean("promo_show_spotify_playlist").default(true),
   promoYoutubeBooktrailer: text("promo_youtube_booktrailer"),
+  promoShowYoutubeBooktrailer: boolean("promo_show_youtube_booktrailer").default(true),
 });
 
 export const testimonials = pgTable("testimonials", {
