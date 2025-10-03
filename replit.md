@@ -46,6 +46,7 @@ Preferred communication style: Simple, everyday language.
   - Testimonial management
   - Newsletter subscriber management
   - Site settings configuration
+  - **UI Text Personalization** - Complete customization of all visible text
 - **Public-facing components** for author portfolio display
 - **Reusable UI components** from shadcn/ui library
 
@@ -143,3 +144,47 @@ Preferred communication style: Simple, everyday language.
   - **Other Content**: Visual cards with icons for concept maps, family trees, press notes, and media
   - External links open in new tabs for better UX
   - Content only displays when both URL exists AND visibility flag is enabled
+
+### UI Text Personalization System
+- **Complete Text Customization** - System to personalize all visible text in the application without code changes
+- **Database Structure**:
+  - `ui_texts` table with fields: id, namespace, key, locale, value
+  - Unique constraint on (namespace, key, locale) for upsert operations
+  - Pre-seeded with 45+ default Spanish texts covering navigation, home sections, and common messages
+- **Namespace Organization**:
+  - `navigation` - Header menu items (home, series, books, bio, testimonials, admin)
+  - `home` - Homepage section titles and subtitles (series, standalone, bio, testimonials, newsletter)
+  - `footer` - Footer content and links
+  - `book_landing` - Book landing page labels and buttons
+  - `series_landing` - Series landing page labels and buttons
+  - `admin` - Admin panel interface texts
+  - `common` - Shared texts (loading, buttons like "read more", "subscribe")
+- **Backend Implementation**:
+  - Storage methods: `getUiTexts(locale?)`, `getUiTextsByNamespace()`, `getUiTextById()`, `updateUiText()`, `upsertUiText()`
+  - RESTful API endpoints:
+    - GET `/api/ui-texts?locale=es-ES` - Fetch texts by locale
+    - GET `/api/ui-texts/:id` - Get specific text
+    - PUT `/api/ui-texts/:id` - Update text (requires auth)
+    - POST `/api/ui-texts` - Create/upsert text (requires auth)
+- **Frontend Integration**:
+  - `UiTextProvider` context wraps entire app, fetching texts on load
+  - `useUiText(namespace, key, defaultValue)` hook for accessing texts in components
+  - Texts cached with React Query for performance
+  - Automatic cache invalidation on updates
+  - Components: navigation, hero-section, newsletter, book-series, standalone-books, author-bio, testimonials
+- **Admin Interface** ("Textos del Sitio"):
+  - Tab-based organization by namespace for easy navigation
+  - Inline editing: click "Editar" → modify text → save
+  - Create new texts with controlled form (namespace, key, locale, value)
+  - Real-time preview: changes reflect immediately on public pages after save
+  - Toast notifications for success/error feedback
+- **Localization Support**:
+  - Multi-locale ready (currently Spanish "es-ES")
+  - Architecture supports adding more languages easily
+  - Locale parameter in all fetch operations
+- **Use Cases**:
+  - Change navigation menu labels
+  - Customize section headings on homepage
+  - Translate interface to other languages
+  - A/B test different copy
+  - Rebrand without code changes
