@@ -4,12 +4,22 @@ import { Menu, X, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import type { Author } from "@shared/schema";
+import { useUiText } from "@/contexts/ui-text-context";
 
 export default function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { data: author } = useQuery<Author>({
     queryKey: ["/api/author"]
   });
+  
+  const navHome = useUiText("navigation", "home", "Inicio");
+  const navSeries = useUiText("navigation", "series", "Series");
+  const navBooks = useUiText("navigation", "books", "Libros");
+  const navBio = useUiText("navigation", "bio", "Biografía");
+  const navTestimonials = useUiText("navigation", "testimonials", "Reseñas");
+  const navAdmin = useUiText("navigation", "admin", "Admin");
+  const navAdminPanel = useUiText("navigation", "admin_panel", "Panel Admin");
+  const commonLoading = useUiText("common", "loading", "Cargando...");
 
   return (
     <nav className="bg-card/80 backdrop-blur-md border-b border-border sticky top-0 z-50">
@@ -17,29 +27,29 @@ export default function Navigation() {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <div className="text-2xl font-serif font-bold text-primary">
-              {author?.name || "Cargando..."}
+              {author?.name || commonLoading}
             </div>
           </div>
           <div className="hidden md:flex items-center space-x-8">
             <a href="#inicio" className="text-muted-foreground hover:text-primary transition-colors" data-testid="nav-inicio">
-              Inicio
+              {navHome}
             </a>
             <a href="#series" className="text-muted-foreground hover:text-primary transition-colors" data-testid="nav-series">
-              Series
+              {navSeries}
             </a>
             <a href="#standalone" className="text-muted-foreground hover:text-primary transition-colors" data-testid="nav-standalone">
-              Libros
+              {navBooks}
             </a>
             <a href="#biografia" className="text-muted-foreground hover:text-primary transition-colors" data-testid="nav-biografia">
-              Biografía
+              {navBio}
             </a>
             <a href="#testimonios" className="text-muted-foreground hover:text-primary transition-colors" data-testid="nav-testimonios">
-              Reseñas
+              {navTestimonials}
             </a>
             <Link href="/admin">
               <Button className="bg-primary text-primary-foreground hover:bg-primary/90" data-testid="button-admin">
                 <Settings className="h-4 w-4 mr-2" />
-                Admin
+                {navAdmin}
               </Button>
             </Link>
           </div>
@@ -60,23 +70,23 @@ export default function Navigation() {
         <div className="md:hidden bg-card border-t border-border">
           <div className="px-4 py-2 space-y-2">
             <a href="#inicio" className="block py-2 text-muted-foreground hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
-              Inicio
+              {navHome}
             </a>
             <a href="#series" className="block py-2 text-muted-foreground hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
-              Series
+              {navSeries}
             </a>
             <a href="#standalone" className="block py-2 text-muted-foreground hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
-              Libros
+              {navBooks}
             </a>
             <a href="#biografia" className="block py-2 text-muted-foreground hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
-              Biografía
+              {navBio}
             </a>
             <a href="#testimonios" className="block py-2 text-muted-foreground hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
-              Reseñas
+              {navTestimonials}
             </a>
             <Link href="/admin" className="block w-full text-left py-2 text-primary" onClick={() => setMobileMenuOpen(false)}>
               <Settings className="h-4 w-4 mr-2 inline" />
-              Panel Admin
+              {navAdminPanel}
             </Link>
           </div>
         </div>

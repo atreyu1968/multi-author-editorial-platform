@@ -4,9 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
+import { useUiText } from "@/contexts/ui-text-context";
 import type { BookSeries, Book } from "@shared/schema";
 
 export default function BookSeries() {
+  const seriesTitle = useUiText("home", "series_title", "Series de Libros");
+  const seriesSubtitle = useUiText("home", "series_subtitle", "Explora las emocionantes series que han cautivado a miles de lectores alrededor del mundo.");
+  
   const { data: series = [] } = useQuery<BookSeries[]>({
     queryKey: ["/api/book-series"]
   });
@@ -24,7 +28,7 @@ export default function BookSeries() {
       <section id="series" className="py-20 bg-muted/30">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary mb-6">Series de Libros</h2>
+            <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary mb-6">{seriesTitle}</h2>
             <p className="text-xl text-muted-foreground">No hay series disponibles en este momento.</p>
           </div>
         </div>
@@ -36,9 +40,9 @@ export default function BookSeries() {
     <section id="series" className="py-20 bg-muted/30">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary mb-6">Series de Libros</h2>
+          <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary mb-6">{seriesTitle}</h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Explora las emocionantes series que han cautivado a miles de lectores alrededor del mundo.
+            {seriesSubtitle}
           </p>
         </div>
 

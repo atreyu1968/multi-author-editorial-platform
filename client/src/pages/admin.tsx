@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { ArrowLeft, Home, BookOpen, Users, User, Star, Settings, FileText, HelpCircle } from "lucide-react";
+import { ArrowLeft, Home, BookOpen, Users, User, Star, Settings, FileText, HelpCircle, Type } from "lucide-react";
 import AdminDashboard from "@/components/admin/admin-dashboard";
 import BookManagement from "@/components/admin/book-management";
 import SeriesManagement from "@/components/admin/series-management";
@@ -9,8 +9,9 @@ import TestimonialManagement from "@/components/admin/testimonial-management";
 import SettingsManagement from "@/components/admin/settings-management";
 import BlogManagement from "@/components/admin/blog-management";
 import HelpInstructions from "@/components/admin/help-instructions";
+import UiTextsManagement from "@/components/admin/ui-texts-management";
 
-type AdminSection = 'dashboard' | 'books' | 'series' | 'bio' | 'testimonials' | 'blog' | 'settings' | 'help';
+type AdminSection = 'dashboard' | 'books' | 'series' | 'bio' | 'testimonials' | 'blog' | 'settings' | 'ui-texts' | 'help';
 
 export default function Admin() {
   const [currentSection, setCurrentSection] = useState<AdminSection>('dashboard');
@@ -31,6 +32,8 @@ export default function Admin() {
         return <BlogManagement />;
       case 'settings':
         return <SettingsManagement />;
+      case 'ui-texts':
+        return <UiTextsManagement />;
       case 'help':
         return <HelpInstructions />;
       default:
@@ -123,6 +126,18 @@ export default function Admin() {
             >
               <FileText className="h-5 w-5" />
               Blog
+            </button>
+            <button 
+              onClick={() => setCurrentSection('ui-texts')}
+              className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
+                currentSection === 'ui-texts' 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'hover:bg-primary hover:text-primary-foreground'
+              }`}
+              data-testid="nav-ui-texts"
+            >
+              <Type className="h-5 w-5" />
+              Textos del Sitio
             </button>
             <button 
               onClick={() => setCurrentSection('settings')}

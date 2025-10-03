@@ -1,8 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { useUiText } from "@/contexts/ui-text-context";
 import type { Author } from "@shared/schema";
 
 export default function AuthorBio() {
+  const bioTitle = useUiText("home", "bio_title", "Conoce a la Autora");
+  const loadingText = useUiText("common", "loading", "Cargando...");
+  
   const { data: author } = useQuery<Author>({
     queryKey: ["/api/author"]
   });
@@ -12,7 +16,7 @@ export default function AuthorBio() {
       <section id="biografia" className="py-20 bg-muted/30">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <div className="text-xl text-muted-foreground">Cargando biografía...</div>
+            <div className="text-xl text-muted-foreground">{loadingText}</div>
           </div>
         </div>
       </section>
@@ -26,7 +30,7 @@ export default function AuthorBio() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="order-2 lg:order-1">
               <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary mb-8">
-                Conoce a la Autora
+                {bioTitle}
               </h2>
               <div className="prose prose-lg max-w-none text-muted-foreground leading-relaxed space-y-6">
                 <p data-testid="bio-paragraph-1">{author.bioParagraph1}</p>

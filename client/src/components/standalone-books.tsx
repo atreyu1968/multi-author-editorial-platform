@@ -4,9 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
+import { useUiText } from "@/contexts/ui-text-context";
 import type { Book } from "@shared/schema";
 
 export default function StandaloneBooks() {
+  const standaloneTitle = useUiText("home", "standalone_title", "Libros Independientes");
+  const standaloneSubtitle = useUiText("home", "standalone_subtitle", "Historias completas y autoconclusivas que puedes disfrutar como experiencias únicas.");
+  
   const { data: books = [] } = useQuery<Book[]>({
     queryKey: ["/api/books/standalone"]
   });
@@ -17,9 +21,9 @@ export default function StandaloneBooks() {
     <section id="standalone" className="py-20">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary mb-6">Libros Independientes</h2>
+          <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary mb-6">{standaloneTitle}</h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Historias completas y autoconclusivas que puedes disfrutar como experiencias únicas.
+            {standaloneSubtitle}
           </p>
         </div>
 

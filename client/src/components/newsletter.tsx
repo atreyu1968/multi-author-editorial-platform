@@ -6,9 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useUiText } from "@/contexts/ui-text-context";
 import type { InsertNewsletter } from "@shared/schema";
 
 export default function Newsletter() {
+  const newsletterTitle = useUiText("home", "newsletter_title", "Únete a Nuestra Comunidad");
+  const newsletterSubtitle = useUiText("home", "newsletter_subtitle", "Suscríbete a nuestro newsletter y recibe un libro gratuito, además de ser el primero en conocer sobre nuevos lanzamientos, ofertas exclusivas y contenido especial.");
+  
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const { toast } = useToast();
@@ -55,11 +59,10 @@ export default function Newsletter() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-serif font-bold mb-6">
-            Únete a Nuestra Comunidad
+            {newsletterTitle}
           </h2>
           <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto leading-relaxed">
-            Suscríbete a nuestro newsletter y recibe un libro gratuito, además de ser el primero en conocer 
-            sobre nuevos lanzamientos, ofertas exclusivas y contenido especial.
+            {newsletterSubtitle}
           </p>
 
           <Card className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 mb-8 border border-white/20">

@@ -2,9 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Download, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useUiText } from "@/contexts/ui-text-context";
 import type { Author, Book } from "@shared/schema";
 
 export default function HeroSection() {
+  const loadingText = useUiText("common", "loading", "Cargando...");
+  
   const { data: author } = useQuery<Author>({
     queryKey: ["/api/author"]
   });
@@ -17,7 +20,7 @@ export default function HeroSection() {
 
   if (!author) {
     return <div className="hero-gradient h-96 flex items-center justify-center">
-      <div className="text-white text-xl">Cargando...</div>
+      <div className="text-white text-xl">{loadingText}</div>
     </div>;
   }
 

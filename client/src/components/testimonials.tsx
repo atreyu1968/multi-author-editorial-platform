@@ -3,9 +3,13 @@ import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useUiText } from "@/contexts/ui-text-context";
 import type { Testimonial } from "@shared/schema";
 
 export default function Testimonials() {
+  const testimonialsTitle = useUiText("home", "testimonials_title", "Lo que Dicen los Lectores");
+  const testimonialsSubtitle = useUiText("home", "testimonials_subtitle", "Miles de lectores han disfrutado de las historias de María. Descubre qué dicen sobre sus libros.");
+  
   const { data: testimonials = [] } = useQuery<Testimonial[]>({
     queryKey: ["/api/testimonials/published"]
   });
@@ -42,7 +46,7 @@ export default function Testimonials() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary mb-6">
-              Lo que Dicen los Lectores
+              {testimonialsTitle}
             </h2>
             <p className="text-xl text-muted-foreground">No hay testimonios disponibles en este momento.</p>
           </div>
@@ -62,10 +66,10 @@ export default function Testimonials() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary mb-6">
-            Lo que Dicen los Lectores
+            {testimonialsTitle}
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Miles de lectores han disfrutado de las historias de María. Descubre qué dicen sobre sus libros.
+            {testimonialsSubtitle}
           </p>
         </div>
 
