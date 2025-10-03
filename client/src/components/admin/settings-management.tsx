@@ -214,10 +214,13 @@ export default function SettingsManagement() {
     }
   }, [settings]);
 
-  const updateSettingsMutation = useMutation({
+  const createUpdateMutation = (settingsToUpdate: string[]) => useMutation({
     mutationFn: async (data: SettingsFormData) => {
+      const filteredData = Object.entries(data)
+        .filter(([key]) => settingsToUpdate.includes(key));
+      
       const results = await Promise.allSettled(
-        Object.entries(data).map(async ([key, value]) => {
+        filteredData.map(async ([key, value]) => {
           try {
             const response = await apiRequest("PUT", `/api/settings/${key}`, { value });
             const result = await response.json();
@@ -264,8 +267,35 @@ export default function SettingsManagement() {
     },
   });
 
+  const updateGeneralSettingsMutation = createUpdateMutation([
+    'heroTitle', 'heroSubtitle', 'contactEmail', 'freeBookTitle', 'freeBookFile', 
+    'freeBookFormat', 'freeBookDescription', 'emailProvider', 'emailFromName', 'emailFromAddress'
+  ]);
+
+  const updateAppearanceMutation = createUpdateMutation(['logoUrl', 'faviconUrl']);
+  
+  const updateColorsMutation = createUpdateMutation([
+    'primaryColor', 'secondaryColor', 'accentColor', 'backgroundColor', 'textColor'
+  ]);
+
+  const updateSocialMutation = createUpdateMutation([
+    'instagramUrl', 'twitterUrl', 'facebookUrl', 'amazonUrl'
+  ]);
+
   const onSubmit = (data: SettingsFormData) => {
-    updateSettingsMutation.mutate(data);
+    updateGeneralSettingsMutation.mutate(data);
+  };
+
+  const onSubmitAppearance = (data: SettingsFormData) => {
+    updateAppearanceMutation.mutate(data);
+  };
+
+  const onSubmitColors = (data: SettingsFormData) => {
+    updateColorsMutation.mutate(data);
+  };
+
+  const onSubmitSocial = (data: SettingsFormData) => {
+    updateSocialMutation.mutate(data);
   };
 
   // Helper functions for file upload
@@ -368,12 +398,12 @@ export default function SettingsManagement() {
 
                   <Button 
                     type="submit" 
-                    disabled={updateSettingsMutation.isPending}
+                    disabled={updateGeneralSettingsMutation.isPending}
                     className="bg-primary text-primary-foreground hover:bg-primary/90"
                     data-testid="button-save-general"
                   >
                     <Save className="h-4 w-4 mr-2" />
-                    {updateSettingsMutation.isPending ? "Guardando..." : "Guardar Configuración"}
+                    {updateGeneralSettingsMutation.isPending ? "Guardando..." : "Guardar Configuración"}
                   </Button>
                 </form>
               </Form>
@@ -389,7 +419,7 @@ export default function SettingsManagement() {
               </CardHeader>
               <CardContent>
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6" data-testid="appearance-settings-form">
+                  <form onSubmit={form.handleSubmit(onSubmitAppearance)} className="space-y-6" data-testid="appearance-settings-form">
                     <div className="space-y-4">
                       <h4 className="font-medium">Logo del Header</h4>
                       <p className="text-sm text-muted-foreground">
@@ -475,12 +505,12 @@ export default function SettingsManagement() {
 
                     <Button 
                       type="submit" 
-                      disabled={updateSettingsMutation.isPending}
+                      disabled={updateAppearanceMutation.isPending}
                       className="bg-primary text-primary-foreground hover:bg-primary/90"
                       data-testid="button-save-appearance"
                     >
                       <Save className="h-4 w-4 mr-2" />
-                      {updateSettingsMutation.isPending ? "Guardando..." : "Guardar Apariencia"}
+                      {updateAppearanceMutation.isPending ? "Guardando..." : "Guardar Apariencia"}
                     </Button>
                   </form>
                 </Form>
@@ -493,7 +523,7 @@ export default function SettingsManagement() {
               </CardHeader>
               <CardContent>
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" data-testid="colors-settings-form">
+                  <form onSubmit={form.handleSubmit(onSubmitColors)} className="space-y-4" data-testid="colors-settings-form">
                     <p className="text-sm text-muted-foreground mb-4">
                       Personaliza los colores principales del sitio web
                     </p>
@@ -578,12 +608,12 @@ export default function SettingsManagement() {
 
                     <Button 
                       type="submit" 
-                      disabled={updateSettingsMutation.isPending}
+                      disabled={updateColorsMutation.isPending}
                       className="bg-primary text-primary-foreground hover:bg-primary/90"
                       data-testid="button-save-colors"
                     >
                       <Save className="h-4 w-4 mr-2" />
-                      {updateSettingsMutation.isPending ? "Guardando..." : "Guardar Colores"}
+                      {updateColorsMutation.isPending ? "Guardando..." : "Guardar Colores"}
                     </Button>
                   </form>
                 </Form>
@@ -678,12 +708,12 @@ export default function SettingsManagement() {
 
                   <Button 
                     type="submit" 
-                    disabled={updateSettingsMutation.isPending}
+                    disabled={updateSocialMutation.isPending}
                     className="bg-primary text-primary-foreground hover:bg-primary/90"
                     data-testid="button-save-social"
                   >
                     <Save className="h-4 w-4 mr-2" />
-                    {updateSettingsMutation.isPending ? "Guardando..." : "Guardar Redes Sociales"}
+                    {updateSocialMutation.isPending ? "Guardando..." : "Guardar Redes Sociales"}
                   </Button>
                 </form>
               </Form>
@@ -870,12 +900,12 @@ export default function SettingsManagement() {
 
                   <Button 
                     type="submit" 
-                    disabled={updateSettingsMutation.isPending}
+                    disabled={updateGeneralSettingsMutation.isPending}
                     className="bg-primary text-primary-foreground hover:bg-primary/90"
                     data-testid="button-save-newsletter"
                   >
                     <Save className="h-4 w-4 mr-2" />
-                    {updateSettingsMutation.isPending ? "Guardando..." : "Guardar Configuración"}
+                    {updateGeneralSettingsMutation.isPending ? "Guardando..." : "Guardar Configuración"}
                   </Button>
                 </form>
               </Form>
