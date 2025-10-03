@@ -10,6 +10,7 @@ import {
   siteSettings,
   users,
   blogPosts,
+  uiTexts,
   type Author,
   type InsertAuthor,
   type BookSeries,
@@ -25,7 +26,9 @@ import {
   type User,
   type InsertUser,
   type BlogPost,
-  type InsertBlogPost
+  type InsertBlogPost,
+  type UiText,
+  type InsertUiText
 } from "@shared/schema";
 import { IStorage } from "./storage";
 import session from "express-session";
@@ -341,5 +344,62 @@ export class DatabaseStorage implements IStorage {
       .where(eq(blogPosts.id, id))
       .returning();
     return result.length > 0;
+  }
+
+  async getUiTexts(locale?: string): Promise<UiText[]> {
+    if (!locale) {
+      return await db.select().from(uiTexts);
+    }
+    return await db
+      .select()
+      .from(uiTexts)
+      .where(eq(uiTexts.locale, locale));
+  }
+
+  async getUiTextsByNamespace(namespace: string, locale?: string): Promise<UiText[]> {
+    if (!locale) {
+      return await db
+        .select()
+        .from(uiTexts)
+        .where(eq(uiTexts.namespace, namespace));
+    }
+    return await db
+      .select()
+      .from(uiTexts)
+      .where(
+        and(
+          eq(uiTexts.namespace, namespace),
+          eq(uiTexts.locale, locale)
+        )
+      );
+  }
+
+  async getUiTextById(id: string): Promise<UiText | undefined> {
+    const [text] = await db
+      .select()
+      .from(uiTexts)
+      .where(eq(uiTexts.id, id));
+    return text || undefined;
+  }
+
+  async updateUiText(id: string, text: Partial<InsertUiText>): Promise<UiText | undefined> {
+    const [updatedText] = await db
+      .update(uiTexts)
+      .set(text)
+      .where(eq(uiTexts.id, id))
+      .returning();
+    return updatedText || undefined;
+  }
+
+  async upsertUiText(text: InsertUiText): Promise<UiText> {
+    const [upsertedText] = await db
+      .insert(uiTexts)
+      .values(text)
+      .onConflictDoUpdate({
+        target: [uiTexts.namespace, uiTexts.key, uiTexts.locale],
+        set: { value: text.value },
+      })
+      .returning();
+    return upsertedText;
   }
 }

@@ -9,7 +9,8 @@ import {
   insertTestimonialSchema,
   insertNewsletterSchema,
   insertSiteSettingsSchema,
-  insertBlogPostSchema
+  insertBlogPostSchema,
+  insertUiTextSchema
 } from "@shared/schema";
 // Referenced from blueprint:javascript_object_storage
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
@@ -484,6 +485,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error setting image:", error);
       res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // UI Texts routes
+  app.get("/api/ui-texts", async (req, res) => {
+    try {
+      const locale = req.query.locale as string | undefined;
+      const texts = await storage.getUiTexts(locale);
+      res.json(texts);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get UI texts" });
+    }
+  });
+
+  app.get("/api/ui-texts/:id", async (req, res) => {
+    try {
+      const text = await storage.getUiTextById(req.params.id);
+      if (!text) {
+        res.status(404).json({ message: "UI text not found" });
+        return;
+      }
+      res.json(text);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get UI text" });
+    }
+  });
+
+  app.put("/api/ui-texts/:id", requireAuth, async (req, res) => {
+    try {
+      const validatedText = insertUiTextSchema.partial().parse(req.body);
+      const text = await storage.updateUiText(req.params.id, validatedText);
+      if (!text) {
+        res.status(404).json({ message: "UI text not found" });
+        return;
+      }
+      res.json(text);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid UI text data" });
+    }
+  });
+
+  app.post("/api/ui-texts", requireAuth, async (req, res) => {
+    try {
+      const validatedText = insertUiTextSchema.parse(req.body);
+      const text = await storage.upsertUiText(validatedText);
+      res.json(text);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid UI text data" });
     }
   });
 

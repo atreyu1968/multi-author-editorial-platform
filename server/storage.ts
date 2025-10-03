@@ -14,7 +14,9 @@ import {
   type User,
   type InsertUser,
   type BlogPost,
-  type InsertBlogPost
+  type InsertBlogPost,
+  type UiText,
+  type InsertUiText
 } from "@shared/schema";
 import { randomUUID, scrypt, randomBytes, scryptSync } from "crypto";
 import { promisify } from "util";
@@ -82,6 +84,13 @@ export interface IStorage {
   updateBlogPost(id: string, post: Partial<InsertBlogPost>): Promise<BlogPost | undefined>;
   deleteBlogPost(id: string): Promise<boolean>;
 
+  // UI Texts methods
+  getUiTexts(locale?: string): Promise<UiText[]>;
+  getUiTextsByNamespace(namespace: string, locale?: string): Promise<UiText[]>;
+  getUiTextById(id: string): Promise<UiText | undefined>;
+  updateUiText(id: string, text: Partial<InsertUiText>): Promise<UiText | undefined>;
+  upsertUiText(text: InsertUiText): Promise<UiText>;
+
   // Session store for authentication
   sessionStore: session.Store;
 }
@@ -100,6 +109,7 @@ export class MemStorage implements IStorage {
   private siteSettings: Map<string, SiteSettings>;
   private users: Map<string, User>;
   private blogPosts: Map<string, BlogPost>;
+  private uiTexts: Map<string, UiText>;
   sessionStore: session.Store;
 
   constructor() {
@@ -111,6 +121,7 @@ export class MemStorage implements IStorage {
     this.siteSettings = new Map();
     this.users = new Map();
     this.blogPosts = new Map();
+    this.uiTexts = new Map();
     
     // Initialize session store
     this.sessionStore = new MemoryStore({
@@ -551,6 +562,52 @@ export class MemStorage implements IStorage {
 
   async deleteBlogPost(id: string): Promise<boolean> {
     return this.blogPosts.delete(id);
+  }
+
+  async getUiTexts(locale?: string): Promise<UiText[]> {
+    const allTexts = Array.from(this.uiTexts.values());
+    if (!locale) {
+      return allTexts;
+    }
+    return allTexts.filter(text => text.locale === locale);
+  }
+
+  async getUiTextsByNamespace(namespace: string, locale?: string): Promise<UiText[]> {
+    const allTexts = Array.from(this.uiTexts.values()).filter(text => text.namespace === namespace);
+    if (!locale) {
+      return allTexts;
+    }
+    return allTexts.filter(text => text.locale === locale);
+  }
+
+  async getUiTextById(id: string): Promise<UiText | undefined> {
+    return this.uiTexts.get(id);
+  }
+
+  async updateUiText(id: string, text: Partial<InsertUiText>): Promise<UiText | undefined> {
+    const existingText = this.uiTexts.get(id);
+    if (!existingText) return undefined;
+    const updatedText = { ...existingText, ...text };
+    this.uiTexts.set(id, updatedText);
+    return updatedText;
+  }
+
+  async upsertUiText(text: InsertUiText): Promise<UiText> {
+    const locale = text.locale || "es-ES";
+    const existing = Array.from(this.uiTexts.values()).find(
+      t => t.namespace === text.namespace && t.key === text.key && t.locale === locale
+    );
+    
+    if (existing) {
+      const updatedText = { ...existing, value: text.value };
+      this.uiTexts.set(existing.id, updatedText);
+      return updatedText;
+    }
+    
+    const id = randomUUID();
+    const newText: UiText = { ...text, id, locale };
+    this.uiTexts.set(id, newText);
+    return newText;
   }
 }
 

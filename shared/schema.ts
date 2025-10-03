@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, boolean, real, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, boolean, real, integer, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -135,7 +135,9 @@ export const uiTexts = pgTable("ui_texts", {
   key: text("key").notNull(),
   locale: text("locale").notNull().default("es-ES"),
   value: text("value").notNull(),
-});
+}, (table) => ({
+  uniqueKey: unique("ui_texts_unique_key").on(table.namespace, table.key, table.locale),
+}));
 
 export const insertAuthorSchema = createInsertSchema(authors).omit({
   id: true,
