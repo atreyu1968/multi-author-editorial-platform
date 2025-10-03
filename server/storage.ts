@@ -70,6 +70,7 @@ export interface IStorage {
   getSiteSettingByKey(key: string): Promise<SiteSettings | undefined>;
   createSiteSetting(setting: InsertSiteSettings): Promise<SiteSettings>;
   updateSiteSetting(key: string, value: string): Promise<SiteSettings | undefined>;
+  upsertSiteSetting(key: string, value: string): Promise<SiteSettings>;
 
   // User methods
   getUser(id: string): Promise<User | undefined>;
@@ -486,6 +487,20 @@ export class MemStorage implements IStorage {
     const updatedSetting = { ...existingSetting, value };
     this.siteSettings.set(existingSetting.id, updatedSetting);
     return updatedSetting;
+  }
+
+  async upsertSiteSetting(key: string, value: string): Promise<SiteSettings> {
+    const existingSetting = Array.from(this.siteSettings.values()).find(s => s.key === key);
+    if (existingSetting) {
+      const updatedSetting = { ...existingSetting, value };
+      this.siteSettings.set(existingSetting.id, updatedSetting);
+      return updatedSetting;
+    }
+    
+    const id = randomUUID();
+    const setting: SiteSettings = { id, key, value };
+    this.siteSettings.set(id, setting);
+    return setting;
   }
 
   // User methods

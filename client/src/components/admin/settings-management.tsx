@@ -217,15 +217,8 @@ export default function SettingsManagement() {
   const updateSettingsMutation = useMutation({
     mutationFn: async (data: SettingsFormData) => {
       const promises = Object.entries(data).map(async ([key, value]) => {
-        try {
-          // Try to update existing setting
-          const response = await apiRequest("PUT", `/api/settings/${key}`, { value });
-          return response.json();
-        } catch (error) {
-          // If setting doesn't exist, create it
-          const response = await apiRequest("POST", "/api/settings", { key, value });
-          return response.json();
-        }
+        const response = await apiRequest("PUT", `/api/settings/${key}`, { value });
+        return response.json();
       });
       return Promise.all(promises);
     },

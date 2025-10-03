@@ -264,6 +264,18 @@ export class DatabaseStorage implements IStorage {
     return setting || undefined;
   }
 
+  async upsertSiteSetting(key: string, value: string): Promise<SiteSettings> {
+    const [setting] = await db
+      .insert(siteSettings)
+      .values({ key, value })
+      .onConflictDoUpdate({
+        target: siteSettings.key,
+        set: { value }
+      })
+      .returning();
+    return setting;
+  }
+
   // User methods
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db

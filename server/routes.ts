@@ -346,14 +346,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(400).json({ message: "Value must be a string" });
         return;
       }
-      const setting = await storage.updateSiteSetting(req.params.key, value);
-      if (!setting) {
-        res.status(404).json({ message: "Setting not found" });
-        return;
-      }
+      const setting = await storage.upsertSiteSetting(req.params.key, value);
       res.json(setting);
     } catch (error) {
-      res.status(500).json({ message: "Failed to update setting" });
+      res.status(500).json({ message: "Failed to upsert setting" });
     }
   });
 
