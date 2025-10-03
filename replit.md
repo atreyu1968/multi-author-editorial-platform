@@ -90,11 +90,19 @@ Preferred communication style: Simple, everyday language.
 - **Hot module replacement** through Vite
 
 ### Email and Newsletter System
-- **Email Service** - Custom email service supporting multiple providers (Resend, SendGrid)
+- **Email Service** - Custom email service supporting 6 providers with dynamic configuration instructions:
+  - **Resend** (Recomendado) - Modern email API with excellent deliverability
+  - **SendGrid** - Enterprise-grade email service by Twilio
+  - **Mailchimp Transactional** (Mandrill) - Transactional emails from Mailchimp
+  - **Brevo** (formerly Sendinblue) - All-in-one marketing platform
+  - **Postmark** - Dedicated transactional email service
+  - **Mailgun** - Developer-focused email API (requires APIKEY:DOMAIN format)
 - **Welcome Email Automation** - Automatic welcome email with free book delivery upon newsletter subscription
 - **File Upload System** - Replit Object Storage integration for hosting free book files (PDF, EPUB)
-- **Configuration** - Admin panel for managing book files, email settings, and provider credentials
+- **Configuration** - Admin panel with provider-specific setup instructions and email settings management
+- **Dynamic Instructions** - Context-aware guidance for obtaining API keys from each provider
 - **Note**: Email integration not using Replit connectors - requires EMAIL_API_KEY secret for the selected provider
+- **Limitation**: File attachments currently not supported; welcome emails include download links instead
 
 ### Marketing and Promotion Tools
 - **QR Code Generation** - Automatic QR code generation for book landing pages using the `qrcode` library

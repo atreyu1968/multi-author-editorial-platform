@@ -6,10 +6,6 @@ interface EmailOptions {
     name: string;
     email: string;
   };
-  attachments?: Array<{
-    filename: string;
-    url: string;
-  }>;
 }
 
 interface EmailProvider {
@@ -39,7 +35,6 @@ class ResendProvider implements EmailProvider {
         to: [options.to],
         subject: options.subject,
         html: options.html,
-        attachments: options.attachments,
       }),
     });
 
@@ -77,12 +72,6 @@ class SendGridProvider implements EmailProvider {
           type: 'text/html',
           value: options.html,
         }],
-        attachments: options.attachments?.map(att => ({
-          filename: att.filename,
-          content: att.url,
-          type: 'application/pdf',
-          disposition: 'attachment',
-        })),
       }),
     });
 
@@ -114,11 +103,6 @@ class MailchimpProvider implements EmailProvider {
           from_email: options.from?.email || 'noreply@example.com',
           from_name: options.from?.name || 'Newsletter',
           to: [{ email: options.to, type: 'to' }],
-          attachments: options.attachments?.map(att => ({
-            type: 'application/pdf',
-            name: att.filename,
-            content: att.url,
-          })),
         },
       }),
     });
@@ -152,10 +136,6 @@ class BrevoProvider implements EmailProvider {
         to: [{ email: options.to }],
         subject: options.subject,
         htmlContent: options.html,
-        attachment: options.attachments?.map(att => ({
-          name: att.filename,
-          url: att.url,
-        })),
       }),
     });
 
@@ -187,11 +167,6 @@ class PostmarkProvider implements EmailProvider {
         To: options.to,
         Subject: options.subject,
         HtmlBody: options.html,
-        Attachments: options.attachments?.map(att => ({
-          Name: att.filename,
-          ContentType: 'application/pdf',
-          Content: att.url,
-        })),
       }),
     });
 
@@ -206,9 +181,14 @@ class MailgunProvider implements EmailProvider {
   private apiKey: string;
   private domain: string;
 
-  constructor(apiKey: string) {
-    this.apiKey = apiKey;
-    this.domain = apiKey.split(':')[1] || 'mg.example.com';
+  constructor(apiKeyWithDomain: string) {
+    // Parse format "APIKEY:DOMAIN" - domain is required for Mailgun
+    const parts = apiKeyWithDomain.split(':');
+    if (parts.length < 2 || !parts[1]) {
+      throw new Error('Mailgun requires API key in format "APIKEY:DOMAIN" (e.g., "key-abc123:mg.yourdomain.com")');
+    }
+    this.apiKey = parts[0];
+    this.domain = parts[1];
   }
 
   async send(options: EmailOptions): Promise<void> {
