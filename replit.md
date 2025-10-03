@@ -121,14 +121,25 @@ Preferred communication style: Simple, everyday language.
   - **Family Trees** - Character relationship diagrams and genealogies
   - **Press Notes** - Links to reviews, articles, and media coverage
   - **Additional Media** - Illustrations, infographics, maps, and visual materials
-  - **Spotify Playlists** - Curated music to accompany reading
-  - **YouTube Booktrailers** - Video promotions and teasers
+  - **Spotify Playlists** - Curated music to accompany reading (embedded players)
+  - **YouTube Booktrailers** - Video promotions and teasers (embedded players)
+- **Visibility Controls** (New):
+  - Each content type has a dedicated visibility toggle in admin panel
+  - Boolean flags control whether content appears on public landing pages
+  - All visibility flags default to `true` when creating new books/series
+  - Switches in admin: `promoShowConceptMap`, `promoShowFamilyTree`, `promoShowYoutubeBooktrailer`, `promoShowSpotifyPlaylist`, `promoShowPressNotes`, `promoShowAdditionalMedia`
 - **Admin Management**:
   - Dedicated "Contenido Promocional" tab in book and series management
   - All fields are optional and can be added/removed as needed
   - Support for multiple links (press notes, media) via array fields
+  - Individual visibility switches for each promotional content type
+  - Real-time preview control: toggle switches to show/hide content on landing pages
 - **Public Display**:
   - Conditional "Contenido Adicional" section on landing pages
-  - Visual cards with icons for each content type
+  - **YouTube & Spotify Embeds**: Full-width responsive iframes with proper aspect ratios
+    - Helper functions convert regular URLs to embed formats automatically
+    - YouTube: Supports youtube.com and youtu.be URLs
+    - Spotify: Supports playlist, track, and album URLs
+  - **Other Content**: Visual cards with icons for concept maps, family trees, press notes, and media
   - External links open in new tabs for better UX
-  - Only displays when at least one promotional field has content
+  - Content only displays when both URL exists AND visibility flag is enabled
