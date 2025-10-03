@@ -31,6 +31,13 @@ interface SettingsFormData {
   twitterUrl: string;
   facebookUrl: string;
   amazonUrl: string;
+  logoUrl: string;
+  faviconUrl: string;
+  primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
+  backgroundColor: string;
+  textColor: string;
 }
 
 function EmailProviderInstructions({ provider }: { provider: string }) {
@@ -162,7 +169,14 @@ export default function SettingsManagement() {
       instagramUrl: "",
       twitterUrl: "",
       facebookUrl: "",
-      amazonUrl: ""
+      amazonUrl: "",
+      logoUrl: "",
+      faviconUrl: "",
+      primaryColor: "#6366f1",
+      secondaryColor: "#8b5cf6",
+      accentColor: "#f59e0b",
+      backgroundColor: "#ffffff",
+      textColor: "#1f2937"
     },
   });
 
@@ -188,7 +202,14 @@ export default function SettingsManagement() {
         instagramUrl: settingsMap.instagramUrl || "",
         twitterUrl: settingsMap.twitterUrl || "",
         facebookUrl: settingsMap.facebookUrl || "",
-        amazonUrl: settingsMap.amazonUrl || ""
+        amazonUrl: settingsMap.amazonUrl || "",
+        logoUrl: settingsMap.logoUrl || "",
+        faviconUrl: settingsMap.faviconUrl || "",
+        primaryColor: settingsMap.primaryColor || "#6366f1",
+        secondaryColor: settingsMap.secondaryColor || "#8b5cf6",
+        accentColor: settingsMap.accentColor || "#f59e0b",
+        backgroundColor: settingsMap.backgroundColor || "#ffffff",
+        textColor: settingsMap.textColor || "#1f2937"
       });
     }
   }, [settings]);
@@ -268,8 +289,9 @@ export default function SettingsManagement() {
       <h3 className="text-3xl font-bold text-primary mb-6">Configuración del Sitio</h3>
       
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="general" data-testid="tab-general">General</TabsTrigger>
+          <TabsTrigger value="appearance" data-testid="tab-appearance">Apariencia</TabsTrigger>
           <TabsTrigger value="social" data-testid="tab-social">Redes Sociales</TabsTrigger>
           <TabsTrigger value="newsletter" data-testid="tab-newsletter">Newsletter</TabsTrigger>
           <TabsTrigger value="stats" data-testid="tab-stats">Estadísticas</TabsTrigger>
@@ -338,6 +360,217 @@ export default function SettingsManagement() {
               </Form>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="appearance">
+          <div className="grid gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Logo y Favicon</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6" data-testid="appearance-settings-form">
+                    <div className="space-y-4">
+                      <h4 className="font-medium">Logo del Header</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Si subes un logo, se mostrará en lugar del nombre de la autora en la navegación
+                      </p>
+                      {form.watch("logoUrl") && (
+                        <div className="border rounded-lg p-4 bg-muted/50">
+                          <img 
+                            src={form.watch("logoUrl")} 
+                            alt="Logo preview" 
+                            className="h-12 object-contain"
+                          />
+                        </div>
+                      )}
+                      <ObjectUploader
+                        onGetUploadParameters={handleGetUploadParameters}
+                        onComplete={(result) => handleFileUploadComplete("logoUrl", result)}
+                        allowedFileTypes={["image/png", "image/jpeg", "image/svg+xml"]}
+                        maxFileSize={2 * 1024 * 1024}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Subir Logo
+                      </ObjectUploader>
+                      <FormField
+                        control={form.control}
+                        name="logoUrl"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>URL del Logo</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="https://..." data-testid="input-logo-url" />
+                            </FormControl>
+                            <FormDescription>
+                              O puedes pegar una URL directamente
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="space-y-4 pt-6 border-t">
+                      <h4 className="font-medium">Favicon</h4>
+                      <p className="text-sm text-muted-foreground">
+                        El favicon es el pequeño ícono que aparece en la pestaña del navegador
+                      </p>
+                      {form.watch("faviconUrl") && (
+                        <div className="border rounded-lg p-4 bg-muted/50 flex items-center gap-4">
+                          <img 
+                            src={form.watch("faviconUrl")} 
+                            alt="Favicon preview" 
+                            className="w-8 h-8 object-contain"
+                          />
+                          <span className="text-sm text-muted-foreground">Vista previa del favicon</span>
+                        </div>
+                      )}
+                      <ObjectUploader
+                        onGetUploadParameters={handleGetUploadParameters}
+                        onComplete={(result) => handleFileUploadComplete("faviconUrl", result)}
+                        allowedFileTypes={["image/png", "image/x-icon", "image/vnd.microsoft.icon"]}
+                        maxFileSize={100 * 1024}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Subir Favicon
+                      </ObjectUploader>
+                      <FormField
+                        control={form.control}
+                        name="faviconUrl"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>URL del Favicon</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="https://..." data-testid="input-favicon-url" />
+                            </FormControl>
+                            <FormDescription>
+                              Formato recomendado: PNG o ICO, 32x32px
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <Button 
+                      type="submit" 
+                      disabled={updateSettingsMutation.isPending}
+                      className="bg-primary text-primary-foreground hover:bg-primary/90"
+                      data-testid="button-save-appearance"
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      {updateSettingsMutation.isPending ? "Guardando..." : "Guardar Apariencia"}
+                    </Button>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Colores Personalizados</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" data-testid="colors-settings-form">
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Personaliza los colores principales del sitio web
+                    </p>
+                    
+                    <FormField
+                      control={form.control}
+                      name="primaryColor"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Color Primario</FormLabel>
+                          <div className="flex gap-2">
+                            <FormControl>
+                              <Input type="color" {...field} className="w-20 h-10" data-testid="input-primary-color" />
+                            </FormControl>
+                            <Input 
+                              type="text" 
+                              value={field.value} 
+                              onChange={field.onChange}
+                              className="flex-1"
+                              placeholder="#6366f1"
+                            />
+                          </div>
+                          <FormDescription>
+                            Color principal de botones y elementos destacados
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="secondaryColor"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Color Secundario</FormLabel>
+                          <div className="flex gap-2">
+                            <FormControl>
+                              <Input type="color" {...field} className="w-20 h-10" data-testid="input-secondary-color" />
+                            </FormControl>
+                            <Input 
+                              type="text" 
+                              value={field.value} 
+                              onChange={field.onChange}
+                              className="flex-1"
+                              placeholder="#8b5cf6"
+                            />
+                          </div>
+                          <FormDescription>
+                            Color secundario para elementos complementarios
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="accentColor"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Color de Acento</FormLabel>
+                          <div className="flex gap-2">
+                            <FormControl>
+                              <Input type="color" {...field} className="w-20 h-10" data-testid="input-accent-color" />
+                            </FormControl>
+                            <Input 
+                              type="text" 
+                              value={field.value} 
+                              onChange={field.onChange}
+                              className="flex-1"
+                              placeholder="#f59e0b"
+                            />
+                          </div>
+                          <FormDescription>
+                            Color para llamadas a la acción y elementos especiales
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <Button 
+                      type="submit" 
+                      disabled={updateSettingsMutation.isPending}
+                      className="bg-primary text-primary-foreground hover:bg-primary/90"
+                      data-testid="button-save-colors"
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      {updateSettingsMutation.isPending ? "Guardando..." : "Guardar Colores"}
+                    </Button>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="social">

@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { Menu, X, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
-import type { Author } from "@shared/schema";
+import type { Author, SiteSettings } from "@shared/schema";
 import { useUiText } from "@/contexts/ui-text-context";
 
 export default function Navigation() {
@@ -11,6 +11,17 @@ export default function Navigation() {
   const { data: author } = useQuery<Author>({
     queryKey: ["/api/author"]
   });
+  
+  const { data: settings = [] } = useQuery<SiteSettings[]>({
+    queryKey: ["/api/settings"]
+  });
+  
+  const settingsMap = settings.reduce((acc, setting) => {
+    acc[setting.key] = setting.value;
+    return acc;
+  }, {} as Record<string, string>);
+  
+  const logoUrl = settingsMap.logoUrl || "";
   
   const navHome = useUiText("navigation", "home", "Inicio");
   const navSeries = useUiText("navigation", "series", "Series");
@@ -26,9 +37,20 @@ export default function Navigation() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <div className="text-2xl font-serif font-bold text-primary">
-              {author?.name || commonLoading}
-            </div>
+            <Link href="/">
+              {logoUrl ? (
+                <img 
+                  src={logoUrl} 
+                  alt={author?.name || "Logo"} 
+                  className="h-10 object-contain"
+                  data-testid="header-logo"
+                />
+              ) : (
+                <div className="text-2xl font-serif font-bold text-primary" data-testid="header-title">
+                  {author?.name || commonLoading}
+                </div>
+              )}
+            </Link>
           </div>
           <div className="hidden md:flex items-center space-x-8">
             <a href="#inicio" className="text-muted-foreground hover:text-primary transition-colors" data-testid="nav-inicio">
