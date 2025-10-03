@@ -129,6 +129,14 @@ export const blogPosts = pgTable("blog_posts", {
   updatedAt: text("updated_at").default(sql`current_timestamp`),
 });
 
+export const uiTexts = pgTable("ui_texts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  namespace: text("namespace").notNull(),
+  key: text("key").notNull(),
+  locale: text("locale").notNull().default("es-ES"),
+  value: text("value").notNull(),
+});
+
 export const insertAuthorSchema = createInsertSchema(authors).omit({
   id: true,
 });
@@ -164,6 +172,10 @@ export const insertBlogPostSchema = createInsertSchema(blogPosts).omit({
   updatedAt: true,
 });
 
+export const insertUiTextSchema = createInsertSchema(uiTexts).omit({
+  id: true,
+});
+
 export type Author = typeof authors.$inferSelect;
 export type InsertAuthor = z.infer<typeof insertAuthorSchema>;
 
@@ -187,3 +199,6 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 
 export type BlogPost = typeof blogPosts.$inferSelect;
 export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
+
+export type UiText = typeof uiTexts.$inferSelect;
+export type InsertUiText = z.infer<typeof insertUiTextSchema>;
