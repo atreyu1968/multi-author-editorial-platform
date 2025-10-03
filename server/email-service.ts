@@ -93,6 +93,148 @@ class SendGridProvider implements EmailProvider {
   }
 }
 
+class MailchimpProvider implements EmailProvider {
+  private apiKey: string;
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey;
+  }
+
+  async send(options: EmailOptions): Promise<void> {
+    const response = await fetch('https://mandrillapp.com/api/1.0/messages/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        key: this.apiKey,
+        message: {
+          html: options.html,
+          subject: options.subject,
+          from_email: options.from?.email || 'noreply@example.com',
+          from_name: options.from?.name || 'Newsletter',
+          to: [{ email: options.to, type: 'to' }],
+          attachments: options.attachments?.map(att => ({
+            type: 'application/pdf',
+            name: att.filename,
+            content: att.url,
+          })),
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Mailchimp Transactional API error: ${error}`);
+    }
+  }
+}
+
+class BrevoProvider implements EmailProvider {
+  private apiKey: string;
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey;
+  }
+
+  async send(options: EmailOptions): Promise<void> {
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'api-key': this.apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        sender: {
+          email: options.from?.email || 'noreply@example.com',
+          name: options.from?.name || 'Newsletter',
+        },
+        to: [{ email: options.to }],
+        subject: options.subject,
+        htmlContent: options.html,
+        attachment: options.attachments?.map(att => ({
+          name: att.filename,
+          url: att.url,
+        })),
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Brevo API error: ${error}`);
+    }
+  }
+}
+
+class PostmarkProvider implements EmailProvider {
+  private apiKey: string;
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey;
+  }
+
+  async send(options: EmailOptions): Promise<void> {
+    const response = await fetch('https://api.postmarkapp.com/email', {
+      method: 'POST',
+      headers: {
+        'X-Postmark-Server-Token': this.apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        From: options.from 
+          ? `${options.from.name} <${options.from.email}>`
+          : 'noreply@example.com',
+        To: options.to,
+        Subject: options.subject,
+        HtmlBody: options.html,
+        Attachments: options.attachments?.map(att => ({
+          Name: att.filename,
+          ContentType: 'application/pdf',
+          Content: att.url,
+        })),
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Postmark API error: ${error}`);
+    }
+  }
+}
+
+class MailgunProvider implements EmailProvider {
+  private apiKey: string;
+  private domain: string;
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey;
+    this.domain = apiKey.split(':')[1] || 'mg.example.com';
+  }
+
+  async send(options: EmailOptions): Promise<void> {
+    const formData = new URLSearchParams();
+    formData.append('from', options.from 
+      ? `${options.from.name} <${options.from.email}>`
+      : 'noreply@example.com');
+    formData.append('to', options.to);
+    formData.append('subject', options.subject);
+    formData.append('html', options.html);
+
+    const response = await fetch(`https://api.mailgun.net/v3/${this.domain}/messages`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${Buffer.from(`api:${this.apiKey}`).toString('base64')}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Mailgun API error: ${error}`);
+    }
+  }
+}
+
 export class EmailService {
   private provider: EmailProvider | null = null;
 
@@ -103,6 +245,18 @@ export class EmailService {
         break;
       case 'sendgrid':
         this.provider = new SendGridProvider(apiKey);
+        break;
+      case 'mailchimp':
+        this.provider = new MailchimpProvider(apiKey);
+        break;
+      case 'brevo':
+        this.provider = new BrevoProvider(apiKey);
+        break;
+      case 'postmark':
+        this.provider = new PostmarkProvider(apiKey);
+        break;
+      case 'mailgun':
+        this.provider = new MailgunProvider(apiKey);
         break;
       default:
         throw new Error(`Unsupported email provider: ${providerName}`);
