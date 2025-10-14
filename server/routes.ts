@@ -45,29 +45,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
 
   // Author routes
-  app.get("/api/author", async (req, res) => {
+  app.get("/api/authors", async (req, res) => {
     try {
-      const author = await storage.getAuthor();
+      const authors = await storage.getAuthors();
+      res.json(authors);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get authors" });
+    }
+  });
+
+  app.get("/api/authors/by-slug/:slug", async (req, res) => {
+    try {
+      const author = await storage.getAuthorBySlug(req.params.slug);
+      if (!author) {
+        res.status(404).json({ message: "Author not found" });
+        return;
+      }
       res.json(author);
     } catch (error) {
       res.status(500).json({ message: "Failed to get author" });
     }
   });
 
-  app.put("/api/author", requireAuth, async (req, res) => {
+  app.get("/api/authors/:id", async (req, res) => {
+    try {
+      const author = await storage.getAuthorById(req.params.id);
+      if (!author) {
+        res.status(404).json({ message: "Author not found" });
+        return;
+      }
+      res.json(author);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get author" });
+    }
+  });
+
+  app.post("/api/authors", requireAuth, async (req, res) => {
     try {
       const validatedAuthor = insertAuthorSchema.parse(req.body);
-      const author = await storage.updateAuthor(validatedAuthor);
+      const author = await storage.createAuthor(validatedAuthor);
+      res.status(201).json(author);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid author data" });
+    }
+  });
+
+  app.put("/api/authors/:id", requireAuth, async (req, res) => {
+    try {
+      const validatedAuthor = insertAuthorSchema.parse(req.body);
+      const author = await storage.updateAuthor(req.params.id, validatedAuthor);
+      if (!author) {
+        res.status(404).json({ message: "Author not found" });
+        return;
+      }
       res.json(author);
     } catch (error) {
       res.status(400).json({ message: "Invalid author data" });
     }
   });
 
+  app.delete("/api/authors/:id", requireAuth, async (req, res) => {
+    try {
+      const deleted = await storage.deleteAuthor(req.params.id);
+      if (!deleted) {
+        res.status(404).json({ message: "Author not found" });
+        return;
+      }
+      res.json({ message: "Author deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete author" });
+    }
+  });
+
   // Book Series routes
   app.get("/api/book-series", async (req, res) => {
     try {
-      const series = await storage.getBookSeries();
+      const authorId = req.query.authorId as string | undefined;
+      const series = await storage.getBookSeries(authorId);
       res.json(series);
     } catch (error) {
       res.status(500).json({ message: "Failed to get book series" });
@@ -127,7 +181,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Book routes (admin-only endpoint for all books including drafts)
   app.get("/api/books", requireAuth, async (req, res) => {
     try {
-      const books = await storage.getBooks();
+      const authorId = req.query.authorId as string | undefined;
+      const books = await storage.getBooks(authorId);
       res.json(books);
     } catch (error) {
       res.status(500).json({ message: "Failed to get books" });
@@ -136,7 +191,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/books/standalone", async (req, res) => {
     try {
-      const books = await storage.getStandaloneBooks();
+      const authorId = req.query.authorId as string | undefined;
+      const books = await storage.getStandaloneBooks(authorId);
       res.json(books);
     } catch (error) {
       res.status(500).json({ message: "Failed to get standalone books" });
@@ -205,7 +261,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Testimonial routes (admin-only endpoint for all testimonials)
   app.get("/api/testimonials", requireAuth, async (req, res) => {
     try {
-      const testimonials = await storage.getTestimonials();
+      const authorId = req.query.authorId as string | undefined;
+      const testimonials = await storage.getTestimonials(authorId);
       res.json(testimonials);
     } catch (error) {
       res.status(500).json({ message: "Failed to get testimonials" });
@@ -214,7 +271,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/testimonials/published", async (req, res) => {
     try {
-      const testimonials = await storage.getPublishedTestimonials();
+      const authorId = req.query.authorId as string | undefined;
+      const testimonials = await storage.getPublishedTestimonials(authorId);
       res.json(testimonials);
     } catch (error) {
       res.status(500).json({ message: "Failed to get published testimonials" });
@@ -261,7 +319,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Newsletter routes
   app.get("/api/newsletter", requireAuth, async (req, res) => {
     try {
-      const subscribers = await storage.getNewsletterSubscribers();
+      const authorId = req.query.authorId as string | undefined;
+      const subscribers = await storage.getNewsletterSubscribers(authorId);
       res.json(subscribers);
     } catch (error) {
       res.status(500).json({ message: "Failed to get newsletter subscribers" });
@@ -325,7 +384,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Site Settings routes
   app.get("/api/settings", async (req, res) => {
     try {
-      const settings = await storage.getSiteSettings();
+      const authorId = req.query.authorId as string | undefined;
+      const settings = await storage.getSiteSettings(authorId);
       res.json(settings);
     } catch (error) {
       res.status(500).json({ message: "Failed to get site settings" });
@@ -334,7 +394,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/settings/:key", async (req, res) => {
     try {
-      const setting = await storage.getSiteSettingByKey(req.params.key);
+      const authorId = req.query.authorId as string;
+      if (!authorId) {
+        res.status(400).json({ message: "authorId query parameter is required" });
+        return;
+      }
+      const setting = await storage.getSiteSettingByKey(authorId, req.params.key);
       if (!setting) {
         res.status(404).json({ message: "Setting not found" });
         return;
@@ -347,8 +412,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/settings", requireAuth, async (req, res) => {
     try {
-      const validatedSetting = insertSiteSettingsSchema.parse(req.body);
-      const setting = await storage.createSiteSetting(validatedSetting);
+      const { authorId, key, value } = req.body;
+      
+      if (!authorId) {
+        res.status(400).json({ message: "authorId is required in request body" });
+        return;
+      }
+      
+      if (!key) {
+        res.status(400).json({ message: "key is required in request body" });
+        return;
+      }
+      
+      if (typeof value !== "string") {
+        res.status(400).json({ message: "value must be a string" });
+        return;
+      }
+      
+      const setting = await storage.upsertSiteSetting(authorId, key, value);
       res.status(201).json(setting);
     } catch (error) {
       res.status(400).json({ message: "Invalid setting data" });
@@ -357,8 +438,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/settings/:key", requireAuth, async (req, res) => {
     try {
-      const { value } = req.body;
+      const { authorId, value } = req.body;
       const key = req.params.key;
+      
+      if (!authorId) {
+        res.status(400).json({ message: "authorId is required in request body" });
+        return;
+      }
       
       if (typeof value !== "string") {
         res.status(400).json({ message: "Value must be a string" });
@@ -382,17 +468,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      const setting = await storage.upsertSiteSetting(key, value);
+      const setting = await storage.updateSiteSetting(authorId, key, value);
+      if (!setting) {
+        res.status(404).json({ message: "Setting not found" });
+        return;
+      }
       res.json(setting);
     } catch (error) {
-      res.status(500).json({ message: "Failed to upsert setting" });
+      res.status(500).json({ message: "Failed to update setting" });
     }
   });
 
   // Blog Post routes
   app.get("/api/blog-posts", requireAuth, async (req, res) => {
     try {
-      const posts = await storage.getBlogPosts();
+      const authorId = req.query.authorId as string | undefined;
+      const posts = await storage.getBlogPosts(authorId);
       res.json(posts);
     } catch (error) {
       res.status(500).json({ message: "Failed to get blog posts" });
@@ -401,7 +492,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/blog-posts/published", async (req, res) => {
     try {
-      const posts = await storage.getPublishedBlogPosts();
+      const authorId = req.query.authorId as string | undefined;
+      const posts = await storage.getPublishedBlogPosts(authorId);
       res.json(posts);
     } catch (error) {
       res.status(500).json({ message: "Failed to get published blog posts" });

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { ArrowLeft, Home, BookOpen, Users, User, Star, Settings, FileText, HelpCircle, Type } from "lucide-react";
+import { ArrowLeft, Home, BookOpen, Users, User, Star, Settings, FileText, HelpCircle, Type, UserCircle } from "lucide-react";
 import AdminDashboard from "@/components/admin/admin-dashboard";
 import BookManagement from "@/components/admin/book-management";
 import SeriesManagement from "@/components/admin/series-management";
@@ -10,8 +10,9 @@ import SettingsManagement from "@/components/admin/settings-management";
 import BlogManagement from "@/components/admin/blog-management";
 import HelpInstructions from "@/components/admin/help-instructions";
 import UiTextsManagement from "@/components/admin/ui-texts-management";
+import AuthorManagement from "@/components/admin/author-management";
 
-type AdminSection = 'dashboard' | 'books' | 'series' | 'bio' | 'testimonials' | 'blog' | 'settings' | 'ui-texts' | 'help';
+type AdminSection = 'dashboard' | 'books' | 'series' | 'authors' | 'bio' | 'testimonials' | 'blog' | 'settings' | 'ui-texts' | 'help';
 
 export default function Admin() {
   const [currentSection, setCurrentSection] = useState<AdminSection>('dashboard');
@@ -24,6 +25,8 @@ export default function Admin() {
         return <BookManagement />;
       case 'series':
         return <SeriesManagement />;
+      case 'authors':
+        return <AuthorManagement />;
       case 'bio':
         return <BioManagement />;
       case 'testimonials':
@@ -90,6 +93,18 @@ export default function Admin() {
             >
               <Users className="h-5 w-5" />
               Series
+            </button>
+            <button 
+              onClick={() => setCurrentSection('authors')}
+              className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
+                currentSection === 'authors' 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'hover:bg-primary hover:text-primary-foreground'
+              }`}
+              data-testid="nav-authors"
+            >
+              <UserCircle className="h-5 w-5" />
+              Autores
             </button>
             <button 
               onClick={() => setCurrentSection('bio')}

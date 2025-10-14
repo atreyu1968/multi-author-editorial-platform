@@ -6,7 +6,7 @@ import { z } from "zod";
 export const authors = pgTable("authors", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
-  slug: text("slug").unique(),
+  slug: text("slug").notNull().unique(),
   heroTitle: text("hero_title").notNull(),
   heroSubtitle: text("hero_subtitle").notNull(),
   bioParagraph1: text("bio_paragraph_1").notNull(),
@@ -23,7 +23,7 @@ export const authors = pgTable("authors", {
 
 export const bookSeries = pgTable("book_series", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  authorId: varchar("author_id"),
+  authorId: varchar("author_id").notNull(),
   title: text("title").notNull(),
   description: text("description").notNull(),
   genre: text("genre").notNull(),
@@ -54,7 +54,7 @@ export const bookSeries = pgTable("book_series", {
 
 export const books = pgTable("books", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  authorId: varchar("author_id"),
+  authorId: varchar("author_id").notNull(),
   title: text("title").notNull(),
   description: text("description"),
   coverImage: text("cover_image"),
@@ -91,7 +91,7 @@ export const books = pgTable("books", {
 
 export const testimonials = pgTable("testimonials", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  authorId: varchar("author_id"),
+  authorId: varchar("author_id").notNull(),
   content: text("content").notNull(),
   authorName: text("author_name").notNull(),
   authorType: text("author_type").notNull(),
@@ -103,7 +103,7 @@ export const testimonials = pgTable("testimonials", {
 
 export const newsletters = pgTable("newsletters", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  authorId: varchar("author_id"),
+  authorId: varchar("author_id").notNull(),
   name: text("name").notNull(),
   email: text("email").notNull(),
   subscribedAt: text("subscribed_at").default(sql`current_timestamp`),
@@ -111,7 +111,7 @@ export const newsletters = pgTable("newsletters", {
 
 export const siteSettings = pgTable("site_settings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  authorId: varchar("author_id"),
+  authorId: varchar("author_id").notNull(),
   key: text("key").notNull(),
   value: text("value").notNull(),
 }, (table) => ({
@@ -126,7 +126,7 @@ export const users = pgTable("users", {
 
 export const blogPosts = pgTable("blog_posts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  authorId: varchar("author_id"),
+  authorId: varchar("author_id").notNull(),
   title: text("title").notNull(),
   content: text("content").notNull(),
   excerpt: text("excerpt").notNull(),
