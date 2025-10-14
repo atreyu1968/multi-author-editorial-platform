@@ -14,6 +14,7 @@ import BlogList from "@/pages/blog";
 import BlogPost from "@/pages/blog-post";
 import BookLanding from "@/pages/book-landing";
 import SeriesLanding from "@/pages/series-landing";
+import AuthorPage from "@/pages/author-page";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/blog/:id" component={BlogPost} />
       <Route path="/libro/:id" component={BookLanding} />
       <Route path="/serie/:id" component={SeriesLanding} />
+      <Route path="/autor/:slug" component={AuthorPage} />
       <ProtectedRoute path="/admin" component={Admin} />
       <Route component={NotFound} />
     </Switch>

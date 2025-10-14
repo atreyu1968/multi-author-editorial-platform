@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Gift, Check, Users, Mail, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,9 +7,13 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useUiText } from "@/contexts/ui-text-context";
-import type { InsertNewsletter } from "@shared/schema";
+import type { InsertNewsletter, Author } from "@shared/schema";
 
-export default function Newsletter() {
+interface NewsletterProps {
+  authorId?: string;
+}
+
+export default function Newsletter({ authorId }: NewsletterProps = {}) {
   const newsletterTitle = useUiText("home", "newsletter_title", "Únete a Nuestra Comunidad");
   const newsletterSubtitle = useUiText("home", "newsletter_subtitle", "Suscríbete a nuestro newsletter y recibe un libro gratuito, además de ser el primero en conocer sobre nuevos lanzamientos, ofertas exclusivas y contenido especial.");
   
@@ -17,6 +21,13 @@ export default function Newsletter() {
   const [email, setEmail] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const { data: authors = [] } = useQuery<Author[]>({
+    queryKey: ["/api/authors"],
+    enabled: !authorId,
+  });
+
+  const defaultAuthorId = authorId || authors[0]?.id;
 
   const subscribeMutation = useMutation({
     mutationFn: async (data: InsertNewsletter) => {
@@ -51,7 +62,19 @@ export default function Newsletter() {
       });
       return;
     }
-    subscribeMutation.mutate({ name: name.trim(), email: email.trim() });
+    if (!defaultAuthorId) {
+      toast({
+        title: "Error",
+        description: "No se pudo identificar el autor.",
+        variant: "destructive",
+      });
+      return;
+    }
+    subscribeMutation.mutate({ 
+      name: name.trim(), 
+      email: email.trim(),
+      authorId: defaultAuthorId
+    });
   };
 
   return (

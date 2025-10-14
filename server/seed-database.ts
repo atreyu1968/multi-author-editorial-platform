@@ -47,8 +47,9 @@ async function seedDatabase() {
   }
 
   // Create author
-  await db.insert(authors).values({
+  const [authorResult] = await db.insert(authors).values({
     name: "María González",
+    slug: "maria-gonzalez",
     heroTitle: "Creando Mundos con Palabras",
     heroSubtitle: "Autora Bestseller • Romance & Thriller • +15 Libros Publicados",
     bioParagraph1: "María González es una autora bestseller española especializada en novelas románticas, thriller psicológico y fantasía urbana. Con más de 12 años de experiencia, sus historias han cautivado a miles de lectores alrededor del mundo.",
@@ -60,11 +61,13 @@ async function seedDatabase() {
     twitterUrl: "https://twitter.com/mgonzalezwriter",
     facebookUrl: "https://facebook.com/mariagonzalezauthor",
     amazonUrl: "https://amazon.com/author/mariagonzalez",
-  });
+  }).returning();
+  const authorId = authorResult.id;
   console.log("✅ Author created");
 
   // Create book series with landing page data
   const [detectiveSeries] = await db.insert(bookSeries).values({
+    authorId: authorId,
     title: "Serie Detective Luna",
     description: "Una serie de thriller psicológico que sigue a la detective Sofía Luna mientras resuelve casos complejos en Barcelona. Misterio, suspense y giros inesperados en cada entrega.",
     genre: "Thriller/Misterio",
@@ -78,6 +81,7 @@ async function seedDatabase() {
   }).returning();
 
   const [corazonesSeries] = await db.insert(bookSeries).values({
+    authorId: authorId,
     title: "Trilogía Corazones",
     description: "Una trilogía romántica contemporánea que explora las complejidades del amor moderno. Tres historias entrelazadas de pasión, pérdida y redención.",
     genre: "Romance Contemporáneo",
@@ -94,6 +98,7 @@ async function seedDatabase() {
   // Create books for Detective Luna series with landing page data
   await db.insert(books).values([
     {
+      authorId: authorId,
       title: "Sombras en la Niebla",
       description: "El primer caso de la detective Sofía Luna la lleva a investigar una serie de desapariciones misteriosas en el barrio gótico de Barcelona. Lo que parece un caso rutinario se convierte en una pesadilla cuando descubre que el pasado que intentó enterrar está a punto de alcanzarla.",
       coverImage: "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=600",
@@ -130,6 +135,7 @@ async function seedDatabase() {
       ],
     },
     {
+      authorId: authorId,
       title: "Ecos del Silencio",
       description: "Sofía Luna se enfrenta a su caso más personal cuando su mejor amiga desaparece sin dejar rastro. Cada pista la acerca más a una verdad que podría destruir todo lo que conoce.",
       coverImage: "https://images.unsplash.com/photo-1512820790803-83ca734da794?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=600",
@@ -163,6 +169,7 @@ async function seedDatabase() {
   // Create books for Corazones trilogy with landing page data
   await db.insert(books).values([
     {
+      authorId: authorId,
       title: "Corazones en Fuga",
       description: "Emma nunca planeó enamorarse de su mejor amigo. Cuando una noche lo cambia todo, debe decidir entre proteger su corazón o arriesgarse a perderlo todo por amor.",
       coverImage: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=600",
@@ -192,6 +199,7 @@ async function seedDatabase() {
       landingAwards: [],
     },
     {
+      authorId: authorId,
       title: "Corazones Rotos",
       description: "Después de una traición devastadora, Laura jura nunca volver a confiar. Pero cuando el pasado regresa en forma de un amor que creyó perdido, debe elegir entre el rencor y el perdón.",
       coverImage: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=600",
@@ -225,6 +233,7 @@ async function seedDatabase() {
   // Create standalone books with landing page data
   await db.insert(books).values([
     {
+      authorId: authorId,
       title: "La Última Carta",
       description: "Una novela epistolar que narra la historia de dos almas destinadas a encontrarse a través del tiempo y el espacio. Cartas escritas con lágrimas de esperanza y tinta de amor eterno.",
       coverImage: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=600",
@@ -254,6 +263,7 @@ async function seedDatabase() {
       landingAwards: ["Mejor Romance Histórico 2023 - Premios Letras de España"],
     },
     {
+      authorId: authorId,
       title: "Susurros en la Oscuridad",
       description: "Un thriller psicológico que explora los límites de la mente humana. Cuando la psiquiatra Elena Vega comienza a experimentar los mismos síntomas que sus pacientes, la línea entre la realidad y la locura se difumina.",
       coverImage: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=600",
@@ -288,6 +298,7 @@ async function seedDatabase() {
   // Create testimonials
   await db.insert(testimonials).values([
     {
+      authorId: authorId,
       content: "María tiene un don especial para crear personajes que se sienten reales. No pude soltar 'Corazones en Fuga' hasta terminarlo. ¡Estoy ansiosa por el siguiente!",
       authorName: "Ana Martínez",
       authorType: "Lectora verificada",
@@ -297,6 +308,7 @@ async function seedDatabase() {
       isPublished: true,
     },
     {
+      authorId: authorId,
       content: "La serie Detective Luna es adictiva. Los giros de la trama son increíbles y siempre me mantiene adivinando hasta el final. ¡Recomendadísima!",
       authorName: "Carlos López",
       authorType: "Lector verificado",
@@ -312,6 +324,7 @@ async function seedDatabase() {
   const now = new Date().toISOString();
   await db.insert(blogPosts).values([
     {
+      authorId: authorId,
       title: "Mi proceso creativo: Cómo nace una nueva historia",
       content: "Escribir es un viaje fascinante que comienza mucho antes de poner las primeras palabras en papel. Mi proceso creativo siempre empieza con una pregunta: ¿qué pasaría si...? Esta simple interrogante ha sido la semilla de todas mis novelas.\n\nCuando una idea me atrapa, comienzo por desarrollar los personajes. Para mí, son ellos quienes conducen la historia, no al revés. Paso días, a veces semanas, conociendo a mis protagonistas: sus miedos, sus sueños, sus contradicciones. Solo cuando puedo verlos claramente en mi mente, cuando sé cómo reaccionarían en cualquier situación, comienzo a escribir.\n\nEl primer borrador siempre es terrible. Es mi regla número uno: permítete escribir mal al principio. La magia está en la reescritura, en pulir cada frase hasta que brille con luz propia.",
       excerpt: "Descubre los secretos detrás de la creación de mis novelas y cómo los personajes cobran vida en mi mente antes de llegar al papel.",
@@ -324,6 +337,7 @@ async function seedDatabase() {
       updatedAt: now,
     },
     {
+      authorId: authorId,
       title: "Próximamente: Nueva serie \"Misterios de Medianoche\"",
       content: "Estoy emocionada de anunciar que estoy trabajando en una nueva serie que espero les fascine tanto como a mí me está fascinando escribirla. \"Misterios de Medianoche\" será una trilogía de suspenso psicológico que explora los límites entre la realidad y la pesadilla.\n\nLa protagonista, Elena Vega, es una psicóloga forense que comienza a experimentar sueños vívidos sobre crímenes que aún no han ocurrido. ¿Son premoniciones? ¿Coincidencias? ¿O hay algo más siniestro en juego?\n\nLa serie estará ambientada en una ciudad ficticia donde los límites entre el día y la noche, entre lo consciente y lo inconsciente, se difuminan peligrosamente. Cada libro podrá leerse de forma independiente, pero juntos contarán una historia más amplia sobre el poder de la mente humana.\n\nEspero tener el primer libro listo para finales de este año. ¡Manténganse atentos para más actualizaciones!",
       excerpt: "Una nueva trilogía de suspenso psicológico está en camino. Conoce a Elena Vega y adéntrate en un mundo donde los sueños pueden predecir el futuro.",
