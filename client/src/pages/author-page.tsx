@@ -8,6 +8,7 @@ import { Link } from "wouter";
 import Navigation from "@/components/navigation";
 import Newsletter from "@/components/newsletter";
 import { SEOHead, generateStructuredData } from "@/components/seo/seo-head";
+import { DynamicTheme } from "@/components/dynamic-theme";
 import type { Author, BookSeries, Book, Testimonial } from "@shared/schema";
 import { useState } from "react";
 import { apiRequest } from "@/lib/queryClient";
@@ -105,20 +106,21 @@ export default function AuthorPage() {
   const publishedStandaloneBooks = standaloneBooks.filter(b => b.isPublished);
 
   return (
-    <div className="bg-background text-foreground font-sans">
-      <SEOHead
-        title={`${author.name} - Autor`}
-        description={author.bioParagraph1.substring(0, 160)}
-        keywords={["autor", "escritor", "libros", author.name]}
-        ogType="website"
-        ogImage={author.photo || undefined}
-        structuredData={generateStructuredData.author({
-          name: author.name,
-          url: `/autor/${author.slug}`,
-          image: author.photo || undefined,
-        })}
-      />
-      <Navigation />
+    <DynamicTheme authorId={author.id}>
+      <div className="bg-background text-foreground font-sans">
+        <SEOHead
+          title={`${author.name} - Autor`}
+          description={author.bioParagraph1.substring(0, 160)}
+          keywords={["autor", "escritor", "libros", author.name]}
+          ogType="website"
+          ogImage={author.photo || undefined}
+          structuredData={generateStructuredData.author({
+            name: author.name,
+            url: `/autor/${author.slug}`,
+            image: author.photo || undefined,
+          })}
+        />
+        <Navigation authorId={author.id} />
 
       {/* Hero Section */}
       <section className="hero-gradient relative overflow-hidden">
@@ -474,6 +476,7 @@ export default function AuthorPage() {
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </DynamicTheme>
   );
 }

@@ -31,8 +31,27 @@ export const getQueryFn: <T>(options: {
   async ({ queryKey }) => {
     let url = queryKey[0] as string;
     
-    if (queryKey.length > 1 && queryKey[1]) {
-      url = `${url}?authorId=${queryKey[1]}`;
+    if (queryKey.length > 1) {
+      const searchParams = new URLSearchParams();
+      
+      // Loop through ALL queryKey elements after the first (URL)
+      for (let i = 1; i < queryKey.length; i++) {
+        const params = queryKey[i];
+        
+        if (params && typeof params === 'object') {
+          // Merge all object elements into query string
+          Object.entries(params).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              searchParams.append(key, String(value));
+            }
+          });
+        }
+      }
+      
+      const queryString = searchParams.toString();
+      if (queryString) {
+        url = `${url}?${queryString}`;
+      }
     }
     
     const res = await fetch(url, {

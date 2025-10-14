@@ -6,14 +6,18 @@ import { useQuery } from "@tanstack/react-query";
 import type { Author, SiteSettings } from "@shared/schema";
 import { useUiText } from "@/contexts/ui-text-context";
 
-export default function Navigation() {
+interface NavigationProps {
+  authorId?: string;
+}
+
+export default function Navigation({ authorId }: NavigationProps = {}) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { data: author } = useQuery<Author>({
     queryKey: ["/api/author"]
   });
   
   const { data: settings = [] } = useQuery<SiteSettings[]>({
-    queryKey: ["/api/settings"]
+    queryKey: authorId ? ["/api/settings", { authorId }] : ["/api/settings"]
   });
   
   const settingsMap = settings.reduce((acc, setting) => {

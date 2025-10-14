@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { ArrowLeft, Home, BookOpen, Users, User, Star, Settings, FileText, HelpCircle, Type, UserCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DynamicTheme } from "@/components/dynamic-theme";
 import AdminDashboard from "@/components/admin/admin-dashboard";
 import BookManagement from "@/components/admin/book-management";
 import SeriesManagement from "@/components/admin/series-management";
@@ -66,7 +67,8 @@ function AdminContent() {
   const selectedAuthor = authors.find(a => a.id === selectedAuthorId);
 
   return (
-    <div className="min-h-screen bg-background">
+    <DynamicTheme authorId={selectedAuthorId!}>
+      <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="bg-primary text-primary-foreground p-6 flex justify-between items-center">
         <div className="flex items-center gap-6">
@@ -223,7 +225,8 @@ function AdminContent() {
           {renderContent()}
         </div>
       </div>
-    </div>
+      </div>
+    </DynamicTheme>
   );
 }
 

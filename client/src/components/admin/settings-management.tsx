@@ -149,7 +149,7 @@ export default function SettingsManagement() {
   const queryClient = useQueryClient();
 
   const { data: settings = [] } = useQuery<SiteSettings[]>({
-    queryKey: ["/api/settings", selectedAuthorId],
+    queryKey: selectedAuthorId ? ["/api/settings", { authorId: selectedAuthorId }] : ["/api/settings"],
     enabled: !!selectedAuthorId,
   });
 
@@ -260,7 +260,7 @@ export default function SettingsManagement() {
         });
       }
       
-      queryClient.invalidateQueries({ queryKey: ["/api/settings", selectedAuthorId] });
+      queryClient.invalidateQueries({ queryKey: selectedAuthorId ? ["/api/settings", { authorId: selectedAuthorId }] : ["/api/settings"] });
     },
     onError: () => {
       toast({
@@ -604,6 +604,58 @@ export default function SettingsManagement() {
                           </div>
                           <FormDescription>
                             Color para llamadas a la acción y elementos especiales
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="backgroundColor"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Color de Fondo</FormLabel>
+                          <div className="flex gap-2">
+                            <FormControl>
+                              <Input type="color" {...field} className="w-20 h-10" data-testid="input-background-color" />
+                            </FormControl>
+                            <Input 
+                              type="text" 
+                              value={field.value} 
+                              onChange={field.onChange}
+                              className="flex-1"
+                              placeholder="#ffffff"
+                            />
+                          </div>
+                          <FormDescription>
+                            Color de fondo del sitio web
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="textColor"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Color de Texto</FormLabel>
+                          <div className="flex gap-2">
+                            <FormControl>
+                              <Input type="color" {...field} className="w-20 h-10" data-testid="input-text-color" />
+                            </FormControl>
+                            <Input 
+                              type="text" 
+                              value={field.value} 
+                              onChange={field.onChange}
+                              className="flex-1"
+                              placeholder="#1f2937"
+                            />
+                          </div>
+                          <FormDescription>
+                            Color principal del texto
                           </FormDescription>
                           <FormMessage />
                         </FormItem>

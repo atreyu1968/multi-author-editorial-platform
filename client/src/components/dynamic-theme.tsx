@@ -4,11 +4,12 @@ import type { SiteSettings } from "@shared/schema";
 
 interface DynamicThemeProps {
   children: ReactNode;
+  authorId?: string;
 }
 
-export function DynamicTheme({ children }: DynamicThemeProps) {
+export function DynamicTheme({ children, authorId }: DynamicThemeProps) {
   const { data: settings = [] } = useQuery<SiteSettings[]>({
-    queryKey: ["/api/settings"],
+    queryKey: authorId ? ["/api/settings", { authorId }] : ["/api/settings"],
     staleTime: 1000 * 60 * 5,
   });
 
@@ -37,29 +38,53 @@ export function DynamicTheme({ children }: DynamicThemeProps) {
   useEffect(() => {
     const root = document.documentElement;
     
+    // Define default values for CSS variables
+    const defaults = {
+      primary: '222.2 47.4% 11.2%',
+      secondary: '210 40% 96.1%',
+      accent: '210 40% 96.1%',
+      background: '0 0% 100%',
+      foreground: '222.2 47.4% 11.2%'
+    };
+    
+    // Set or reset primary color
     if (settingsMap.primaryColor) {
       const hsl = hexToHSL(settingsMap.primaryColor);
       root.style.setProperty('--primary', hsl);
+    } else {
+      root.style.setProperty('--primary', defaults.primary);
     }
     
+    // Set or reset secondary color
     if (settingsMap.secondaryColor) {
       const hsl = hexToHSL(settingsMap.secondaryColor);
       root.style.setProperty('--secondary', hsl);
+    } else {
+      root.style.setProperty('--secondary', defaults.secondary);
     }
     
+    // Set or reset accent color
     if (settingsMap.accentColor) {
       const hsl = hexToHSL(settingsMap.accentColor);
       root.style.setProperty('--accent', hsl);
+    } else {
+      root.style.setProperty('--accent', defaults.accent);
     }
 
+    // Set or reset background color
     if (settingsMap.backgroundColor) {
       const hsl = hexToHSL(settingsMap.backgroundColor);
       root.style.setProperty('--background', hsl);
+    } else {
+      root.style.setProperty('--background', defaults.background);
     }
 
+    // Set or reset text color
     if (settingsMap.textColor) {
       const hsl = hexToHSL(settingsMap.textColor);
       root.style.setProperty('--foreground', hsl);
+    } else {
+      root.style.setProperty('--foreground', defaults.foreground);
     }
   }, [
     settingsMap.primaryColor,
