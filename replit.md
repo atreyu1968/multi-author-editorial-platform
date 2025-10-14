@@ -47,6 +47,7 @@ Preferred communication style: Simple, everyday language.
   - Newsletter subscriber management
   - Site settings configuration
   - **UI Text Personalization** - Complete customization of all visible text
+  - **Visual Personalization** - Logo, favicon, and color scheme customization
 - **Public-facing components** for author portfolio display
 - **Reusable UI components** from shadcn/ui library
 
@@ -69,6 +70,10 @@ Preferred communication style: Simple, everyday language.
 - **Tailwind CSS** - Utility-first CSS framework
 - **Lucide Icons** - Icon library
 - **Google Fonts** - Typography (Inter, Playfair Display)
+- **Theme Applied** - Warm brown and ochre literary aesthetic:
+  - Light Mode: Aged paper cream backgrounds with golden ochre accents
+  - Dark Mode: Deep charcoal brown with warm golden ochre highlights
+  - Color palette evokes vintage books, libraries, and classic literature
 
 ### Development Tools
 - **Vite** - Build tool and development server
@@ -188,3 +193,31 @@ Preferred communication style: Simple, everyday language.
   - Translate interface to other languages
   - A/B test different copy
   - Rebrand without code changes
+
+### Visual Personalization System
+- **Complete Visual Customization** - System to personalize all visual aspects without code changes
+- **Customizable Elements**:
+  - **Logo**: Upload custom logo image (replaces site name in navigation)
+  - **Favicon**: Upload custom favicon for browser tabs
+  - **Color Scheme**: 5 customizable colors:
+    - Primary Color: Main brand color for buttons and highlights
+    - Secondary Color: Supporting brand color
+    - Accent Color: Call-to-action and emphasis
+    - Background Color: Main site background
+    - Text Color: Primary text color
+- **Implementation**:
+  - `DynamicTheme` component applies colors via CSS variables
+  - Favicon updates dynamically with fallback to default
+  - Logo displays in navigation when configured
+  - All uploads stored in Replit Object Storage
+- **Admin Interface** ("Apariencia" in Configuración):
+  - Granular mutations prevent data loss (logo/favicon separate from colors)
+  - Color picker inputs with hex validation
+  - Real-time preview of changes
+  - Upload UI with Replit Object Storage integration
+- **Current Theme Applied**: Brown and ochre literary aesthetic
+  - Primary: #D4A574 (Golden Ochre)
+  - Secondary: #8B6F47 (Medium Brown)
+  - Accent: #C19A6B (Camel)
+  - Background: #2C2416 (Deep Brown)
+  - Text: #E8DCC8 (Cream/Parchment)
