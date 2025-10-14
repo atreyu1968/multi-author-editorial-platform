@@ -367,10 +367,18 @@ export default function AuthorManagement() {
                   name="slug"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Slug *</FormLabel>
+                      <FormLabel>Slug (URL) *</FormLabel>
                       <FormControl>
-                        <Input {...field} data-testid="input-author-slug" />
+                        <Input 
+                          {...field} 
+                          readOnly 
+                          className="bg-muted text-muted-foreground cursor-not-allowed"
+                          data-testid="input-author-slug" 
+                        />
                       </FormControl>
+                      <p className="text-sm text-muted-foreground">
+                        Se genera automáticamente del nombre
+                      </p>
                       <FormMessage />
                     </FormItem>
                   )}

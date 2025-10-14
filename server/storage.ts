@@ -142,6 +142,7 @@ export class MemStorage implements IStorage {
     const author: Author = {
       id: authorId,
       name: "María González",
+      slug: "maria-gonzalez",
       heroTitle: "Descubre Mundos Extraordinarios",
       heroSubtitle: "Sumérgete en las emocionantes aventuras creadas por la autora bestseller María González. Descarga gratis tu primer libro y comienza una experiencia inolvidable.",
       bioParagraph1: "María González es una autora bestseller con más de diez años de experiencia creando historias que han cautivado a lectores de todo el mundo. Nacida en Barcelona, siempre tuvo una pasión por contar historias que tocaran el corazón de las personas.",
@@ -152,7 +153,8 @@ export class MemStorage implements IStorage {
       instagramUrl: "https://instagram.com/mariagonzalez",
       twitterUrl: "https://twitter.com/mariagonzalez",
       facebookUrl: "https://facebook.com/mariagonzalez",
-      amazonUrl: "https://amazon.com/author/mariagonzalez"
+      amazonUrl: "https://amazon.com/author/mariagonzalez",
+      isActive: true
     };
     this.authors.set(authorId, author);
 
@@ -160,28 +162,69 @@ export class MemStorage implements IStorage {
     const seriesId1 = randomUUID();
     const series1: BookSeries = {
       id: seriesId1,
+      authorId: authorId,
       title: "Serie Pasiones Urbanas",
       description: "Una serie de romance contemporáneo que sigue las vidas entrecruzadas de jóvenes profesionales en la ciudad. Cada libro puede leerse de forma independiente, pero juntos forman una saga emocionante llena de pasión, drama y segundas oportunidades.",
       genre: "Romance",
       amazonUrl: "https://amazon.com/series/pasiones-urbanas",
-      isActive: true
+      isActive: true,
+      cardBackgroundImage: null,
+      landingHeroImage: null,
+      landingTagline: null,
+      landingWorldDescription: null,
+      landingCharacters: null,
+      landingReadingOrder: null,
+      landingThemes: null,
+      promoConceptMap: null,
+      promoShowConceptMap: true,
+      promoFamilyTree: null,
+      promoShowFamilyTree: true,
+      promoPressNotes: null,
+      promoShowPressNotes: true,
+      promoAdditionalMedia: null,
+      promoShowAdditionalMedia: true,
+      promoSpotifyPlaylist: null,
+      promoShowSpotifyPlaylist: true,
+      promoYoutubeBooktrailer: null,
+      promoShowYoutubeBooktrailer: true
     };
     this.bookSeries.set(seriesId1, series1);
 
     const seriesId2 = randomUUID();
     const series2: BookSeries = {
       id: seriesId2,
+      authorId: authorId,
       title: "Serie Detective Luna",
       description: "Sigue las investigaciones de la detective Carmen Luna mientras resuelve los casos más complejos de la ciudad. Una serie llena de suspense, giros inesperados y un toque de misterio que te mantendrá en vilo hasta la última página.",
       genre: "Thriller",
       amazonUrl: "https://amazon.com/series/detective-luna",
-      isActive: true
+      isActive: true,
+      cardBackgroundImage: null,
+      landingHeroImage: null,
+      landingTagline: null,
+      landingWorldDescription: null,
+      landingCharacters: null,
+      landingReadingOrder: null,
+      landingThemes: null,
+      promoConceptMap: null,
+      promoShowConceptMap: true,
+      promoFamilyTree: null,
+      promoShowFamilyTree: true,
+      promoPressNotes: null,
+      promoShowPressNotes: true,
+      promoAdditionalMedia: null,
+      promoShowAdditionalMedia: true,
+      promoSpotifyPlaylist: null,
+      promoShowSpotifyPlaylist: true,
+      promoYoutubeBooktrailer: null,
+      promoShowYoutubeBooktrailer: true
     };
     this.bookSeries.set(seriesId2, series2);
 
     // Create sample books
     const books = [
       {
+        authorId: authorId,
         title: "Corazones en Fuga",
         description: "Una historia de amor contemporáneo en la ciudad",
         coverImage: "https://images.unsplash.com/photo-1516414447565-b14be0adf13e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=600",
@@ -191,9 +234,30 @@ export class MemStorage implements IStorage {
         seriesId: seriesId1,
         orderInSeries: 1,
         isStandalone: false,
-        isPublished: true
+        isPublished: true,
+        landingHeroImage: null,
+        landingTagline: null,
+        landingSynopsis: null,
+        landingFeatures: null,
+        landingQuotes: null,
+        landingCTA: null,
+        landingGallery: null,
+        landingAwards: null,
+        promoConceptMap: null,
+        promoShowConceptMap: true,
+        promoFamilyTree: null,
+        promoShowFamilyTree: true,
+        promoPressNotes: null,
+        promoShowPressNotes: true,
+        promoAdditionalMedia: null,
+        promoShowAdditionalMedia: true,
+        promoSpotifyPlaylist: null,
+        promoShowSpotifyPlaylist: true,
+        promoYoutubeBooktrailer: null,
+        promoShowYoutubeBooktrailer: true
       },
       {
+        authorId: authorId,
         title: "Sombras del Pasado",
         description: "Un thriller lleno de suspense y misterio",
         coverImage: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=600",
@@ -203,9 +267,30 @@ export class MemStorage implements IStorage {
         seriesId: seriesId2,
         orderInSeries: 3,
         isStandalone: false,
-        isPublished: true
+        isPublished: true,
+        landingHeroImage: null,
+        landingTagline: null,
+        landingSynopsis: null,
+        landingFeatures: null,
+        landingQuotes: null,
+        landingCTA: null,
+        landingGallery: null,
+        landingAwards: null,
+        promoConceptMap: null,
+        promoShowConceptMap: true,
+        promoFamilyTree: null,
+        promoShowFamilyTree: true,
+        promoPressNotes: null,
+        promoShowPressNotes: true,
+        promoAdditionalMedia: null,
+        promoShowAdditionalMedia: true,
+        promoSpotifyPlaylist: null,
+        promoShowSpotifyPlaylist: true,
+        promoYoutubeBooktrailer: null,
+        promoShowYoutubeBooktrailer: true
       },
       {
+        authorId: authorId,
         title: "El Último Hechizo",
         description: "Una joven bibliotecaria descubre un grimorio ancestral que cambiará su vida para siempre. Una aventura mágica llena de secretos, poder y autodescubrimiento.",
         coverImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=600",
@@ -215,7 +300,27 @@ export class MemStorage implements IStorage {
         seriesId: null,
         orderInSeries: null,
         isStandalone: true,
-        isPublished: true
+        isPublished: true,
+        landingHeroImage: null,
+        landingTagline: null,
+        landingSynopsis: null,
+        landingFeatures: null,
+        landingQuotes: null,
+        landingCTA: null,
+        landingGallery: null,
+        landingAwards: null,
+        promoConceptMap: null,
+        promoShowConceptMap: true,
+        promoFamilyTree: null,
+        promoShowFamilyTree: true,
+        promoPressNotes: null,
+        promoShowPressNotes: true,
+        promoAdditionalMedia: null,
+        promoShowAdditionalMedia: true,
+        promoSpotifyPlaylist: null,
+        promoShowSpotifyPlaylist: true,
+        promoYoutubeBooktrailer: null,
+        promoShowYoutubeBooktrailer: true
       }
     ];
 
@@ -227,6 +332,7 @@ export class MemStorage implements IStorage {
     // Create sample testimonials
     const testimonials = [
       {
+        authorId: authorId,
         content: "María tiene un don especial para crear personajes que se sienten reales. No pude soltar 'Corazones en Fuga' hasta terminarlo. ¡Estoy ansiosa por el siguiente!",
         authorName: "Ana Martínez",
         authorType: "Lectora verificada",
@@ -236,6 +342,7 @@ export class MemStorage implements IStorage {
         isPublished: true
       },
       {
+        authorId: authorId,
         content: "La serie Detective Luna es adictiva. Los giros de la trama son increíbles y siempre me mantiene adivinando hasta el final. ¡Recomendadísima!",
         authorName: "Carlos López",
         authorType: "Lector verificado",
@@ -288,7 +395,8 @@ export class MemStorage implements IStorage {
       const postId = randomUUID();
       const now = new Date().toISOString();
       this.blogPosts.set(postId, { 
-        id: postId, 
+        id: postId,
+        authorId: authorId,
         ...post,
         publishedAt: post.publishedAt || null,
         createdAt: post.publishedAt || now,
@@ -332,21 +440,47 @@ export class MemStorage implements IStorage {
     return Array.from(this.authors.values())[0];
   }
 
+  async getAuthors(): Promise<Author[]> {
+    return Array.from(this.authors.values());
+  }
+
+  async getAuthorById(id: string): Promise<Author | undefined> {
+    return this.authors.get(id);
+  }
+
+  async getAuthorBySlug(slug: string): Promise<Author | undefined> {
+    return Array.from(this.authors.values()).find(author => author.slug === slug);
+  }
+
   async createAuthor(insertAuthor: InsertAuthor): Promise<Author> {
     const id = randomUUID();
-    const author: Author = { ...insertAuthor, id, email: insertAuthor.email || null, instagramUrl: insertAuthor.instagramUrl || null, twitterUrl: insertAuthor.twitterUrl || null, facebookUrl: insertAuthor.facebookUrl || null, amazonUrl: insertAuthor.amazonUrl || null, photo: insertAuthor.photo || null };
+    const author: Author = { 
+      ...insertAuthor, 
+      id, 
+      email: insertAuthor.email ?? null, 
+      instagramUrl: insertAuthor.instagramUrl ?? null, 
+      twitterUrl: insertAuthor.twitterUrl ?? null, 
+      facebookUrl: insertAuthor.facebookUrl ?? null, 
+      amazonUrl: insertAuthor.amazonUrl ?? null, 
+      photo: insertAuthor.photo ?? null,
+      isActive: insertAuthor.isActive ?? null
+    };
     this.authors.set(id, author);
     return author;
   }
 
-  async updateAuthor(updateAuthor: Partial<InsertAuthor>): Promise<Author> {
-    const existingAuthor = Array.from(this.authors.values())[0];
+  async updateAuthor(id: string, updateAuthor: Partial<InsertAuthor>): Promise<Author | undefined> {
+    const existingAuthor = this.authors.get(id);
     if (!existingAuthor) {
-      throw new Error("No author found");
+      return undefined;
     }
     const updatedAuthor = { ...existingAuthor, ...updateAuthor };
-    this.authors.set(existingAuthor.id, updatedAuthor);
+    this.authors.set(id, updatedAuthor);
     return updatedAuthor;
+  }
+
+  async deleteAuthor(id: string): Promise<boolean> {
+    return this.authors.delete(id);
   }
 
   // Book Series methods
@@ -360,7 +494,31 @@ export class MemStorage implements IStorage {
 
   async createBookSeries(insertSeries: InsertBookSeries): Promise<BookSeries> {
     const id = randomUUID();
-    const series: BookSeries = { ...insertSeries, id, amazonUrl: insertSeries.amazonUrl || null, isActive: insertSeries.isActive || null };
+    const series: BookSeries = { 
+      ...insertSeries, 
+      id, 
+      amazonUrl: insertSeries.amazonUrl ?? null, 
+      isActive: insertSeries.isActive ?? null,
+      cardBackgroundImage: insertSeries.cardBackgroundImage ?? null,
+      landingHeroImage: insertSeries.landingHeroImage ?? null,
+      landingTagline: insertSeries.landingTagline ?? null,
+      landingWorldDescription: insertSeries.landingWorldDescription ?? null,
+      landingCharacters: insertSeries.landingCharacters ?? null,
+      landingReadingOrder: insertSeries.landingReadingOrder ?? null,
+      landingThemes: insertSeries.landingThemes ?? null,
+      promoConceptMap: insertSeries.promoConceptMap ?? null,
+      promoShowConceptMap: insertSeries.promoShowConceptMap ?? null,
+      promoFamilyTree: insertSeries.promoFamilyTree ?? null,
+      promoShowFamilyTree: insertSeries.promoShowFamilyTree ?? null,
+      promoPressNotes: insertSeries.promoPressNotes ?? null,
+      promoShowPressNotes: insertSeries.promoShowPressNotes ?? null,
+      promoAdditionalMedia: insertSeries.promoAdditionalMedia ?? null,
+      promoShowAdditionalMedia: insertSeries.promoShowAdditionalMedia ?? null,
+      promoSpotifyPlaylist: insertSeries.promoSpotifyPlaylist ?? null,
+      promoShowSpotifyPlaylist: insertSeries.promoShowSpotifyPlaylist ?? null,
+      promoYoutubeBooktrailer: insertSeries.promoYoutubeBooktrailer ?? null,
+      promoShowYoutubeBooktrailer: insertSeries.promoShowYoutubeBooktrailer ?? null
+    };
     this.bookSeries.set(id, series);
     return series;
   }
@@ -396,7 +554,38 @@ export class MemStorage implements IStorage {
 
   async createBook(insertBook: InsertBook): Promise<Book> {
     const id = randomUUID();
-    const book: Book = { ...insertBook, id, amazonUrl: insertBook.amazonUrl || null, description: insertBook.description || null, seriesId: insertBook.seriesId || null, coverImage: insertBook.coverImage || null, price: insertBook.price || null, orderInSeries: insertBook.orderInSeries || null, isStandalone: insertBook.isStandalone || null, isPublished: insertBook.isPublished || null };
+    const book: Book = { 
+      ...insertBook, 
+      id, 
+      amazonUrl: insertBook.amazonUrl ?? null, 
+      description: insertBook.description ?? null, 
+      seriesId: insertBook.seriesId ?? null, 
+      coverImage: insertBook.coverImage ?? null, 
+      price: insertBook.price ?? null, 
+      orderInSeries: insertBook.orderInSeries ?? null, 
+      isStandalone: insertBook.isStandalone ?? null, 
+      isPublished: insertBook.isPublished ?? null,
+      landingHeroImage: insertBook.landingHeroImage ?? null,
+      landingTagline: insertBook.landingTagline ?? null,
+      landingSynopsis: insertBook.landingSynopsis ?? null,
+      landingFeatures: insertBook.landingFeatures ?? null,
+      landingQuotes: insertBook.landingQuotes ?? null,
+      landingCTA: insertBook.landingCTA ?? null,
+      landingGallery: insertBook.landingGallery ?? null,
+      landingAwards: insertBook.landingAwards ?? null,
+      promoConceptMap: insertBook.promoConceptMap ?? null,
+      promoShowConceptMap: insertBook.promoShowConceptMap ?? null,
+      promoFamilyTree: insertBook.promoFamilyTree ?? null,
+      promoShowFamilyTree: insertBook.promoShowFamilyTree ?? null,
+      promoPressNotes: insertBook.promoPressNotes ?? null,
+      promoShowPressNotes: insertBook.promoShowPressNotes ?? null,
+      promoAdditionalMedia: insertBook.promoAdditionalMedia ?? null,
+      promoShowAdditionalMedia: insertBook.promoShowAdditionalMedia ?? null,
+      promoSpotifyPlaylist: insertBook.promoSpotifyPlaylist ?? null,
+      promoShowSpotifyPlaylist: insertBook.promoShowSpotifyPlaylist ?? null,
+      promoYoutubeBooktrailer: insertBook.promoYoutubeBooktrailer ?? null,
+      promoShowYoutubeBooktrailer: insertBook.promoShowYoutubeBooktrailer ?? null
+    };
     this.books.set(id, book);
     return book;
   }
@@ -492,10 +681,10 @@ export class MemStorage implements IStorage {
     return updatedSetting;
   }
 
-  async upsertSiteSetting(key: string, value: string): Promise<SiteSettings> {
-    const existingSetting = Array.from(this.siteSettings.values()).find(s => s.key === key);
+  async upsertSiteSetting(authorId: string, key: string, value: string): Promise<SiteSettings> {
+    const existingSetting = Array.from(this.siteSettings.values()).find(s => s.authorId === authorId && s.key === key);
     const id = existingSetting?.id || randomUUID();
-    const setting: SiteSettings = { id, key, value };
+    const setting: SiteSettings = { id, authorId, key, value };
     this.siteSettings.set(id, setting);
     return setting;
   }

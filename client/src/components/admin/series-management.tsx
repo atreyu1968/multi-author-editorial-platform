@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Edit, Trash2, BookOpen, Upload } from "lucide-react";
+import { useAdminAuthor } from "@/contexts/admin-author-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -23,6 +24,7 @@ import type { UploadResult } from "@uppy/core";
 type SeriesFormData = z.infer<typeof insertBookSeriesSchema>;
 
 export default function SeriesManagement() {
+  const { selectedAuthorId } = useAdminAuthor();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSeries, setEditingSeries] = useState<BookSeries | null>(null);
   const { toast } = useToast();
@@ -59,16 +61,18 @@ export default function SeriesManagement() {
   });
 
   const { data: series = [] } = useQuery<BookSeries[]>({
-    queryKey: ["/api/book-series"]
+    queryKey: ["/api/book-series", selectedAuthorId],
+    enabled: !!selectedAuthorId,
   });
 
   const { data: books = [] } = useQuery<Book[]>({
-    queryKey: ["/api/books"]
+    queryKey: ["/api/books", selectedAuthorId],
+    enabled: !!selectedAuthorId,
   });
 
   const createSeriesMutation = useMutation({
     mutationFn: async (seriesData: SeriesFormData) => {
-      const response = await apiRequest("POST", "/api/book-series", seriesData);
+      const response = await apiRequest("POST", "/api/book-series", { ...seriesData, authorId: selectedAuthorId });
       return response.json();
     },
     onSuccess: () => {
@@ -76,7 +80,7 @@ export default function SeriesManagement() {
         title: "Serie creada",
         description: "La serie ha sido creada exitosamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/book-series"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/book-series", selectedAuthorId] });
       setIsModalOpen(false);
       form.reset();
     },
@@ -91,7 +95,7 @@ export default function SeriesManagement() {
 
   const updateSeriesMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: SeriesFormData }) => {
-      const response = await apiRequest("PUT", `/api/book-series/${id}`, data);
+      const response = await apiRequest("PUT", `/api/book-series/${id}`, { ...data, authorId: selectedAuthorId });
       return response.json();
     },
     onSuccess: () => {
@@ -99,7 +103,7 @@ export default function SeriesManagement() {
         title: "Serie actualizada",
         description: "La serie ha sido actualizada exitosamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/book-series"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/book-series", selectedAuthorId] });
       setIsModalOpen(false);
       setEditingSeries(null);
       form.reset();
@@ -122,7 +126,7 @@ export default function SeriesManagement() {
         title: "Serie eliminada",
         description: "La serie ha sido eliminada exitosamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/book-series"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/book-series", selectedAuthorId] });
     },
     onError: () => {
       toast({

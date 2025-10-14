@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Edit, Trash2, Star } from "lucide-react";
+import { useAdminAuthor } from "@/contexts/admin-author-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,13 +18,15 @@ import { apiRequest } from "@/lib/queryClient";
 import { insertTestimonialSchema, type Testimonial, type InsertTestimonial } from "@shared/schema";
 
 export default function TestimonialManagement() {
+  const { selectedAuthorId } = useAdminAuthor();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTestimonial, setEditingTestimonial] = useState<Testimonial | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: testimonials = [] } = useQuery<Testimonial[]>({
-    queryKey: ["/api/testimonials"]
+    queryKey: ["/api/testimonials", selectedAuthorId],
+    enabled: !!selectedAuthorId,
   });
 
   const form = useForm<InsertTestimonial>({
@@ -41,7 +44,7 @@ export default function TestimonialManagement() {
 
   const createTestimonialMutation = useMutation({
     mutationFn: async (data: InsertTestimonial) => {
-      const response = await apiRequest("POST", "/api/testimonials", data);
+      const response = await apiRequest("POST", "/api/testimonials", { ...data, authorId: selectedAuthorId });
       return response.json();
     },
     onSuccess: () => {
@@ -49,7 +52,7 @@ export default function TestimonialManagement() {
         title: "Testimonio creado",
         description: "El testimonio ha sido agregado exitosamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/testimonials"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/testimonials", selectedAuthorId] });
       setIsDialogOpen(false);
       form.reset();
     },
@@ -64,7 +67,7 @@ export default function TestimonialManagement() {
 
   const updateTestimonialMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<InsertTestimonial> }) => {
-      const response = await apiRequest("PUT", `/api/testimonials/${id}`, data);
+      const response = await apiRequest("PUT", `/api/testimonials/${id}`, { ...data, authorId: selectedAuthorId });
       return response.json();
     },
     onSuccess: () => {
@@ -72,7 +75,7 @@ export default function TestimonialManagement() {
         title: "Testimonio actualizado",
         description: "Los cambios han sido guardados exitosamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/testimonials"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/testimonials", selectedAuthorId] });
       setIsDialogOpen(false);
       setEditingTestimonial(null);
       form.reset();
@@ -95,7 +98,7 @@ export default function TestimonialManagement() {
         title: "Testimonio eliminado",
         description: "El testimonio ha sido eliminado exitosamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/testimonials"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/testimonials", selectedAuthorId] });
     },
     onError: () => {
       toast({
@@ -230,7 +233,8 @@ export default function TestimonialManagement() {
                         <Input 
                           type="url" 
                           placeholder="https://example.com/photo.jpg"
-                          {...field} 
+                          {...field}
+                          value={field.value ?? ""}
                           data-testid="input-author-photo"
                         />
                       </FormControl>
@@ -245,7 +249,7 @@ export default function TestimonialManagement() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Calificación</FormLabel>
-                      <Select onValueChange={(value) => field.onChange(parseInt(value))} defaultValue={field.value.toString()}>
+                      <Select onValueChange={(value) => field.onChange(parseInt(value))} defaultValue={field.value?.toString() ?? "5"}>
                         <FormControl>
                           <SelectTrigger data-testid="select-rating">
                             <SelectValue />
@@ -278,7 +282,7 @@ export default function TestimonialManagement() {
                         </div>
                         <FormControl>
                           <Switch
-                            checked={field.value}
+                            checked={field.value ?? false}
                             onCheckedChange={field.onChange}
                             data-testid="switch-featured"
                           />
@@ -300,7 +304,7 @@ export default function TestimonialManagement() {
                         </div>
                         <FormControl>
                           <Switch
-                            checked={field.value}
+                            checked={field.value ?? false}
                             onCheckedChange={field.onChange}
                             data-testid="switch-published"
                           />

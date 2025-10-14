@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Edit, Trash2, Search, Eye, Calendar } from "lucide-react";
+import { useAdminAuthor } from "@/contexts/admin-author-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -21,6 +22,7 @@ import type { BlogPost } from "@shared/schema";
 type BlogPostFormData = z.infer<typeof insertBlogPostSchema>;
 
 export default function BlogManagement() {
+  const { selectedAuthorId } = useAdminAuthor();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
@@ -44,12 +46,13 @@ export default function BlogManagement() {
   });
 
   const { data: posts = [] } = useQuery<BlogPost[]>({
-    queryKey: ["/api/blog-posts"]
+    queryKey: ["/api/blog-posts", selectedAuthorId],
+    enabled: !!selectedAuthorId,
   });
 
   const createPostMutation = useMutation({
     mutationFn: async (postData: BlogPostFormData) => {
-      const response = await apiRequest("POST", "/api/blog-posts", postData);
+      const response = await apiRequest("POST", "/api/blog-posts", { ...postData, authorId: selectedAuthorId });
       return response.json();
     },
     onSuccess: () => {
@@ -57,7 +60,7 @@ export default function BlogManagement() {
         title: "Artículo creado",
         description: "El artículo ha sido creado exitosamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/blog-posts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/blog-posts", selectedAuthorId] });
       setIsModalOpen(false);
       form.reset();
     },
@@ -72,7 +75,7 @@ export default function BlogManagement() {
 
   const updatePostMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: BlogPostFormData }) => {
-      const response = await apiRequest("PUT", `/api/blog-posts/${id}`, data);
+      const response = await apiRequest("PUT", `/api/blog-posts/${id}`, { ...data, authorId: selectedAuthorId });
       return response.json();
     },
     onSuccess: () => {
@@ -80,7 +83,7 @@ export default function BlogManagement() {
         title: "Artículo actualizado",
         description: "El artículo ha sido actualizado exitosamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/blog-posts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/blog-posts", selectedAuthorId] });
       setIsModalOpen(false);
       setEditingPost(null);
       form.reset();
@@ -103,7 +106,7 @@ export default function BlogManagement() {
         title: "Artículo eliminado",
         description: "El artículo ha sido eliminado exitosamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/blog-posts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/blog-posts", selectedAuthorId] });
     },
     onError: () => {
       toast({

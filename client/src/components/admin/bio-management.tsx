@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Camera, Save, Eye } from "lucide-react";
+import { useAdminAuthor } from "@/contexts/admin-author-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,12 +14,19 @@ import { apiRequest } from "@/lib/queryClient";
 import { insertAuthorSchema, type Author, type InsertAuthor } from "@shared/schema";
 
 export default function BioManagement() {
+  const { selectedAuthorId } = useAdminAuthor();
   const [previewMode, setPreviewMode] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: author, isLoading } = useQuery<Author>({
-    queryKey: ["/api/author"]
+    queryKey: ["/api/authors", selectedAuthorId],
+    queryFn: async () => {
+      const response = await fetch(`/api/authors/${selectedAuthorId}`);
+      if (!response.ok) throw new Error("Failed to fetch author");
+      return response.json();
+    },
+    enabled: !!selectedAuthorId,
   });
 
   const form = useForm<InsertAuthor>({
@@ -61,7 +69,7 @@ export default function BioManagement() {
 
   const updateAuthorMutation = useMutation({
     mutationFn: async (data: InsertAuthor) => {
-      const response = await apiRequest("PUT", "/api/author", data);
+      const response = await apiRequest("PUT", `/api/authors/${selectedAuthorId}`, data);
       return response.json();
     },
     onSuccess: () => {
@@ -69,7 +77,7 @@ export default function BioManagement() {
         title: "Biografía actualizada",
         description: "Los cambios han sido guardados exitosamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/author"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/authors", selectedAuthorId] });
     },
     onError: () => {
       toast({
@@ -164,7 +172,8 @@ export default function BioManagement() {
                               <Input 
                                 type="url" 
                                 placeholder="URL de la foto"
-                                {...field} 
+                                {...field}
+                                value={field.value ?? ""}
                                 data-testid="input-photo-url"
                               />
                             </FormControl>
@@ -198,7 +207,7 @@ export default function BioManagement() {
                     <FormItem>
                       <FormLabel>Email de Contacto</FormLabel>
                       <FormControl>
-                        <Input type="email" {...field} data-testid="input-email" />
+                        <Input type="email" {...field} value={field.value ?? ""} data-testid="input-email" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -299,7 +308,7 @@ export default function BioManagement() {
                       <FormItem>
                         <FormLabel>Instagram URL</FormLabel>
                         <FormControl>
-                          <Input type="url" placeholder="https://instagram.com/..." {...field} data-testid="input-instagram" />
+                          <Input type="url" placeholder="https://instagram.com/..." {...field} value={field.value ?? ""} data-testid="input-instagram" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -313,7 +322,7 @@ export default function BioManagement() {
                       <FormItem>
                         <FormLabel>Twitter URL</FormLabel>
                         <FormControl>
-                          <Input type="url" placeholder="https://twitter.com/..." {...field} data-testid="input-twitter" />
+                          <Input type="url" placeholder="https://twitter.com/..." {...field} value={field.value ?? ""} data-testid="input-twitter" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -327,7 +336,7 @@ export default function BioManagement() {
                       <FormItem>
                         <FormLabel>Facebook URL</FormLabel>
                         <FormControl>
-                          <Input type="url" placeholder="https://facebook.com/..." {...field} data-testid="input-facebook" />
+                          <Input type="url" placeholder="https://facebook.com/..." {...field} value={field.value ?? ""} data-testid="input-facebook" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -341,7 +350,7 @@ export default function BioManagement() {
                       <FormItem>
                         <FormLabel>Amazon Author Page</FormLabel>
                         <FormControl>
-                          <Input type="url" placeholder="https://amazon.com/author/..." {...field} data-testid="input-amazon" />
+                          <Input type="url" placeholder="https://amazon.com/author/..." {...field} value={field.value ?? ""} data-testid="input-amazon" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

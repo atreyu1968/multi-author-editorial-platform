@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Edit, Trash2, Upload, Copy, Download, QrCode } from "lucide-react";
+import { useAdminAuthor } from "@/contexts/admin-author-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -25,6 +26,7 @@ import QRCode from "qrcode";
 type BookFormData = z.infer<typeof insertBookSchema>;
 
 export default function BookManagement() {
+  const { selectedAuthorId } = useAdminAuthor();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGenre, setSelectedGenre] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -70,16 +72,18 @@ export default function BookManagement() {
   });
 
   const { data: books = [] } = useQuery<Book[]>({
-    queryKey: ["/api/books"]
+    queryKey: ["/api/books", selectedAuthorId],
+    enabled: !!selectedAuthorId,
   });
 
   const { data: series = [] } = useQuery<BookSeries[]>({
-    queryKey: ["/api/book-series"]
+    queryKey: ["/api/book-series", selectedAuthorId],
+    enabled: !!selectedAuthorId,
   });
 
   const createBookMutation = useMutation({
     mutationFn: async (bookData: BookFormData) => {
-      const response = await apiRequest("POST", "/api/books", bookData);
+      const response = await apiRequest("POST", "/api/books", { ...bookData, authorId: selectedAuthorId });
       return response.json();
     },
     onSuccess: () => {
@@ -87,7 +91,7 @@ export default function BookManagement() {
         title: "Libro creado",
         description: "El libro ha sido creado exitosamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/books"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/books", selectedAuthorId] });
       setIsModalOpen(false);
       form.reset();
     },
@@ -102,7 +106,7 @@ export default function BookManagement() {
 
   const updateBookMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: BookFormData }) => {
-      const response = await apiRequest("PUT", `/api/books/${id}`, data);
+      const response = await apiRequest("PUT", `/api/books/${id}`, { ...data, authorId: selectedAuthorId });
       return response.json();
     },
     onSuccess: () => {
@@ -110,7 +114,7 @@ export default function BookManagement() {
         title: "Libro actualizado",
         description: "El libro ha sido actualizado exitosamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/books"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/books", selectedAuthorId] });
       setIsModalOpen(false);
       setEditingBook(null);
       form.reset();
@@ -133,7 +137,7 @@ export default function BookManagement() {
         title: "Libro eliminado",
         description: "El libro ha sido eliminado exitosamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/books"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/books", selectedAuthorId] });
     },
     onError: () => {
       toast({

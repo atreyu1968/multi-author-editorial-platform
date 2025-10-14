@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { Save, Upload, ExternalLink, Info } from "lucide-react";
+import { useAdminAuthor } from "@/contexts/admin-author-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -143,15 +144,18 @@ function EmailProviderInstructions({ provider }: { provider: string }) {
 }
 
 export default function SettingsManagement() {
+  const { selectedAuthorId } = useAdminAuthor();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: settings = [] } = useQuery<SiteSettings[]>({
-    queryKey: ["/api/settings"]
+    queryKey: ["/api/settings", selectedAuthorId],
+    enabled: !!selectedAuthorId,
   });
 
   const { data: subscribers = [] } = useQuery<Newsletter[]>({
-    queryKey: ["/api/newsletter"]
+    queryKey: ["/api/newsletter", selectedAuthorId],
+    enabled: !!selectedAuthorId,
   });
 
   const form = useForm<SettingsFormData>({
@@ -222,7 +226,7 @@ export default function SettingsManagement() {
       const results = await Promise.allSettled(
         filteredData.map(async ([key, value]) => {
           try {
-            const response = await apiRequest("PUT", `/api/settings/${key}`, { value });
+            const response = await apiRequest("PUT", `/api/settings/${key}`, { value, authorId: selectedAuthorId });
             const result = await response.json();
             return { key, status: 'success', data: result };
           } catch (error: any) {
@@ -256,7 +260,7 @@ export default function SettingsManagement() {
         });
       }
       
-      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/settings", selectedAuthorId] });
     },
     onError: () => {
       toast({

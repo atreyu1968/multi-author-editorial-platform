@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { ArrowLeft, Home, BookOpen, Users, User, Star, Settings, FileText, HelpCircle, Type, UserCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import AdminDashboard from "@/components/admin/admin-dashboard";
 import BookManagement from "@/components/admin/book-management";
 import SeriesManagement from "@/components/admin/series-management";
@@ -11,11 +12,13 @@ import BlogManagement from "@/components/admin/blog-management";
 import HelpInstructions from "@/components/admin/help-instructions";
 import UiTextsManagement from "@/components/admin/ui-texts-management";
 import AuthorManagement from "@/components/admin/author-management";
+import { AdminAuthorProvider, useAdminAuthor } from "@/contexts/admin-author-context";
 
 type AdminSection = 'dashboard' | 'books' | 'series' | 'authors' | 'bio' | 'testimonials' | 'blog' | 'settings' | 'ui-texts' | 'help';
 
-export default function Admin() {
+function AdminContent() {
   const [currentSection, setCurrentSection] = useState<AdminSection>('dashboard');
+  const { selectedAuthorId, setSelectedAuthorId, authors, isLoading } = useAdminAuthor();
 
   const renderContent = () => {
     switch (currentSection) {
@@ -44,11 +47,45 @@ export default function Admin() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-xl text-muted-foreground">Cargando autores...</div>
+      </div>
+    );
+  }
+
+  if (!isLoading && !selectedAuthorId) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-xl text-muted-foreground">No hay autores disponibles</div>
+      </div>
+    );
+  }
+
+  const selectedAuthor = authors.find(a => a.id === selectedAuthorId);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="bg-primary text-primary-foreground p-6 flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Panel de Administración</h1>
+        <div className="flex items-center gap-6">
+          <h1 className="text-2xl font-bold">Panel de Administración</h1>
+          <Select value={selectedAuthorId || undefined} onValueChange={setSelectedAuthorId} disabled={isLoading}>
+            <SelectTrigger className="w-[250px] bg-primary-foreground text-primary" data-testid="select-admin-author">
+              <SelectValue placeholder="Seleccionar autor">
+                {selectedAuthor?.name || "Seleccionar autor"}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {authors.map((author) => (
+                <SelectItem key={author.id} value={author.id}>
+                  {author.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <Link href="/" className="text-primary-foreground hover:text-accent transition-colors" data-testid="link-home">
           <ArrowLeft className="h-6 w-6" />
         </Link>
@@ -187,5 +224,13 @@ export default function Admin() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Admin() {
+  return (
+    <AdminAuthorProvider>
+      <AdminContent />
+    </AdminAuthorProvider>
   );
 }
