@@ -46,8 +46,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Author methods
-  async getAuthor(): Promise<Author | undefined> {
-    const [author] = await db.select().from(authors).limit(1);
+  async getAuthors(): Promise<Author[]> {
+    return await db.select().from(authors);
+  }
+
+  async getAuthorById(id: string): Promise<Author | undefined> {
+    const [author] = await db
+      .select()
+      .from(authors)
+      .where(eq(authors.id, id));
+    return author || undefined;
+  }
+
+  async getAuthorBySlug(slug: string): Promise<Author | undefined> {
+    const [author] = await db
+      .select()
+      .from(authors)
+      .where(eq(authors.slug, slug));
     return author || undefined;
   }
 
@@ -59,21 +74,31 @@ export class DatabaseStorage implements IStorage {
     return author;
   }
 
-  async updateAuthor(updateAuthor: Partial<InsertAuthor>): Promise<Author> {
-    const existingAuthor = await this.getAuthor();
-    if (!existingAuthor) {
-      throw new Error("Author not found");
-    }
+  async updateAuthor(id: string, updateAuthor: Partial<InsertAuthor>): Promise<Author | undefined> {
     const [author] = await db
       .update(authors)
       .set(updateAuthor)
-      .where(eq(authors.id, existingAuthor.id))
+      .where(eq(authors.id, id))
       .returning();
-    return author;
+    return author || undefined;
+  }
+
+  async deleteAuthor(id: string): Promise<boolean> {
+    const result = await db
+      .delete(authors)
+      .where(eq(authors.id, id))
+      .returning();
+    return result.length > 0;
   }
 
   // Book Series methods
-  async getBookSeries(): Promise<BookSeries[]> {
+  async getBookSeries(authorId?: string): Promise<BookSeries[]> {
+    if (authorId) {
+      return await db
+        .select()
+        .from(bookSeries)
+        .where(eq(bookSeries.authorId, authorId));
+    }
     return await db.select().from(bookSeries);
   }
 
@@ -114,7 +139,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Book methods
-  async getBooks(): Promise<Book[]> {
+  async getBooks(authorId?: string): Promise<Book[]> {
+    if (authorId) {
+      return await db
+        .select()
+        .from(books)
+        .where(eq(books.authorId, authorId));
+    }
     return await db.select().from(books);
   }
 
@@ -125,16 +156,20 @@ export class DatabaseStorage implements IStorage {
       .where(eq(books.seriesId, seriesId));
   }
 
-  async getStandaloneBooks(): Promise<Book[]> {
+  async getStandaloneBooks(authorId?: string): Promise<Book[]> {
+    const conditions = [
+      eq(books.isStandalone, true),
+      eq(books.isPublished, true)
+    ];
+    
+    if (authorId) {
+      conditions.push(eq(books.authorId, authorId));
+    }
+    
     return await db
       .select()
       .from(books)
-      .where(
-        and(
-          eq(books.isStandalone, true),
-          eq(books.isPublished, true)
-        )
-      );
+      .where(and(...conditions));
   }
 
   async getBookById(id: string): Promise<Book | undefined> {
@@ -174,15 +209,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Testimonial methods
-  async getTestimonials(): Promise<Testimonial[]> {
+  async getTestimonials(authorId?: string): Promise<Testimonial[]> {
+    if (authorId) {
+      return await db
+        .select()
+        .from(testimonials)
+        .where(eq(testimonials.authorId, authorId));
+    }
     return await db.select().from(testimonials);
   }
 
-  async getPublishedTestimonials(): Promise<Testimonial[]> {
+  async getPublishedTestimonials(authorId?: string): Promise<Testimonial[]> {
+    const conditions = [eq(testimonials.isPublished, true)];
+    
+    if (authorId) {
+      conditions.push(eq(testimonials.authorId, authorId));
+    }
+    
     return await db
       .select()
       .from(testimonials)
-      .where(eq(testimonials.isPublished, true));
+      .where(and(...conditions));
   }
 
   async getTestimonialById(id: string): Promise<Testimonial | undefined> {
@@ -222,7 +269,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Newsletter methods
-  async getNewsletterSubscribers(): Promise<Newsletter[]> {
+  async getNewsletterSubscribers(authorId?: string): Promise<Newsletter[]> {
+    if (authorId) {
+      return await db
+        .select()
+        .from(newsletters)
+        .where(eq(newsletters.authorId, authorId));
+    }
     return await db.select().from(newsletters);
   }
 
@@ -235,15 +288,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Site Settings methods
-  async getSiteSettings(): Promise<SiteSettings[]> {
+  async getSiteSettings(authorId?: string): Promise<SiteSettings[]> {
+    if (authorId) {
+      return await db
+        .select()
+        .from(siteSettings)
+        .where(eq(siteSettings.authorId, authorId));
+    }
     return await db.select().from(siteSettings);
   }
 
-  async getSiteSettingByKey(key: string): Promise<SiteSettings | undefined> {
+  async getSiteSettingByKey(authorId: string, key: string): Promise<SiteSettings | undefined> {
     const [setting] = await db
       .select()
       .from(siteSettings)
-      .where(eq(siteSettings.key, key));
+      .where(
+        and(
+          eq(siteSettings.authorId, authorId),
+          eq(siteSettings.key, key)
+        )
+      );
     return setting || undefined;
   }
 
@@ -255,21 +319,26 @@ export class DatabaseStorage implements IStorage {
     return setting;
   }
 
-  async updateSiteSetting(key: string, value: string): Promise<SiteSettings | undefined> {
+  async updateSiteSetting(authorId: string, key: string, value: string): Promise<SiteSettings | undefined> {
     const [setting] = await db
       .update(siteSettings)
       .set({ value })
-      .where(eq(siteSettings.key, key))
+      .where(
+        and(
+          eq(siteSettings.authorId, authorId),
+          eq(siteSettings.key, key)
+        )
+      )
       .returning();
     return setting || undefined;
   }
 
-  async upsertSiteSetting(key: string, value: string): Promise<SiteSettings> {
+  async upsertSiteSetting(authorId: string, key: string, value: string): Promise<SiteSettings> {
     const [setting] = await db
       .insert(siteSettings)
-      .values({ key, value })
+      .values({ authorId, key, value })
       .onConflictDoUpdate({
-        target: siteSettings.key,
+        target: [siteSettings.authorId, siteSettings.key],
         set: { value }
       })
       .returning();
@@ -302,15 +371,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Blog Post methods
-  async getBlogPosts(): Promise<BlogPost[]> {
+  async getBlogPosts(authorId?: string): Promise<BlogPost[]> {
+    if (authorId) {
+      return await db
+        .select()
+        .from(blogPosts)
+        .where(eq(blogPosts.authorId, authorId));
+    }
     return await db.select().from(blogPosts);
   }
 
-  async getPublishedBlogPosts(): Promise<BlogPost[]> {
+  async getPublishedBlogPosts(authorId?: string): Promise<BlogPost[]> {
+    const conditions = [eq(blogPosts.isPublished, true)];
+    
+    if (authorId) {
+      conditions.push(eq(blogPosts.authorId, authorId));
+    }
+    
     return await db
       .select()
       .from(blogPosts)
-      .where(eq(blogPosts.isPublished, true));
+      .where(and(...conditions));
   }
 
   async getBlogPostById(id: string): Promise<BlogPost | undefined> {

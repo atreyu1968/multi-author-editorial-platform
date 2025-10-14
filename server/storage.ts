@@ -33,44 +33,47 @@ async function hashPassword(password: string) {
 
 export interface IStorage {
   // Author methods
-  getAuthor(): Promise<Author | undefined>;
+  getAuthors(): Promise<Author[]>;
+  getAuthorById(id: string): Promise<Author | undefined>;
+  getAuthorBySlug(slug: string): Promise<Author | undefined>;
   createAuthor(author: InsertAuthor): Promise<Author>;
-  updateAuthor(author: Partial<InsertAuthor>): Promise<Author>;
+  updateAuthor(id: string, author: Partial<InsertAuthor>): Promise<Author | undefined>;
+  deleteAuthor(id: string): Promise<boolean>;
 
   // Book Series methods
-  getBookSeries(): Promise<BookSeries[]>;
+  getBookSeries(authorId?: string): Promise<BookSeries[]>;
   getBookSeriesById(id: string): Promise<BookSeries | undefined>;
   createBookSeries(series: InsertBookSeries): Promise<BookSeries>;
   updateBookSeries(id: string, series: Partial<InsertBookSeries>): Promise<BookSeries | undefined>;
   deleteBookSeries(id: string): Promise<boolean>;
 
   // Book methods
-  getBooks(): Promise<Book[]>;
+  getBooks(authorId?: string): Promise<Book[]>;
   getBooksBySeriesId(seriesId: string): Promise<Book[]>;
-  getStandaloneBooks(): Promise<Book[]>;
+  getStandaloneBooks(authorId?: string): Promise<Book[]>;
   getBookById(id: string): Promise<Book | undefined>;
   createBook(book: InsertBook): Promise<Book>;
   updateBook(id: string, book: Partial<InsertBook>): Promise<Book | undefined>;
   deleteBook(id: string): Promise<boolean>;
 
   // Testimonial methods
-  getTestimonials(): Promise<Testimonial[]>;
-  getPublishedTestimonials(): Promise<Testimonial[]>;
+  getTestimonials(authorId?: string): Promise<Testimonial[]>;
+  getPublishedTestimonials(authorId?: string): Promise<Testimonial[]>;
   getTestimonialById(id: string): Promise<Testimonial | undefined>;
   createTestimonial(testimonial: InsertTestimonial): Promise<Testimonial>;
   updateTestimonial(id: string, testimonial: Partial<InsertTestimonial>): Promise<Testimonial | undefined>;
   deleteTestimonial(id: string): Promise<boolean>;
 
   // Newsletter methods
-  getNewsletterSubscribers(): Promise<Newsletter[]>;
+  getNewsletterSubscribers(authorId?: string): Promise<Newsletter[]>;
   createNewsletterSubscriber(subscriber: InsertNewsletter): Promise<Newsletter>;
 
   // Site Settings methods
-  getSiteSettings(): Promise<SiteSettings[]>;
-  getSiteSettingByKey(key: string): Promise<SiteSettings | undefined>;
+  getSiteSettings(authorId?: string): Promise<SiteSettings[]>;
+  getSiteSettingByKey(authorId: string, key: string): Promise<SiteSettings | undefined>;
   createSiteSetting(setting: InsertSiteSettings): Promise<SiteSettings>;
-  updateSiteSetting(key: string, value: string): Promise<SiteSettings | undefined>;
-  upsertSiteSetting(key: string, value: string): Promise<SiteSettings>;
+  updateSiteSetting(authorId: string, key: string, value: string): Promise<SiteSettings | undefined>;
+  upsertSiteSetting(authorId: string, key: string, value: string): Promise<SiteSettings>;
 
   // User methods
   getUser(id: string): Promise<User | undefined>;
@@ -78,8 +81,8 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
 
   // Blog Post methods
-  getBlogPosts(): Promise<BlogPost[]>;
-  getPublishedBlogPosts(): Promise<BlogPost[]>;
+  getBlogPosts(authorId?: string): Promise<BlogPost[]>;
+  getPublishedBlogPosts(authorId?: string): Promise<BlogPost[]>;
   getBlogPostById(id: string): Promise<BlogPost | undefined>;
   createBlogPost(post: InsertBlogPost): Promise<BlogPost>;
   updateBlogPost(id: string, post: Partial<InsertBlogPost>): Promise<BlogPost | undefined>;
