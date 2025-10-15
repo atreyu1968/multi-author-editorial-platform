@@ -89,11 +89,12 @@ Preferred communication style: Simple, everyday language.
 - **Testing**: End-to-end tests confirm multi-author series creation, display, and book count updates work correctly across admin and public pages
 
 ### Editorial Branding & Navigation Configuration (October 15, 2025)
+- **Editorial Name Configuration**: Added configurable editorial name field in `editorial_settings.name` (NOT NULL), displayed dynamically in headers, footers, SEO metadata, and copyright text across all public pages (home, authors list). Replaces all hardcoded "Editorial" references with dynamic values from database.
 - **Logo Configuration**: Added support for editorial logo in header and footer via `editorial_settings.logo_url`
 - **Favicon Support**: Added favicon configuration via `editorial_settings.favicon_url`, dynamically injected via SEOHead component
 - **Footer Navigation**: Added configurable footer quick links stored as array in `editorial_settings.footer_quick_links` (format: "Label|URL" per line)
-- **Admin Interface**: New "Branding" tab in editorial settings allows configuration of logo, favicon, and footer menu links
-- **UI Updates**: Logo displays in EditorialNavigation header and footer, favicon updates dynamically when configured
+- **Admin Interface**: New "Branding" tab in editorial settings allows configuration of editorial name, logo, favicon, and footer menu links
+- **UI Updates**: Logo displays in EditorialNavigation header and footer, favicon updates dynamically when configured, editorial name shows as fallback when no logo is set
 - **Modal Improvements**: Fixed transparent background issue in AlertDialog components - now use solid backgrounds (white/dark gray)
 - **Color Scheme Update**: Updated primary color to warm ochre tone (HSL: 40 65% 50% light mode, 42 70% 58% dark mode) for improved visual consistency across admin panel and public pages
 - **File Upload Fix**: Fixed image upload functionality by adding Uppy CSS imports (@uppy/core/css/style.min.css and @uppy/dashboard/css/style.min.css) to main.tsx, enabling the upload modal to display and function correctly
