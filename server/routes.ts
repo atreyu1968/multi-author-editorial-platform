@@ -1021,7 +1021,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customer = await storage.getCustomerById(order.customerId);
       }
       
-      res.json({ ...order, customer });
+      // Include download tokens for digital products
+      const downloadTokens = await storage.getDownloadTokensByOrderId(order.id);
+      const downloadTokensFormatted = await Promise.all(
+        downloadTokens.map(async (token) => {
+          const book = await storage.getBookById(token.bookId);
+          return {
+            bookId: token.bookId,
+            bookTitle: book?.title || 'Unknown',
+            token: token.token,
+            expiresAt: token.expiresAt,
+            usedAt: token.usedAt
+          };
+        })
+      );
+      
+      res.json({ ...order, customer, downloadTokens: downloadTokensFormatted });
     } catch (error) {
       res.status(500).json({ message: "Failed to get order" });
     }
@@ -1040,7 +1055,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedOrder = insertOrderSchema.parse(req.body);
       const order = await storage.createOrder(validatedOrder);
-      res.status(201).json(order);
+      
+      // Generate secure download tokens for digital products
+      const downloadTokens = [];
+      if (order.status === 'completed') {
+        const orderItems = JSON.parse(order.items);
+        
+        for (const item of orderItems) {
+          if (item.productType === 'book') {
+            const book = await storage.getBookById(item.productId);
+            
+            if (book && book.isDigitalProduct && book.digitalFileUrl) {
+              // Generate secure token with crypto.randomUUID()
+              const { randomUUID } = await import('crypto');
+              const token = randomUUID();
+              
+              // Calculate expiration date (7 days from now)
+              const expiresAt = new Date();
+              expiresAt.setDate(expiresAt.getDate() + 7);
+              
+              // Create download token
+              const downloadToken = await storage.createDownloadToken({
+                orderId: order.id,
+                bookId: book.id,
+                token: token,
+                expiresAt: expiresAt.toISOString(),
+                usedAt: null
+              });
+              
+              downloadTokens.push({
+                bookId: book.id,
+                bookTitle: book.title,
+                token: downloadToken.token,
+                expiresAt: downloadToken.expiresAt
+              });
+            }
+          }
+        }
+      }
+      
+      res.status(201).json({ ...order, downloadTokens });
     } catch (error) {
       res.status(400).json({ message: "Invalid order data" });
     }
@@ -1061,6 +1115,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(order);
     } catch (error) {
       res.status(500).json({ message: "Failed to update order status" });
+    }
+  });
+
+  // Secure digital file download endpoint with token validation
+  app.get("/api/download/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+
+      // Get download token
+      const downloadToken = await storage.getDownloadToken(token);
+      
+      if (!downloadToken) {
+        res.status(404).json({ message: "Invalid download token" });
+        return;
+      }
+
+      // Verify token hasn't been used
+      if (downloadToken.usedAt) {
+        res.status(401).json({ message: "This download link has already been used" });
+        return;
+      }
+
+      // Verify token hasn't expired
+      const now = new Date();
+      const expirationDate = new Date(downloadToken.expiresAt);
+      if (now > expirationDate) {
+        res.status(403).json({ message: "This download link has expired" });
+        return;
+      }
+
+      // Verify order is completed
+      const order = await storage.getOrderById(downloadToken.orderId);
+      if (!order) {
+        res.status(404).json({ message: "Order not found" });
+        return;
+      }
+
+      if (order.status !== 'completed') {
+        res.status(403).json({ message: "Order is not completed yet" });
+        return;
+      }
+
+      // Get book details
+      const book = await storage.getBookById(downloadToken.bookId);
+      if (!book || !book.digitalFileUrl || !book.isDigitalProduct) {
+        res.status(404).json({ message: "Digital file not available" });
+        return;
+      }
+
+      // Mark token as used BEFORE redirect
+      await storage.markTokenAsUsed(token);
+
+      // Log download for analytics
+      try {
+        await storage.incrementDailyMetric(
+          new Date().toISOString().split('T')[0],
+          'book',
+          downloadToken.bookId,
+          'bookDownloads',
+          1
+        );
+        console.log(`[DOWNLOAD] Token: ${token}, Order: ${downloadToken.orderId}, Book: ${downloadToken.bookId}, Time: ${new Date().toISOString()}`);
+      } catch (analyticsError) {
+        console.error('Failed to log download:', analyticsError);
+      }
+
+      // Redirect to the digital file URL
+      res.redirect(book.digitalFileUrl);
+    } catch (error) {
+      console.error('Download error:', error);
+      res.status(500).json({ message: "Failed to download file" });
     }
   });
 

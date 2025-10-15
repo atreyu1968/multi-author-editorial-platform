@@ -73,6 +73,9 @@ export default function BookManagement() {
       seoKeywords: "",
       backgroundImageUrl: "",
       backgroundColor: "",
+      digitalFileUrl: "",
+      digitalFileFormat: "",
+      isDigitalProduct: false,
     },
   });
 
@@ -191,6 +194,21 @@ export default function BookManagement() {
           variant: "destructive",
         });
       }
+    }
+  };
+
+  const handleDigitalFileUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+    if (result.successful && result.successful.length > 0) {
+      const uploadedFile = result.successful[0];
+      const fileURL = uploadedFile.uploadURL;
+      
+      // Store the URL directly - no need to set public ACL for private files
+      form.setValue('digitalFileUrl', fileURL);
+      
+      toast({
+        title: "Archivo subido",
+        description: "El archivo digital ha sido subido exitosamente.",
+      });
     }
   };
 
@@ -719,6 +737,116 @@ export default function BookManagement() {
                         )}
                       />
                     </div>
+                  </div>
+
+                  <div className="space-y-4 border-t pt-6 mt-6">
+                    <h3 className="text-lg font-semibold">Archivo Digital</h3>
+                    <p className="text-sm text-muted-foreground">Configura el archivo digital para descarga después de la compra.</p>
+                    
+                    <FormField
+                      control={form.control}
+                      name="isDigitalProduct"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <Switch
+                              checked={field.value || false}
+                              onCheckedChange={field.onChange}
+                              data-testid="switch-book-digital"
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>Es producto digital</FormLabel>
+                            <FormDescription>
+                              Marca si este libro es un producto digital descargable
+                            </FormDescription>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+
+                    {form.watch('isDigitalProduct') && (
+                      <div className="space-y-4 pl-4 border-l-2 border-primary/20">
+                        <FormField
+                          control={form.control}
+                          name="digitalFileFormat"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Formato del archivo *</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value || ""}>
+                                <FormControl>
+                                  <SelectTrigger data-testid="select-digital-format">
+                                    <SelectValue placeholder="Selecciona el formato" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="EPUB">EPUB</SelectItem>
+                                  <SelectItem value="PDF">PDF</SelectItem>
+                                  <SelectItem value="MOBI">MOBI</SelectItem>
+                                  <SelectItem value="AZW3">AZW3</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="digitalFileUrl"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Archivo Digital (máx 50 MB)</FormLabel>
+                              <div className="space-y-2">
+                                <div className="flex gap-2">
+                                  <FormControl>
+                                    <Input 
+                                      placeholder="URL del archivo digital"
+                                      data-testid="input-digital-file"
+                                      {...field}
+                                      value={field.value || ""} 
+                                      className="flex-1"
+                                      readOnly
+                                    />
+                                  </FormControl>
+                                  <ObjectUploader
+                                    maxNumberOfFiles={1}
+                                    maxFileSize={52428800}
+                                    allowedFileTypes={[
+                                      'application/epub+zip',
+                                      'application/pdf',
+                                      'application/x-mobipocket-ebook',
+                                      'application/vnd.amazon.ebook'
+                                    ]}
+                                    onGetUploadParameters={handleGetUploadParameters}
+                                    onComplete={handleDigitalFileUploadComplete}
+                                    buttonClassName="shrink-0"
+                                  >
+                                    <Upload className="h-4 w-4 mr-2" />
+                                    Subir
+                                  </ObjectUploader>
+                                  {field.value && (
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="icon"
+                                      onClick={() => form.setValue('digitalFileUrl', '')}
+                                      data-testid="button-clear-digital-file"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                                <FormDescription>
+                                  Archivo almacenado de forma segura en Object Storage privado
+                                </FormDescription>
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-4 border-t pt-6 mt-6">

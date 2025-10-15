@@ -19,6 +19,7 @@ import {
   orders,
   merchandiseProducts,
   cartItems,
+  downloadTokens,
   type Author,
   type InsertAuthor,
   type BookSeries,
@@ -52,7 +53,9 @@ import {
   type MerchandiseProduct,
   type InsertMerchandiseProduct,
   type CartItem,
-  type InsertCartItem
+  type InsertCartItem,
+  type DownloadToken,
+  type InsertDownloadToken
 } from "@shared/schema";
 import { IStorage, CartItemWithDetails } from "./storage";
 import session from "express-session";
@@ -852,6 +855,29 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
+  async getOrderItemBooks(orderId: string): Promise<Book[]> {
+    const order = await this.getOrderById(orderId);
+    if (!order) {
+      return [];
+    }
+    
+    const items = JSON.parse(order.items);
+    const bookIds = items
+      .filter((item: any) => item.productType === 'book')
+      .map((item: any) => item.productId);
+    
+    if (bookIds.length === 0) {
+      return [];
+    }
+    
+    const orderBooks = await db
+      .select()
+      .from(books)
+      .where(sql`${books.id} = ANY(${bookIds})`);
+    
+    return orderBooks;
+  }
+
   // Merchandise Product methods
   async getMerchandiseProducts(): Promise<MerchandiseProduct[]> {
     return await db.select().from(merchandiseProducts);
@@ -922,5 +948,36 @@ export class DatabaseStorage implements IStorage {
 
   async clearCart(sessionId: string): Promise<void> {
     await db.delete(cartItems).where(eq(cartItems.sessionId, sessionId));
+  }
+
+  // Download Token methods
+  async createDownloadToken(insertToken: InsertDownloadToken): Promise<DownloadToken> {
+    const [token] = await db
+      .insert(downloadTokens)
+      .values(insertToken)
+      .returning();
+    return token;
+  }
+
+  async getDownloadToken(token: string): Promise<DownloadToken | undefined> {
+    const [downloadToken] = await db
+      .select()
+      .from(downloadTokens)
+      .where(eq(downloadTokens.token, token));
+    return downloadToken || undefined;
+  }
+
+  async markTokenAsUsed(token: string): Promise<void> {
+    await db
+      .update(downloadTokens)
+      .set({ usedAt: new Date().toISOString() })
+      .where(eq(downloadTokens.token, token));
+  }
+
+  async getDownloadTokensByOrderId(orderId: string): Promise<DownloadToken[]> {
+    return await db
+      .select()
+      .from(downloadTokens)
+      .where(eq(downloadTokens.orderId, orderId));
   }
 }

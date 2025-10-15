@@ -2,26 +2,46 @@ import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { CheckCircle, Home, FileText, ShoppingBag, AlertCircle, Loader2 } from "lucide-react";
+import { CheckCircle, Home, FileText, ShoppingBag, AlertCircle, Loader2, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
-import type { Order, Customer } from "@shared/schema";
+import type { Order, Customer, Book } from "@shared/schema";
 
 export default function OrderConfirmation() {
   const { orderId } = useParams();
   const { user } = useAuth();
 
-  const { data: orderResponse, isLoading, error: orderError, refetch } = useQuery<Order & { customer?: Customer }>({
+  const { data: orderResponse, isLoading, error: orderError, refetch } = useQuery<Order & { customer?: Customer, downloadTokens?: Array<{ bookId: string, bookTitle: string, token: string, expiresAt: string }> }>({
     queryKey: [`/api/orders/${orderId}`],
     enabled: !!orderId,
   });
 
   const order = orderResponse;
   const customer = orderResponse?.customer;
+  const downloadTokens = orderResponse?.downloadTokens || [];
+
+  // Get book IDs from order items
+  const orderItems = order?.items ? JSON.parse(order.items) : [];
+  const bookIds = orderItems
+    .filter((item: any) => item.productType === 'book')
+    .map((item: any) => item.productId);
+
+  // Fetch book details for all books in the order
+  const { data: books = [] } = useQuery<Book[]>({
+    queryKey: ['/api/books', { ids: bookIds }],
+    queryFn: async () => {
+      if (bookIds.length === 0) return [];
+      const bookPromises = bookIds.map((id: string) => 
+        fetch(`/api/books/${id}`).then(res => res.json())
+      );
+      return Promise.all(bookPromises);
+    },
+    enabled: bookIds.length > 0,
+  });
 
   if (isLoading) {
     return (
@@ -77,8 +97,7 @@ export default function OrderConfirmation() {
     );
   }
 
-  const orderItems = order.items ? JSON.parse(order.items) : [];
-  const shippingAddress = order.shippingAddress ? JSON.parse(order.shippingAddress) : null;
+  const shippingAddress = order?.shippingAddress ? JSON.parse(order.shippingAddress) : null;
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; label: string }> = {
@@ -173,28 +192,77 @@ export default function OrderConfirmation() {
           <div data-testid="section-order-items">
             <h3 className="font-semibold mb-3" data-testid="text-items-title">Artículos del Pedido</h3>
             <div className="space-y-3">
-              {orderItems.map((item: any, index: number) => (
-                <div 
-                  key={index} 
-                  className="flex justify-between items-start p-3 bg-muted/30 rounded-lg"
-                  data-testid={`order-item-${index}`}
-                >
-                  <div className="flex-1">
-                    <p className="font-medium" data-testid={`text-item-name-${index}`}>{item.name}</p>
-                    <p className="text-sm text-muted-foreground" data-testid={`text-item-quantity-${index}`}>
-                      Cantidad: {item.quantity}
-                    </p>
-                    <p className="text-sm text-muted-foreground" data-testid={`text-item-price-${index}`}>
-                      Precio unitario: ${item.price?.toFixed(2) || '0.00'} USD
-                    </p>
+              {orderItems.map((item: any, index: number) => {
+                const book = item.productType === 'book' 
+                  ? books.find((b: Book) => b.id === item.productId)
+                  : null;
+                const isDigital = book?.isDigitalProduct && book?.digitalFileUrl;
+                const downloadToken = downloadTokens.find(dt => dt.bookId === item.productId);
+                
+                const formatExpirationDate = (dateString: string) => {
+                  try {
+                    return format(new Date(dateString), "d 'de' MMMM 'de' yyyy", { locale: es });
+                  } catch {
+                    return dateString;
+                  }
+                };
+                
+                return (
+                  <div 
+                    key={index} 
+                    className="flex flex-col gap-3 p-3 bg-muted/30 rounded-lg"
+                    data-testid={`order-item-${index}`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <p className="font-medium" data-testid={`text-item-name-${index}`}>
+                          {item.name}
+                          {isDigital && (
+                            <Badge variant="secondary" className="ml-2" data-testid={`badge-digital-${item.productId}`}>
+                              Digital
+                            </Badge>
+                          )}
+                        </p>
+                        <p className="text-sm text-muted-foreground" data-testid={`text-item-quantity-${index}`}>
+                          Cantidad: {item.quantity}
+                        </p>
+                        <p className="text-sm text-muted-foreground" data-testid={`text-item-price-${index}`}>
+                          Precio unitario: ${item.price?.toFixed(2) || '0.00'} USD
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold" data-testid={`text-item-subtotal-${index}`}>
+                          ${((item.price || 0) * item.quantity).toFixed(2)} USD
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {isDigital && downloadToken && (
+                      <div className="space-y-2">
+                        <Button
+                          asChild
+                          variant="default"
+                          className="w-full"
+                          data-testid={`button-download-${item.productId}`}
+                        >
+                          <a href={`/api/download/${downloadToken.token}`} target="_blank" rel="noopener noreferrer">
+                            <Download className="h-4 w-4 mr-2" />
+                            Descargar {book?.digitalFileFormat || 'Archivo'}
+                          </a>
+                        </Button>
+                        <p className="text-xs text-muted-foreground text-center" data-testid={`text-expiration-${item.productId}`}>
+                          Link válido hasta {formatExpirationDate(downloadToken.expiresAt)}
+                        </p>
+                      </div>
+                    )}
+                    {isDigital && !downloadToken && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400 text-center">
+                        El enlace de descarga estará disponible cuando se complete el pedido
+                      </p>
+                    )}
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold" data-testid={`text-item-subtotal-${index}`}>
-                      ${((item.price || 0) * item.quantity).toFixed(2)} USD
-                    </p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

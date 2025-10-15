@@ -179,6 +179,11 @@ export default function BookLanding() {
                         {series.title} - Libro {book.orderInSeries}
                       </Badge>
                     )}
+                    {book.isDigitalProduct && (
+                      <Badge variant="default" className="text-base px-4 py-1" data-testid="badge-digital-product">
+                        Producto Digital
+                      </Badge>
+                    )}
                   </div>
                   
                   <h1 className="text-5xl lg:text-6xl font-serif font-bold mb-6 text-primary" data-testid="book-title">
@@ -193,8 +198,15 @@ export default function BookLanding() {
                 </div>
 
                 {book.directSaleEnabled && book.directSalePrice !== null && book.directSalePrice !== undefined && (
-                  <div className="text-4xl font-bold text-primary mb-6" data-testid={`text-price-${bookId}`}>
-                    ${book.directSalePrice.toFixed(2)}
+                  <div className="mb-6" data-testid={`text-price-${bookId}`}>
+                    <div className="text-4xl font-bold text-primary">
+                      ${book.directSalePrice.toFixed(2)}
+                    </div>
+                    {book.isDigitalProduct && book.digitalFileFormat && (
+                      <div className="text-lg text-muted-foreground mt-2" data-testid="text-digital-format">
+                        Formato Digital ({book.digitalFileFormat})
+                      </div>
+                    )}
                   </div>
                 )}
 

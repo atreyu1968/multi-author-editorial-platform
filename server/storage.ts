@@ -32,7 +32,9 @@ import {
   type MerchandiseProduct,
   type InsertMerchandiseProduct,
   type CartItem,
-  type InsertCartItem
+  type InsertCartItem,
+  type DownloadToken,
+  type InsertDownloadToken
 } from "@shared/schema";
 import { randomUUID, scrypt, randomBytes, scryptSync } from "crypto";
 import { promisify } from "util";
@@ -153,6 +155,7 @@ export interface IStorage {
   getOrdersByCustomerId(customerId: string): Promise<Order[]>;
   createOrder(order: InsertOrder): Promise<Order>;
   updateOrderStatus(id: string, status: string): Promise<Order | undefined>;
+  getOrderItemBooks(orderId: string): Promise<Book[]>;
   
   // Merchandise Product methods
   getMerchandiseProducts(): Promise<MerchandiseProduct[]>;
@@ -168,6 +171,12 @@ export interface IStorage {
   updateCartItem(id: string, quantity: number): Promise<CartItem | undefined>;
   deleteCartItem(id: string): Promise<boolean>;
   clearCart(sessionId: string): Promise<void>;
+
+  // Download Token methods (secure download system)
+  createDownloadToken(token: InsertDownloadToken): Promise<DownloadToken>;
+  getDownloadToken(token: string): Promise<DownloadToken | undefined>;
+  markTokenAsUsed(token: string): Promise<void>;
+  getDownloadTokensByOrderId(orderId: string): Promise<DownloadToken[]>;
 
   // Session store for authentication
   sessionStore: session.Store;

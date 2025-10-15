@@ -109,6 +109,10 @@ export const books = pgTable("books", {
   directSaleEnabled: boolean("direct_sale_enabled").default(false),
   directSalePrice: real("direct_sale_price"),
   directSaleStock: integer("direct_sale_stock").default(0),
+  // Digital file configuration
+  digitalFileUrl: text("digital_file_url"),
+  digitalFileFormat: text("digital_file_format"),
+  isDigitalProduct: boolean("is_digital_product").default(false),
 });
 
 export const testimonials = pgTable("testimonials", {
@@ -284,6 +288,17 @@ export const orders = pgTable("orders", {
 });
 
 // Analytics - Event tracking system
+// Download Tokens - secure tokens for digital file downloads
+export const downloadTokens = pgTable("download_tokens", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar("order_id").notNull(),
+  bookId: varchar("book_id").notNull(),
+  token: varchar("token").notNull().unique(),
+  expiresAt: text("expires_at").notNull(),
+  usedAt: text("used_at"),
+  createdAt: text("created_at").default(sql`current_timestamp`),
+});
+
 export const analyticsSessions = pgTable("analytics_sessions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   sessionId: text("session_id").notNull().unique(), // Browser-generated session ID
@@ -390,6 +405,9 @@ export const insertBookSchema = createInsertSchema(books).omit({
   seoKeywords: z.string().nullable().optional(),
   backgroundImageUrl: z.string().nullable().optional(),
   backgroundColor: z.string().nullable().optional(),
+  digitalFileUrl: z.string().nullable().optional(),
+  digitalFileFormat: z.string().nullable().optional(),
+  isDigitalProduct: z.boolean().optional(),
 });
 
 export const insertTestimonialSchema = createInsertSchema(testimonials).omit({
@@ -504,6 +522,11 @@ export const insertAnalyticsDailyMetricsSchema = createInsertSchema(analyticsDai
   updatedAt: true,
 });
 
+export const insertDownloadTokenSchema = createInsertSchema(downloadTokens).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type AnalyticsSession = typeof analyticsSessions.$inferSelect;
 export type InsertAnalyticsSession = z.infer<typeof insertAnalyticsSessionSchema>;
 
@@ -512,3 +535,6 @@ export type InsertAnalyticsEvent = z.infer<typeof insertAnalyticsEventSchema>;
 
 export type AnalyticsDailyMetrics = typeof analyticsDailyMetrics.$inferSelect;
 export type InsertAnalyticsDailyMetrics = z.infer<typeof insertAnalyticsDailyMetricsSchema>;
+
+export type DownloadToken = typeof downloadTokens.$inferSelect;
+export type InsertDownloadToken = z.infer<typeof insertDownloadTokenSchema>;
