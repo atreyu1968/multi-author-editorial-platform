@@ -105,6 +105,10 @@ export const books = pgTable("books", {
   // Background customization
   backgroundImageUrl: text("background_image_url"),
   backgroundColor: text("background_color"),
+  // Direct sales configuration
+  directSaleEnabled: boolean("direct_sale_enabled").default(false),
+  directSalePrice: real("direct_sale_price"),
+  directSaleStock: integer("direct_sale_stock").default(0),
 });
 
 export const testimonials = pgTable("testimonials", {
@@ -211,6 +215,51 @@ export const editorialSettings = pgTable("editorial_settings", {
   // Background customization
   backgroundImageUrl: text("background_image_url"),
   backgroundColor: text("background_color"),
+});
+
+// Merchandise Products - products linked to authors, books, or series
+export const merchandiseProducts = pgTable("merchandise_products", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  price: real("price").notNull(),
+  imageUrl: text("image_url"),
+  stock: integer("stock").notNull().default(0),
+  isActive: boolean("is_active").default(true),
+  // Linked entity - can be author, book, or series
+  linkedEntityType: text("linked_entity_type"), // "author" | "book" | "series" | null (global)
+  linkedEntityId: varchar("linked_entity_id"), // ID of the author, book, or series
+  createdAt: text("created_at").default(sql`current_timestamp`),
+  updatedAt: text("updated_at").default(sql`current_timestamp`),
+});
+
+// Cart Items - shopping cart for users
+export const cartItems = pgTable("cart_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: text("session_id").notNull(), // For guest users
+  userId: varchar("user_id"), // For authenticated users (optional)
+  productType: text("product_type").notNull(), // "book" | "merchandise"
+  productId: varchar("product_id").notNull(), // ID of the book or merchandise product
+  quantity: integer("quantity").notNull().default(1),
+  createdAt: text("created_at").default(sql`current_timestamp`),
+});
+
+// Orders - completed purchases
+export const orders = pgTable("orders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderNumber: text("order_number").notNull().unique(),
+  paypalOrderId: text("paypal_order_id"),
+  totalAmount: real("total_amount").notNull(),
+  status: text("status").notNull().default("pending"), // "pending" | "completed" | "failed" | "cancelled"
+  // Customer information
+  customerName: text("customer_name").notNull(),
+  customerEmail: text("customer_email").notNull(),
+  shippingAddress: text("shipping_address"), // JSON string
+  // Order items (stored as JSON)
+  items: text("items").notNull(), // JSON array of items with product details
+  // Timestamps
+  createdAt: text("created_at").default(sql`current_timestamp`),
+  completedAt: text("completed_at"),
 });
 
 export const insertAuthorSchema = createInsertSchema(authors).omit({
@@ -321,3 +370,29 @@ export type InsertUiText = z.infer<typeof insertUiTextSchema>;
 
 export type EditorialSettings = typeof editorialSettings.$inferSelect;
 export type InsertEditorialSettings = z.infer<typeof insertEditorialSettingsSchema>;
+
+export const insertMerchandiseProductSchema = createInsertSchema(merchandiseProducts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCartItemSchema = createInsertSchema(cartItems).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertOrderSchema = createInsertSchema(orders).omit({
+  id: true,
+  createdAt: true,
+  completedAt: true,
+});
+
+export type MerchandiseProduct = typeof merchandiseProducts.$inferSelect;
+export type InsertMerchandiseProduct = z.infer<typeof insertMerchandiseProductSchema>;
+
+export type CartItem = typeof cartItems.$inferSelect;
+export type InsertCartItem = z.infer<typeof insertCartItemSchema>;
+
+export type Order = typeof orders.$inferSelect;
+export type InsertOrder = z.infer<typeof insertOrderSchema>;
