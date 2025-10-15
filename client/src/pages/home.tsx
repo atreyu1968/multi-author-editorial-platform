@@ -1,27 +1,53 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
-import { BookOpen, Users, ArrowRight, Sparkles, User } from "lucide-react";
+import { BookOpen, Users, ArrowRight, Sparkles, User, Heart, Star, Globe, Award, TrendingUp, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import EditorialNavigation from "@/components/editorial-navigation";
 import { SEOHead, generateStructuredData } from "@/components/seo/seo-head";
-import type { Author } from "@shared/schema";
+import type { Author, EditorialSettings } from "@shared/schema";
+
+// Icon mapping for dynamic feature icons
+const iconMap: Record<string, any> = {
+  BookOpen,
+  Users,
+  Sparkles,
+  Heart,
+  Star,
+  Globe,
+  Award,
+  TrendingUp,
+  Zap,
+};
 
 export default function Home() {
   const [, setLocation] = useLocation();
-  const { data: authors = [], isLoading } = useQuery<Author[]>({
+  const { data: authors = [], isLoading: authorsLoading } = useQuery<Author[]>({
     queryKey: ["/api/authors"],
+  });
+
+  const { data: settings, isLoading: settingsLoading } = useQuery<EditorialSettings>({
+    queryKey: ["/api/editorial-settings"],
   });
 
   const activeAuthors = authors.filter(author => author.isActive);
   const featuredAuthors = activeAuthors.slice(0, 4);
 
+  const isLoading = authorsLoading || settingsLoading;
+
+  // Helper function to render icon
+  const renderIcon = (iconName: string | undefined, className: string = "h-8 w-8") => {
+    if (!iconName) return <BookOpen className={className} />;
+    const IconComponent = iconMap[iconName] || BookOpen;
+    return <IconComponent className={className} />;
+  };
+
   return (
     <div className="bg-background text-foreground font-sans">
       <SEOHead
-        title="Editorial - Descubre Nuevas Voces en Literatura"
-        description="Bienvenido a nuestra editorial. Descubre talentosos autores y sus cautivadoras historias. Desde romance hasta thriller, tenemos el libro perfecto para ti."
-        keywords={["editorial", "libros", "autores", "literatura", "novelas", "escritores"]}
+        title={settings?.seoTitle || "Editorial - Descubre Nuevas Voces en Literatura"}
+        description={settings?.seoDescription || "Bienvenido a nuestra editorial. Descubre talentosos autores y sus cautivadoras historias."}
+        keywords={settings?.seoKeywords?.split(',').map(k => k.trim()) || ["editorial", "libros", "autores", "literatura"]}
         ogType="website"
         structuredData={generateStructuredData.website()}
       />
@@ -33,11 +59,10 @@ export default function Home() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32 relative z-10">
           <div className="max-w-4xl mx-auto text-center text-white">
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif font-bold mb-6 leading-tight">
-              Descubre Historias que<br />
-              <span className="text-accent">Transforman Vidas</span>
+              {settings?.heroTitle || "Descubre Historias que Transforman Vidas"}
             </h1>
             <p className="text-xl md:text-2xl mb-8 opacity-90 max-w-3xl mx-auto leading-relaxed">
-              Una editorial comprometida con nuevas voces literarias. Conectamos lectores apasionados con autores excepcionales.
+              {settings?.heroSubtitle || "Una editorial comprometida con nuevas voces literarias."}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button 
@@ -46,7 +71,7 @@ export default function Home() {
                 onClick={() => setLocation('/autores')}
               >
                 <Users className="h-5 w-5 mr-2" />
-                Conocer Autores
+                {settings?.heroPrimaryButtonText || "Conocer Autores"}
               </Button>
               <Button 
                 variant="outline" 
@@ -55,7 +80,7 @@ export default function Home() {
                 onClick={() => document.getElementById('autores-destacados')?.scrollIntoView({ behavior: 'smooth' })}
               >
                 <Sparkles className="h-5 w-5 mr-2" />
-                Ver Destacados
+                {settings?.heroSecondaryButtonText || "Ver Destacados"}
               </Button>
             </div>
           </div>
@@ -68,47 +93,47 @@ export default function Home() {
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary mb-6">
-                ¿Qué Ofrecemos?
+                {settings?.offerSectionTitle || "¿Qué Ofrecemos?"}
               </h2>
               <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-                Somos más que una editorial, somos un puente entre grandes historias y lectores ávidos
+                {settings?.offerSectionDescription || "Somos más que una editorial, somos un puente entre grandes historias y lectores ávidos"}
               </p>
             </div>
             
             <div className="grid md:grid-cols-3 gap-8">
               <Card className="p-8 text-center bg-card border border-border rounded-xl shadow-lg hover:shadow-2xl transition-all">
                 <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <BookOpen className="h-8 w-8 text-primary" />
+                  {renderIcon(settings?.feature1Icon, "h-8 w-8 text-primary")}
                 </div>
                 <h3 className="text-2xl font-serif font-bold text-primary mb-4">
-                  Calidad Literaria
+                  {settings?.feature1Title || "Calidad Literaria"}
                 </h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  Seleccionamos cuidadosamente cada obra para garantizar historias que cautiven, emocionen y perduren.
+                  {settings?.feature1Description || "Seleccionamos cuidadosamente cada obra."}
                 </p>
               </Card>
               
               <Card className="p-8 text-center bg-card border border-border rounded-xl shadow-lg hover:shadow-2xl transition-all">
                 <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Users className="h-8 w-8 text-primary" />
+                  {renderIcon(settings?.feature2Icon, "h-8 w-8 text-primary")}
                 </div>
                 <h3 className="text-2xl font-serif font-bold text-primary mb-4">
-                  Autores Diversos
+                  {settings?.feature2Title || "Autores Diversos"}
                 </h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  Promovemos voces únicas con perspectivas frescas en diversos géneros literarios.
+                  {settings?.feature2Description || "Promovemos voces únicas con perspectivas frescas."}
                 </p>
               </Card>
               
               <Card className="p-8 text-center bg-card border border-border rounded-xl shadow-lg hover:shadow-2xl transition-all">
                 <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Sparkles className="h-8 w-8 text-primary" />
+                  {renderIcon(settings?.feature3Icon, "h-8 w-8 text-primary")}
                 </div>
                 <h3 className="text-2xl font-serif font-bold text-primary mb-4">
-                  Experiencia Única
+                  {settings?.feature3Title || "Experiencia Única"}
                 </h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  Creamos conexiones significativas entre autores y lectores a través de contenido exclusivo.
+                  {settings?.feature3Description || "Creamos conexiones significativas entre autores y lectores."}
                 </p>
               </Card>
             </div>
@@ -121,10 +146,10 @@ export default function Home() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary mb-6">
-              Autores Destacados
+              {settings?.featuredSectionTitle || "Autores Destacados"}
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Conoce a algunos de los talentosos escritores que forman parte de nuestra editorial
+              {settings?.featuredSectionDescription || "Conoce a algunos de los talentosos escritores que forman parte de nuestra editorial"}
             </p>
           </div>
 
@@ -211,18 +236,24 @@ export default function Home() {
                 Editorial
               </div>
               <p className="text-muted-foreground mb-4">
-                Descubriendo nuevas voces en la literatura. Conectamos historias extraordinarias con lectores apasionados desde 2024.
+                {settings?.footerDescription || "Descubriendo nuevas voces en la literatura."}
               </p>
               <div className="flex space-x-4">
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors" data-testid="footer-instagram">
-                  <i className="fab fa-instagram text-xl"></i>
-                </a>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors" data-testid="footer-twitter">
-                  <i className="fab fa-twitter text-xl"></i>
-                </a>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors" data-testid="footer-facebook">
-                  <i className="fab fa-facebook text-xl"></i>
-                </a>
+                {settings?.footerInstagramUrl && (
+                  <a href={settings.footerInstagramUrl} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors" data-testid="footer-instagram">
+                    <i className="fab fa-instagram text-xl"></i>
+                  </a>
+                )}
+                {settings?.footerTwitterUrl && (
+                  <a href={settings.footerTwitterUrl} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors" data-testid="footer-twitter">
+                    <i className="fab fa-twitter text-xl"></i>
+                  </a>
+                )}
+                {settings?.footerFacebookUrl && (
+                  <a href={settings.footerFacebookUrl} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors" data-testid="footer-facebook">
+                    <i className="fab fa-facebook text-xl"></i>
+                  </a>
+                )}
               </div>
             </div>
             <div>
@@ -248,13 +279,17 @@ export default function Home() {
             <div>
               <h3 className="font-semibold text-primary mb-4">Contacto</h3>
               <ul className="space-y-2 text-muted-foreground">
-                <li><i className="fas fa-envelope mr-2"></i>info@editorial.com</li>
-                <li><i className="fas fa-map-marker-alt mr-2"></i>Barcelona, España</li>
+                {settings?.footerEmail && (
+                  <li><i className="fas fa-envelope mr-2"></i>{settings.footerEmail}</li>
+                )}
+                {settings?.footerLocation && (
+                  <li><i className="fas fa-map-marker-alt mr-2"></i>{settings.footerLocation}</li>
+                )}
               </ul>
             </div>
           </div>
           <div className="border-t border-border mt-8 pt-8 text-center text-muted-foreground">
-            <p>&copy; 2024 Editorial. Todos los derechos reservados.</p>
+            <p>{settings?.footerCopyright || "© 2024 Editorial. Todos los derechos reservados."}</p>
           </div>
         </div>
       </footer>
