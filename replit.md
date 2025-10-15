@@ -76,3 +76,14 @@ Preferred communication style: Simple, everyday language.
 ### State Management
 - **TanStack Query**: Server state.
 - **React Context**: Local state.
+
+## Recent Changes
+
+### Multi-Author Series/Collections Implementation (October 15, 2025)
+- **Database Schema**: Made `book_series.author_id` nullable to support global series not tied to a single author
+- **Admin Panel**: Series management is now global (not author-restricted), showing all series with book counts from all authors
+- **Book Management**: Shows all available series in dropdown for cross-author assignments
+- **Public Pages**: Author pages filter and display series based on book participation (shows series containing at least one book by that author)
+- **Cache Management**: Book mutations invalidate both author-scoped `['/api/books', authorId]` and global `['/api/books']` queries for real-time updates
+- **Validation Schema**: Updated `insertBookSeriesSchema` to properly handle all nullable and optional fields
+- **Testing**: End-to-end tests confirm multi-author series creation, display, and book count updates work correctly across admin and public pages
