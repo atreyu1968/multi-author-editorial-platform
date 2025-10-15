@@ -180,7 +180,8 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(books)
-      .where(eq(books.seriesId, seriesId));
+      .where(eq(books.seriesId, seriesId))
+      .orderBy(books.orderInSeries);
   }
 
   async getStandaloneBooks(authorId?: string): Promise<Book[]> {

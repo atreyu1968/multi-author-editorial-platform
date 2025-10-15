@@ -106,7 +106,7 @@ export default function SeriesLanding() {
         structuredData={generateStructuredData.bookSeries(series, sortedBooks)}
       />
       
-      <Navigation />
+      <Navigation authorId={series.authorId || books[0]?.authorId} />
       
       <main className="min-h-screen">
         {/* Hero Section */}

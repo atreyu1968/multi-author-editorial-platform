@@ -133,7 +133,7 @@ export default function BookLanding() {
         structuredData={generateStructuredData.book(book)}
       />
       
-      <Navigation />
+      <Navigation authorId={book.authorId} />
       
       <main className="min-h-screen">
         {/* Hero Section with Parallax Effect */}

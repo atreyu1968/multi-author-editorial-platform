@@ -17,6 +17,7 @@ import { useAnalytics } from "@/hooks/use-analytics";
 import { Loader2, ShoppingCart, Trash2, Plus, Minus, ArrowLeft } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import PayPalButton from "@/components/PayPalButton";
+import { SEOHead } from "@/components/seo/seo-head";
 
 // Extend customer schema with proper validation
 const checkoutFormSchema = insertCustomerSchema.extend({
@@ -290,6 +291,12 @@ export default function Checkout() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <SEOHead
+        title="Checkout - Finalizar Compra"
+        description="Completa tu compra de forma segura. Revisa tu carrito, ingresa tu información de facturación y envío, y procede al pago."
+        keywords={["checkout", "comprar", "pago", "carrito", "finalizar compra"]}
+        ogType="website"
+      />
       <h1 className="text-3xl font-bold mb-8" data-testid="text-checkout-title">Finalizar Compra</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
