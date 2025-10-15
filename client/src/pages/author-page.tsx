@@ -18,44 +18,22 @@ export default function AuthorPage() {
   const { slug } = useParams<{ slug: string }>();
   
   const { data: author, isLoading: authorLoading, error: authorError } = useQuery<Author>({
-    queryKey: ["/api/authors/by-slug", slug],
-    queryFn: async () => {
-      const response = await apiRequest("GET", `/api/authors/by-slug/${slug}`);
-      if (!response.ok) {
-        throw new Error("Author not found");
-      }
-      return response.json();
-    },
+    queryKey: [`/api/authors/by-slug/${slug}`],
     enabled: !!slug,
   });
 
   // Get all series (they can have books from multiple authors now)
   const { data: allSeries = [], isLoading: seriesLoading } = useQuery<BookSeries[]>({
     queryKey: ["/api/book-series"],
-    queryFn: async () => {
-      const response = await fetch(`/api/book-series`);
-      if (!response.ok) throw new Error("Failed to fetch series");
-      return response.json();
-    },
   });
 
   const { data: standaloneBooks = [], isLoading: booksLoading } = useQuery<Book[]>({
     queryKey: ["/api/books/standalone", { authorId: author?.id }],
-    queryFn: async () => {
-      const response = await fetch(`/api/books/standalone?authorId=${author?.id}`);
-      if (!response.ok) throw new Error("Failed to fetch books");
-      return response.json();
-    },
     enabled: !!author?.id,
   });
 
   const { data: testimonials = [], isLoading: testimonialsLoading } = useQuery<Testimonial[]>({
     queryKey: ["/api/testimonials/published", { authorId: author?.id }],
-    queryFn: async () => {
-      const response = await fetch(`/api/testimonials/published?authorId=${author?.id}`);
-      if (!response.ok) throw new Error("Failed to fetch testimonials");
-      return response.json();
-    },
     enabled: !!author?.id,
   });
 

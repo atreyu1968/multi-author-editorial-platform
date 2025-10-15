@@ -15,12 +15,12 @@ export default function BookDetail() {
   const bookId = params?.id;
 
   const { data: book, isLoading, error } = useQuery<Book>({
-    queryKey: ["/api/books", bookId],
+    queryKey: [`/api/books/${bookId}`],
     enabled: !!bookId,
   });
 
   const { data: series } = useQuery<any>({
-    queryKey: ["/api/series", book?.seriesId],
+    queryKey: [`/api/series/${book?.seriesId}`],
     enabled: !!book?.seriesId,
   });
 

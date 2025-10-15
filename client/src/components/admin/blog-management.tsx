@@ -46,7 +46,7 @@ export default function BlogManagement() {
   });
 
   const { data: posts = [] } = useQuery<BlogPost[]>({
-    queryKey: ["/api/blog-posts", selectedAuthorId],
+    queryKey: ["/api/blog-posts", { authorId: selectedAuthorId }],
     enabled: !!selectedAuthorId,
   });
 
@@ -60,7 +60,7 @@ export default function BlogManagement() {
         title: "Artículo creado",
         description: "El artículo ha sido creado exitosamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/blog-posts", selectedAuthorId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/blog-posts", { authorId: selectedAuthorId }] });
       setIsModalOpen(false);
       form.reset();
     },
@@ -83,7 +83,7 @@ export default function BlogManagement() {
         title: "Artículo actualizado",
         description: "El artículo ha sido actualizado exitosamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/blog-posts", selectedAuthorId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/blog-posts", { authorId: selectedAuthorId }] });
       setIsModalOpen(false);
       setEditingPost(null);
       form.reset();
@@ -106,7 +106,7 @@ export default function BlogManagement() {
         title: "Artículo eliminado",
         description: "El artículo ha sido eliminado exitosamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/blog-posts", selectedAuthorId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/blog-posts", { authorId: selectedAuthorId }] });
     },
     onError: () => {
       toast({

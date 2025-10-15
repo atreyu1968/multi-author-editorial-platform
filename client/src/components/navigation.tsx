@@ -17,7 +17,7 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
   const { totalItems } = useCart();
   
   const { data: author } = useQuery<Author>({
-    queryKey: ["/api/authors", authorId],
+    queryKey: [`/api/authors/${authorId}`],
     enabled: !!authorId
   });
   

@@ -15,7 +15,7 @@ export default function BlogPostDetail() {
   const postId = params?.id;
 
   const { data: post, isLoading, error } = useQuery<BlogPost>({
-    queryKey: ["/api/blog-posts", postId],
+    queryKey: [`/api/blog-posts/${postId}`],
     enabled: !!postId,
   });
 

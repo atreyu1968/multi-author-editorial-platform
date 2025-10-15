@@ -59,7 +59,7 @@ export default function BookLanding() {
   });
 
   const { data: series } = useQuery<any>({
-    queryKey: ["/api/series", book?.seriesId],
+    queryKey: [`/api/series/${book?.seriesId}`],
     enabled: !!book?.seriesId,
   });
 

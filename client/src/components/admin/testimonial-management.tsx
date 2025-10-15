@@ -25,7 +25,7 @@ export default function TestimonialManagement() {
   const queryClient = useQueryClient();
 
   const { data: testimonials = [] } = useQuery<Testimonial[]>({
-    queryKey: ["/api/testimonials", selectedAuthorId],
+    queryKey: ["/api/testimonials", { authorId: selectedAuthorId }],
     enabled: !!selectedAuthorId,
   });
 
@@ -52,7 +52,7 @@ export default function TestimonialManagement() {
         title: "Testimonio creado",
         description: "El testimonio ha sido agregado exitosamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/testimonials", selectedAuthorId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/testimonials", { authorId: selectedAuthorId }] });
       setIsDialogOpen(false);
       form.reset();
     },
@@ -75,7 +75,7 @@ export default function TestimonialManagement() {
         title: "Testimonio actualizado",
         description: "Los cambios han sido guardados exitosamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/testimonials", selectedAuthorId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/testimonials", { authorId: selectedAuthorId }] });
       setIsDialogOpen(false);
       setEditingTestimonial(null);
       form.reset();
@@ -98,7 +98,7 @@ export default function TestimonialManagement() {
         title: "Testimonio eliminado",
         description: "El testimonio ha sido eliminado exitosamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/testimonials", selectedAuthorId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/testimonials", { authorId: selectedAuthorId }] });
     },
     onError: () => {
       toast({

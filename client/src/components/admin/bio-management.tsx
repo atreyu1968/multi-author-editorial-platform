@@ -20,12 +20,7 @@ export default function BioManagement() {
   const queryClient = useQueryClient();
 
   const { data: author, isLoading } = useQuery<Author>({
-    queryKey: ["/api/authors", selectedAuthorId],
-    queryFn: async () => {
-      const response = await fetch(`/api/authors/${selectedAuthorId}`);
-      if (!response.ok) throw new Error("Failed to fetch author");
-      return response.json();
-    },
+    queryKey: [`/api/authors/${selectedAuthorId}`],
     enabled: !!selectedAuthorId,
   });
 
@@ -77,7 +72,7 @@ export default function BioManagement() {
         title: "Biografía actualizada",
         description: "Los cambios han sido guardados exitosamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/authors", selectedAuthorId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/authors/${selectedAuthorId}`] });
     },
     onError: () => {
       toast({

@@ -17,14 +17,7 @@ interface UiTextProviderProps {
 
 export function UiTextProvider({ children, locale = "es-ES" }: UiTextProviderProps) {
   const { data: uiTexts = [], isLoading } = useQuery<UiText[]>({
-    queryKey: ["/api/ui-texts", locale],
-    queryFn: async () => {
-      const response = await fetch(`/api/ui-texts?locale=${locale}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch UI texts");
-      }
-      return response.json();
-    },
+    queryKey: ["/api/ui-texts", { locale }],
     staleTime: 1000 * 60 * 5,
   });
 

@@ -46,12 +46,12 @@ export default function SeriesLanding() {
   const seriesId = params?.id;
 
   const { data: series, isLoading: seriesLoading, error: seriesError } = useQuery<BookSeries>({
-    queryKey: ["/api/book-series", seriesId],
+    queryKey: [`/api/book-series/${seriesId}`],
     enabled: !!seriesId,
   });
 
   const { data: books = [], isLoading: booksLoading } = useQuery<Book[]>({
-    queryKey: ["/api/books/series", seriesId],
+    queryKey: [`/api/books/series/${seriesId}`],
     enabled: !!seriesId,
   });
 

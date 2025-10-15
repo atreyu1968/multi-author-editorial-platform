@@ -154,7 +154,7 @@ export default function SettingsManagement() {
   });
 
   const { data: subscribers = [] } = useQuery<Newsletter[]>({
-    queryKey: ["/api/newsletter", selectedAuthorId],
+    queryKey: ["/api/newsletter", { authorId: selectedAuthorId }],
     enabled: !!selectedAuthorId,
   });
 

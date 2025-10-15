@@ -86,7 +86,7 @@ export default function BookManagement() {
   });
 
   const { data: books = [] } = useQuery<Book[]>({
-    queryKey: ["/api/books", selectedAuthorId],
+    queryKey: ["/api/books", { authorId: selectedAuthorId }],
     enabled: !!selectedAuthorId,
   });
 
@@ -105,7 +105,7 @@ export default function BookManagement() {
         title: "Libro creado",
         description: "El libro ha sido creado exitosamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/books", selectedAuthorId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/books", { authorId: selectedAuthorId }] });
       queryClient.invalidateQueries({ queryKey: ["/api/books"] }); // Invalidate global books for series management
       queryClient.invalidateQueries({ queryKey: ["/api/book-series"] }); // Invalidate series as they may now include this book
       setIsModalOpen(false);
@@ -130,7 +130,7 @@ export default function BookManagement() {
         title: "Libro actualizado",
         description: "El libro ha sido actualizado exitosamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/books", selectedAuthorId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/books", { authorId: selectedAuthorId }] });
       queryClient.invalidateQueries({ queryKey: ["/api/books"] }); // Invalidate global books for series management
       queryClient.invalidateQueries({ queryKey: ["/api/book-series"] }); // Invalidate series as they may now include this book
       setIsModalOpen(false);
@@ -155,7 +155,7 @@ export default function BookManagement() {
         title: "Libro eliminado",
         description: "El libro ha sido eliminado exitosamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/books", selectedAuthorId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/books", { authorId: selectedAuthorId }] });
       queryClient.invalidateQueries({ queryKey: ["/api/books"] }); // Invalidate global books for series management
       queryClient.invalidateQueries({ queryKey: ["/api/book-series"] }); // Invalidate series as the deleted book may have been in a series
     },
