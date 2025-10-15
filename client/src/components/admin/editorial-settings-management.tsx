@@ -24,6 +24,7 @@ export default function EditorialSettingsManagement() {
   const form = useForm({
     resolver: zodResolver(insertEditorialSettingsSchema.partial()),
     defaultValues: {
+      name: "",
       logoUrl: "",
       faviconUrl: "",
       heroTitle: "",
@@ -60,6 +61,7 @@ export default function EditorialSettingsManagement() {
   useEffect(() => {
     if (settings) {
       form.reset({
+        name: settings.name || "",
         logoUrl: settings.logoUrl || "",
         faviconUrl: settings.faviconUrl || "",
         heroTitle: settings.heroTitle,
@@ -148,9 +150,26 @@ export default function EditorialSettingsManagement() {
             <TabsContent value="branding" className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Logo y Favicon</CardTitle>
+                  <CardTitle>Identidad de la Editorial</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nombre de la Editorial</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Mi Editorial" data-testid="input-editorial-name" />
+                        </FormControl>
+                        <FormDescription>
+                          Nombre que aparecerá en el header, footer y en todo el sitio
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   <FormField
                     control={form.control}
                     name="logoUrl"
