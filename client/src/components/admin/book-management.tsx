@@ -398,6 +398,28 @@ export default function BookManagement() {
   };
 
   const handleSubmit = (data: BookFormData) => {
+    // Validate sale format configuration
+    if (data.directSaleEnabled) {
+      if (!data.saleFormatPhysical && !data.saleFormatDigital) {
+        toast({
+          title: "Error de validación",
+          description: "Debes habilitar al menos un formato de venta (físico o digital) cuando la venta directa está activa",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // If digital format is enabled, ensure digital file is configured
+      if (data.saleFormatDigital && !data.digitalFileUrl) {
+        toast({
+          title: "Error de validación",
+          description: "Se requiere un archivo digital cuando el formato digital está habilitado",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
     const processedData = {
       ...data,
       seriesId: data.seriesId === "none" ? null : data.seriesId,

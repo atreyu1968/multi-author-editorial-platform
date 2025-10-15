@@ -245,6 +245,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/books", requireAuth, async (req, res) => {
     try {
       const validatedBook = insertBookSchema.parse(req.body);
+      
+      // Validate sale format configuration
+      if (validatedBook.directSaleEnabled) {
+        if (!validatedBook.saleFormatPhysical && !validatedBook.saleFormatDigital) {
+          res.status(400).json({ 
+            message: "Al menos un formato de venta debe estar habilitado cuando la venta directa está activa" 
+          });
+          return;
+        }
+        
+        // If digital format is enabled, ensure digital file is configured
+        if (validatedBook.saleFormatDigital && !validatedBook.digitalFileUrl) {
+          res.status(400).json({ 
+            message: "Se requiere un archivo digital cuando el formato digital está habilitado" 
+          });
+          return;
+        }
+      }
+      
       const book = await storage.createBook(validatedBook);
       res.status(201).json(book);
     } catch (error) {
@@ -255,6 +274,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/books/:id", requireAuth, async (req, res) => {
     try {
       const validatedBook = insertBookSchema.partial().parse(req.body);
+      
+      // Get existing book to merge with partial update
+      const existingBook = await storage.getBookById(req.params.id);
+      if (!existingBook) {
+        res.status(404).json({ message: "Book not found" });
+        return;
+      }
+      
+      // Merge existing book data with update payload
+      const mergedBook = {
+        ...existingBook,
+        ...validatedBook,
+      };
+      
+      // Validate sale format configuration on merged data
+      if (mergedBook.directSaleEnabled) {
+        if (!mergedBook.saleFormatPhysical && !mergedBook.saleFormatDigital) {
+          res.status(400).json({ 
+            message: "Al menos un formato de venta debe estar habilitado cuando la venta directa está activa" 
+          });
+          return;
+        }
+        
+        // If digital format is enabled, ensure digital file is configured
+        if (mergedBook.saleFormatDigital && !mergedBook.digitalFileUrl) {
+          res.status(400).json({ 
+            message: "Se requiere un archivo digital cuando el formato digital está habilitado" 
+          });
+          return;
+        }
+      }
+      
       const book = await storage.updateBook(req.params.id, validatedBook);
       if (!book) {
         res.status(404).json({ message: "Book not found" });
