@@ -94,3 +94,5 @@ Preferred communication style: Simple, everyday language.
 - **Footer Navigation**: Added configurable footer quick links stored as array in `editorial_settings.footer_quick_links` (format: "Label|URL" per line)
 - **Admin Interface**: New "Branding" tab in editorial settings allows configuration of logo, favicon, and footer menu links
 - **UI Updates**: Logo displays in EditorialNavigation header and footer, favicon updates dynamically when configured
+- **Modal Improvements**: Fixed transparent background issue in AlertDialog components - now use solid backgrounds (white/dark gray)
+- **Color Scheme Update**: Updated primary color to warm ochre tone (HSL: 40 65% 50% light mode, 42 70% 58% dark mode) for improved visual consistency across admin panel and public pages
