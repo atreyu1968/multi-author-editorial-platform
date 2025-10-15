@@ -200,6 +200,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/books/latest", async (req, res) => {
+    try {
+      const parsedLimit = req.query.limit ? parseInt(req.query.limit as string, 10) : 6;
+      const limit = isNaN(parsedLimit) || parsedLimit < 1 ? 6 : Math.min(parsedLimit, 50);
+      const books = await storage.getLatestBooks(limit);
+      res.json(books);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get latest books" });
+    }
+  });
+
   app.get("/api/books/series/:seriesId", async (req, res) => {
     try {
       const books = await storage.getBooksBySeriesId(req.params.seriesId);

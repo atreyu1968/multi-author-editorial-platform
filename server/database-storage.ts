@@ -1,6 +1,6 @@
 // Reference: blueprint:javascript_database integration
 import { db } from "./db";
-import { eq, and, isNull, sql } from "drizzle-orm";
+import { eq, and, isNull, sql, desc } from "drizzle-orm";
 import {
   authors,
   bookSeries,
@@ -173,6 +173,15 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(books)
       .where(and(...conditions));
+  }
+
+  async getLatestBooks(limit: number = 6): Promise<Book[]> {
+    return await db
+      .select()
+      .from(books)
+      .where(eq(books.isPublished, true))
+      .orderBy(desc(books.publicationDate))
+      .limit(limit);
   }
 
   async getBookById(id: string): Promise<Book | undefined> {

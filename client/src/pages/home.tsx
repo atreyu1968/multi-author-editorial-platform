@@ -6,7 +6,8 @@ import { Card } from "@/components/ui/card";
 import EditorialNavigation from "@/components/editorial-navigation";
 import { SEOHead, generateStructuredData } from "@/components/seo/seo-head";
 import { buildBackgroundStyle } from "@/lib/utils";
-import type { Author, EditorialSettings } from "@shared/schema";
+import { LatestBooksCarousel } from "@/components/latest-books-carousel";
+import type { Author, EditorialSettings, Book } from "@shared/schema";
 
 // Icon mapping for dynamic feature icons
 const iconMap: Record<string, any> = {
@@ -31,6 +32,10 @@ export default function Home() {
     queryKey: ["/api/editorial-settings"],
   });
 
+  const { data: latestBooks = [], isLoading: booksLoading } = useQuery<Book[]>({
+    queryKey: ["/api/books/latest"],
+  });
+
   const activeAuthors = authors.filter(author => author.isActive);
   const featuredAuthors = activeAuthors.slice(0, 4);
 
@@ -51,7 +56,7 @@ export default function Home() {
         keywords={settings?.seoKeywords?.split(',').map(k => k.trim()) || ["editorial", "libros", "autores", "literatura"]}
         ogType="website"
         structuredData={generateStructuredData.website()}
-        faviconUrl={settings?.faviconUrl}
+        faviconUrl={settings?.faviconUrl || undefined}
       />
       <EditorialNavigation />
       
@@ -143,8 +148,34 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Latest Publications Carousel */}
+      {latestBooks.length > 0 && (
+        <section className="py-20 bg-background">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary mb-6">
+                Últimas Publicaciones
+              </h2>
+              <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+                Descubre nuestros libros más recientes y sumérgete en nuevas historias
+              </p>
+            </div>
+            
+            <div className="max-w-7xl mx-auto">
+              {booksLoading ? (
+                <div className="text-center py-12">
+                  <div className="text-xl text-muted-foreground">Cargando publicaciones...</div>
+                </div>
+              ) : (
+                <LatestBooksCarousel books={latestBooks} />
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Featured Authors Section */}
-      <section id="autores-destacados" className="py-20 bg-background">
+      <section id="autores-destacados" className="py-20 bg-muted/30">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary mb-6">

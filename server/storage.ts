@@ -53,6 +53,7 @@ export interface IStorage {
   getBooks(authorId?: string): Promise<Book[]>;
   getBooksBySeriesId(seriesId: string): Promise<Book[]>;
   getStandaloneBooks(authorId?: string): Promise<Book[]>;
+  getLatestBooks(limit?: number): Promise<Book[]>;
   getBookById(id: string): Promise<Book | undefined>;
   createBook(book: InsertBook): Promise<Book>;
   updateBook(id: string, book: Partial<InsertBook>): Promise<Book | undefined>;
@@ -160,7 +161,12 @@ export class MemStorage implements IStorage {
       twitterUrl: "https://twitter.com/mariagonzalez",
       facebookUrl: "https://facebook.com/mariagonzalez",
       amazonUrl: "https://amazon.com/author/mariagonzalez",
-      isActive: true
+      isActive: true,
+      seoTitle: null,
+      seoDescription: null,
+      seoKeywords: null,
+      backgroundImageUrl: null,
+      backgroundColor: null
     };
     this.authors.set(authorId, author);
 
@@ -192,7 +198,9 @@ export class MemStorage implements IStorage {
       promoSpotifyPlaylist: null,
       promoShowSpotifyPlaylist: true,
       promoYoutubeBooktrailer: null,
-      promoShowYoutubeBooktrailer: true
+      promoShowYoutubeBooktrailer: true,
+      backgroundImageUrl: null,
+      backgroundColor: null
     };
     this.bookSeries.set(seriesId1, series1);
 
@@ -223,7 +231,9 @@ export class MemStorage implements IStorage {
       promoSpotifyPlaylist: null,
       promoShowSpotifyPlaylist: true,
       promoYoutubeBooktrailer: null,
-      promoShowYoutubeBooktrailer: true
+      promoShowYoutubeBooktrailer: true,
+      backgroundImageUrl: null,
+      backgroundColor: null
     };
     this.bookSeries.set(seriesId2, series2);
 
@@ -260,7 +270,13 @@ export class MemStorage implements IStorage {
         promoSpotifyPlaylist: null,
         promoShowSpotifyPlaylist: true,
         promoYoutubeBooktrailer: null,
-        promoShowYoutubeBooktrailer: true
+        promoShowYoutubeBooktrailer: true,
+        seoTitle: null,
+        seoDescription: null,
+        seoKeywords: null,
+        backgroundImageUrl: null,
+        backgroundColor: null,
+        publicationDate: "2024-01-15"
       },
       {
         authorId: authorId,
@@ -293,7 +309,13 @@ export class MemStorage implements IStorage {
         promoSpotifyPlaylist: null,
         promoShowSpotifyPlaylist: true,
         promoYoutubeBooktrailer: null,
-        promoShowYoutubeBooktrailer: true
+        promoShowYoutubeBooktrailer: true,
+        seoTitle: null,
+        seoDescription: null,
+        seoKeywords: null,
+        backgroundImageUrl: null,
+        backgroundColor: null,
+        publicationDate: "2024-03-20"
       },
       {
         authorId: authorId,
@@ -326,7 +348,13 @@ export class MemStorage implements IStorage {
         promoSpotifyPlaylist: null,
         promoShowSpotifyPlaylist: true,
         promoYoutubeBooktrailer: null,
-        promoShowYoutubeBooktrailer: true
+        promoShowYoutubeBooktrailer: true,
+        seoTitle: null,
+        seoDescription: null,
+        seoKeywords: null,
+        backgroundImageUrl: null,
+        backgroundColor: null,
+        publicationDate: "2024-06-10"
       }
     ];
 
@@ -469,7 +497,12 @@ export class MemStorage implements IStorage {
       facebookUrl: insertAuthor.facebookUrl ?? null, 
       amazonUrl: insertAuthor.amazonUrl ?? null, 
       photo: insertAuthor.photo ?? null,
-      isActive: insertAuthor.isActive ?? null
+      isActive: insertAuthor.isActive ?? null,
+      seoTitle: insertAuthor.seoTitle ?? null,
+      seoDescription: insertAuthor.seoDescription ?? null,
+      seoKeywords: insertAuthor.seoKeywords ?? null,
+      backgroundImageUrl: insertAuthor.backgroundImageUrl ?? null,
+      backgroundColor: insertAuthor.backgroundColor ?? null
     };
     this.authors.set(id, author);
     return author;
@@ -502,7 +535,8 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const series: BookSeries = { 
       ...insertSeries, 
-      id, 
+      id,
+      authorId: insertSeries.authorId ?? null, 
       amazonUrl: insertSeries.amazonUrl ?? null, 
       isActive: insertSeries.isActive ?? null,
       cardBackgroundImage: insertSeries.cardBackgroundImage ?? null,
@@ -523,7 +557,9 @@ export class MemStorage implements IStorage {
       promoSpotifyPlaylist: insertSeries.promoSpotifyPlaylist ?? null,
       promoShowSpotifyPlaylist: insertSeries.promoShowSpotifyPlaylist ?? null,
       promoYoutubeBooktrailer: insertSeries.promoYoutubeBooktrailer ?? null,
-      promoShowYoutubeBooktrailer: insertSeries.promoShowYoutubeBooktrailer ?? null
+      promoShowYoutubeBooktrailer: insertSeries.promoShowYoutubeBooktrailer ?? null,
+      backgroundImageUrl: insertSeries.backgroundImageUrl ?? null,
+      backgroundColor: insertSeries.backgroundColor ?? null
     };
     this.bookSeries.set(id, series);
     return series;
@@ -554,6 +590,17 @@ export class MemStorage implements IStorage {
     return Array.from(this.books.values()).filter(book => book.isStandalone);
   }
 
+  async getLatestBooks(limit: number = 6): Promise<Book[]> {
+    return Array.from(this.books.values())
+      .filter(book => book.isPublished === true)
+      .sort((a, b) => {
+        const aDate = new Date(a.publicationDate || 0);
+        const bDate = new Date(b.publicationDate || 0);
+        return bDate.getTime() - aDate.getTime();
+      })
+      .slice(0, limit);
+  }
+
   async getBookById(id: string): Promise<Book | undefined> {
     return this.books.get(id);
   }
@@ -562,7 +609,8 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const book: Book = { 
       ...insertBook, 
-      id, 
+      id,
+      authorId: insertBook.authorId || "", 
       amazonUrl: insertBook.amazonUrl ?? null, 
       description: insertBook.description ?? null, 
       seriesId: insertBook.seriesId ?? null, 
@@ -590,7 +638,13 @@ export class MemStorage implements IStorage {
       promoSpotifyPlaylist: insertBook.promoSpotifyPlaylist ?? null,
       promoShowSpotifyPlaylist: insertBook.promoShowSpotifyPlaylist ?? null,
       promoYoutubeBooktrailer: insertBook.promoYoutubeBooktrailer ?? null,
-      promoShowYoutubeBooktrailer: insertBook.promoShowYoutubeBooktrailer ?? null
+      promoShowYoutubeBooktrailer: insertBook.promoShowYoutubeBooktrailer ?? null,
+      seoTitle: insertBook.seoTitle ?? null,
+      seoDescription: insertBook.seoDescription ?? null,
+      seoKeywords: insertBook.seoKeywords ?? null,
+      backgroundImageUrl: insertBook.backgroundImageUrl ?? null,
+      backgroundColor: insertBook.backgroundColor ?? null,
+      publicationDate: insertBook.publicationDate ?? null
     };
     this.books.set(id, book);
     return book;

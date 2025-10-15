@@ -75,6 +75,7 @@ export const books = pgTable("books", {
   orderInSeries: integer("order_in_series"),
   isStandalone: boolean("is_standalone").default(false),
   isPublished: boolean("is_published").default(true),
+  publicationDate: text("publication_date"), // Format: YYYY-MM-DD
   // Landing page fields
   landingHeroImage: text("landing_hero_image"),
   landingTagline: text("landing_tagline"),
