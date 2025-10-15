@@ -75,6 +75,13 @@ export function SEOHead({
     const existingTags = document.querySelectorAll('meta[data-seo="true"]');
     existingTags.forEach(tag => tag.remove());
 
+    // Remove static meta tags that might conflict (from index.html)
+    const staticKeywords = document.querySelector('meta[name="keywords"]:not([data-seo="true"])');
+    if (staticKeywords) staticKeywords.remove();
+    
+    const staticDescription = document.querySelector('meta[name="description"]:not([data-seo="true"])');
+    if (staticDescription) staticDescription.remove();
+
     // Remove existing canonical link
     const existingCanonical = document.querySelector('link[rel="canonical"]');
     if (existingCanonical) existingCanonical.remove();

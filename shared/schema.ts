@@ -19,6 +19,10 @@ export const authors = pgTable("authors", {
   facebookUrl: text("facebook_url"),
   amazonUrl: text("amazon_url"),
   isActive: boolean("is_active").default(true),
+  // SEO fields
+  seoTitle: text("seo_title"),
+  seoDescription: text("seo_description"),
+  seoKeywords: text("seo_keywords"),
 });
 
 export const bookSeries = pgTable("book_series", {
@@ -87,6 +91,10 @@ export const books = pgTable("books", {
   promoShowSpotifyPlaylist: boolean("promo_show_spotify_playlist").default(true),
   promoYoutubeBooktrailer: text("promo_youtube_booktrailer"),
   promoShowYoutubeBooktrailer: boolean("promo_show_youtube_booktrailer").default(true),
+  // SEO fields
+  seoTitle: text("seo_title"),
+  seoDescription: text("seo_description"),
+  seoKeywords: text("seo_keywords"),
 });
 
 export const testimonials = pgTable("testimonials", {

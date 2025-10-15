@@ -58,6 +58,9 @@ export default function AuthorManagement() {
       facebookUrl: "",
       amazonUrl: "",
       isActive: true,
+      seoTitle: "",
+      seoDescription: "",
+      seoKeywords: "",
     },
   });
 
@@ -199,6 +202,9 @@ export default function AuthorManagement() {
       facebookUrl: "",
       amazonUrl: "",
       isActive: true,
+      seoTitle: "",
+      seoDescription: "",
+      seoKeywords: "",
     });
     setIsModalOpen(true);
   };
@@ -220,6 +226,9 @@ export default function AuthorManagement() {
       facebookUrl: author.facebookUrl || "",
       amazonUrl: author.amazonUrl || "",
       isActive: author.isActive ?? true,
+      seoTitle: author.seoTitle || "",
+      seoDescription: author.seoDescription || "",
+      seoKeywords: author.seoKeywords || "",
     });
     setIsModalOpen(true);
   };
@@ -556,6 +565,62 @@ export default function AuthorManagement() {
                       <FormControl>
                         <Input {...field} value={field.value || ""} placeholder="https://amazon.com/author/..." data-testid="input-author-amazon" />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="space-y-4 border-t pt-6 mt-6">
+                <h3 className="text-lg font-semibold">SEO - Optimización para Buscadores</h3>
+                <p className="text-sm text-muted-foreground">Configura cómo aparecerá la página del autor en Google y redes sociales.</p>
+                
+                <FormField
+                  control={form.control}
+                  name="seoTitle"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Título SEO</FormLabel>
+                      <FormControl>
+                        <Input {...field} value={field.value || ""} placeholder={`${form.watch('name')} - Autor`} data-testid="input-author-seo-title" />
+                      </FormControl>
+                      <div className="text-xs text-muted-foreground">
+                        Deja vacío para usar: "{form.watch('name')} - Autor"
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="seoDescription"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Descripción SEO</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} value={field.value || ""} rows={3} placeholder="Descripción breve para buscadores (150-160 caracteres)" data-testid="textarea-author-seo-description" />
+                      </FormControl>
+                      <div className="text-xs text-muted-foreground">
+                        {field.value?.length || 0}/160 caracteres. Deja vacío para usar el primer párrafo de la biografía.
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="seoKeywords"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Palabras Clave SEO</FormLabel>
+                      <FormControl>
+                        <Input {...field} value={field.value || ""} placeholder="autor, escritor, novela, fantasía, etc." data-testid="input-author-seo-keywords" />
+                      </FormControl>
+                      <div className="text-xs text-muted-foreground">
+                        Separa las palabras clave con comas
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}

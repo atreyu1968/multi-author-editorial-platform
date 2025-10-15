@@ -45,8 +45,8 @@ export default function BookLanding() {
   const [match, params] = useRoute("/libro/:id");
   const bookId = params?.id;
 
-  const { data: book, isLoading, error } = useQuery<Book>({
-    queryKey: ["/api/books", bookId],
+  const { data: book, isLoading, error} = useQuery<Book>({
+    queryKey: [`/api/books/${bookId}`],
     enabled: !!bookId,
   });
 
@@ -96,9 +96,9 @@ export default function BookLanding() {
   return (
     <div className="bg-background text-foreground font-sans">
       <SEOHead
-        title={`${book.title}${book.genre ? ` - Novela ${book.genre}` : ''}`}
-        description={synopsis || `Descubre "${book.title}", una fascinante novela${book.genre ? ` de ${book.genre.toLowerCase()}` : ''} que te mantendrá enganchado desde la primera página.`}
-        keywords={[book.title, book.genre || '', "novela", "libro", "María González"].filter(Boolean)}
+        title={book.seoTitle || `${book.title}${book.genre ? ` - Novela ${book.genre}` : ''}`}
+        description={book.seoDescription || synopsis || `Descubre "${book.title}", una fascinante novela${book.genre ? ` de ${book.genre.toLowerCase()}` : ''} que te mantendrá enganchado desde la primera página.`}
+        keywords={book.seoKeywords ? book.seoKeywords.split(',').map(k => k.trim()) : [book.title, book.genre || '', "novela", "libro"].filter(Boolean)}
         ogType="book"
         ogImage={heroImage || undefined}
         ogImageAlt={`Portada de ${book.title}`}

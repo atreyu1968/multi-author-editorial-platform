@@ -705,6 +705,62 @@ export default function BookManagement() {
                       />
                     </div>
                   </div>
+
+                  <div className="space-y-4 border-t pt-6 mt-6">
+                    <h3 className="text-lg font-semibold">SEO - Optimización para Buscadores</h3>
+                    <p className="text-sm text-muted-foreground">Configura cómo aparecerá la página del libro en Google y redes sociales.</p>
+                    
+                    <FormField
+                      control={form.control}
+                      name="seoTitle"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Título SEO</FormLabel>
+                          <FormControl>
+                            <Input {...field} value={field.value || ""} placeholder={`${form.watch('title')}${form.watch('genre') ? ` - Novela ${form.watch('genre')}` : ''}`} data-testid="input-book-seo-title" />
+                          </FormControl>
+                          <div className="text-xs text-muted-foreground">
+                            Deja vacío para usar automáticamente: "{form.watch('title')}{form.watch('genre') ? ` - Novela ${form.watch('genre')}` : ''}"
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="seoDescription"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Descripción SEO</FormLabel>
+                          <FormControl>
+                            <Textarea {...field} value={field.value || ""} rows={3} placeholder="Descripción breve para buscadores (150-160 caracteres)" data-testid="textarea-book-seo-description" />
+                          </FormControl>
+                          <div className="text-xs text-muted-foreground">
+                            {field.value?.length || 0}/160 caracteres. Deja vacío para usar la descripción del libro.
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="seoKeywords"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Palabras Clave SEO</FormLabel>
+                          <FormControl>
+                            <Input {...field} value={field.value || ""} placeholder="novela, fantasía, aventura, etc." data-testid="input-book-seo-keywords" />
+                          </FormControl>
+                          <div className="text-xs text-muted-foreground">
+                            Separa las palabras clave con comas. Se incluirá automáticamente el título y género.
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="landing" className="space-y-6 mt-6">

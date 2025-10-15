@@ -112,9 +112,9 @@ export default function AuthorPage() {
     <DynamicTheme authorId={author.id}>
       <div className="bg-background text-foreground font-sans">
         <SEOHead
-          title={`${author.name} - Autor`}
-          description={author.bioParagraph1.substring(0, 160)}
-          keywords={["autor", "escritor", "libros", author.name]}
+          title={author.seoTitle || `${author.name} - Autor`}
+          description={author.seoDescription || author.bioParagraph1.substring(0, 160)}
+          keywords={author.seoKeywords ? author.seoKeywords.split(',').map(k => k.trim()) : ["autor", "escritor", "libros", author.name]}
           ogType="website"
           ogImage={author.photo || undefined}
           structuredData={generateStructuredData.author({
