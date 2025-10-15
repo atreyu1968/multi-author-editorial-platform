@@ -5,12 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import EditorialNavigation from "@/components/editorial-navigation";
 import { SEOHead } from "@/components/seo/seo-head";
-import type { Author } from "@shared/schema";
+import type { Author, EditorialSettings } from "@shared/schema";
 
 export default function AuthorsListPage() {
   const [, setLocation] = useLocation();
   const { data: authors = [], isLoading } = useQuery<Author[]>({
     queryKey: ["/api/authors"],
+  });
+
+  const { data: settings } = useQuery<EditorialSettings>({
+    queryKey: ["/api/editorial-settings"],
   });
 
   const activeAuthors = authors.filter(author => author.isActive);
@@ -31,8 +35,8 @@ export default function AuthorsListPage() {
   return (
     <div className="bg-background text-foreground font-sans min-h-screen">
       <SEOHead
-        title="Nuestros Autores - Editorial"
-        description="Descubre los talentosos autores de nuestra editorial. Explora sus obras, biografías y conecta con sus historias únicas."
+        title={`Nuestros Autores - ${settings?.name || "Editorial"}`}
+        description={`Descubre los talentosos autores de ${settings?.name || "nuestra editorial"}. Explora sus obras, biografías y conecta con sus historias únicas.`}
         keywords={["autores", "escritores", "editorial", "libros", "literatura"]}
         ogType="website"
       />
@@ -118,13 +122,17 @@ export default function AuthorsListPage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="text-2xl font-serif font-bold text-primary mb-4">
-              Editorial
+              {settings?.logoUrl ? (
+                <img src={settings.logoUrl} alt="Logo Editorial" className="h-10 object-contain mx-auto" />
+              ) : (
+                settings?.name || "Editorial"
+              )}
             </div>
             <p className="text-muted-foreground mb-4">
-              Descubriendo nuevas voces en la literatura
+              {settings?.footerDescription || "Descubriendo nuevas voces en la literatura"}
             </p>
             <div className="border-t border-border mt-8 pt-8 text-muted-foreground">
-              <p>&copy; 2024 Editorial. Todos los derechos reservados.</p>
+              <p>&copy; 2024 {settings?.name || "Editorial"}. Todos los derechos reservados.</p>
             </div>
           </div>
         </div>

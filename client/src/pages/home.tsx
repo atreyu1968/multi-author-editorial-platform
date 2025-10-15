@@ -45,8 +45,8 @@ export default function Home() {
   return (
     <div className="bg-background text-foreground font-sans">
       <SEOHead
-        title={settings?.seoTitle || "Editorial - Descubre Nuevas Voces en Literatura"}
-        description={settings?.seoDescription || "Bienvenido a nuestra editorial. Descubre talentosos autores y sus cautivadoras historias."}
+        title={settings?.seoTitle || `${settings?.name || "Editorial"} - Descubre Nuevas Voces en Literatura`}
+        description={settings?.seoDescription || `Bienvenido a ${settings?.name || "nuestra editorial"}. Descubre talentosos autores y sus cautivadoras historias.`}
         keywords={settings?.seoKeywords?.split(',').map(k => k.trim()) || ["editorial", "libros", "autores", "literatura"]}
         ogType="website"
         structuredData={generateStructuredData.website()}
@@ -237,7 +237,7 @@ export default function Home() {
                 {settings?.logoUrl ? (
                   <img src={settings.logoUrl} alt="Logo Editorial" className="h-10 object-contain" />
                 ) : (
-                  "Editorial"
+                  settings?.name || "Editorial"
                 )}
               </div>
               <p className="text-muted-foreground mb-4">

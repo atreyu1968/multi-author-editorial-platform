@@ -26,7 +26,7 @@ export default function EditorialNavigation() {
               {settings?.logoUrl ? (
                 <img src={settings.logoUrl} alt="Logo Editorial" className="h-8 object-contain" />
               ) : (
-                "Editorial"
+                settings?.name || "Editorial"
               )}
             </Link>
           </div>
