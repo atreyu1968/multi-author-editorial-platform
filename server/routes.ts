@@ -13,7 +13,11 @@ import {
   insertUiTextSchema,
   insertEditorialSettingsSchema,
   insertAnalyticsSessionSchema,
-  insertAnalyticsEventSchema
+  insertAnalyticsEventSchema,
+  insertCustomerSchema,
+  insertOrderSchema,
+  insertMerchandiseProductSchema,
+  insertCartItemSchema
 } from "@shared/schema";
 import { z } from "zod";
 // Referenced from blueprint:javascript_object_storage
@@ -930,6 +934,262 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(topAuthors);
     } catch (error) {
       res.status(500).json({ message: "Failed to get top authors" });
+    }
+  });
+
+  // E-commerce routes
+  // Customer routes
+  app.get("/api/customers", requireAuth, async (req, res) => {
+    try {
+      const customers = await storage.getCustomers();
+      res.json(customers);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get customers" });
+    }
+  });
+
+  app.get("/api/customers/:id", requireAuth, async (req, res) => {
+    try {
+      const customer = await storage.getCustomerById(req.params.id);
+      if (!customer) {
+        res.status(404).json({ message: "Customer not found" });
+        return;
+      }
+      res.json(customer);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get customer" });
+    }
+  });
+
+  app.get("/api/customers/email/:email", async (req, res) => {
+    try {
+      const customer = await storage.getCustomerByEmail(req.params.email);
+      res.json(customer || null);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get customer" });
+    }
+  });
+
+  app.post("/api/customers", async (req, res) => {
+    try {
+      const validatedCustomer = insertCustomerSchema.parse(req.body);
+      const customer = await storage.createCustomer(validatedCustomer);
+      
+      // Newsletter subscription will be handled during checkout when we have author context
+      
+      res.status(201).json(customer);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid customer data" });
+    }
+  });
+
+  app.put("/api/customers/:id", requireAuth, async (req, res) => {
+    try {
+      const validatedCustomer = insertCustomerSchema.partial().parse(req.body);
+      const customer = await storage.updateCustomer(req.params.id, validatedCustomer);
+      if (!customer) {
+        res.status(404).json({ message: "Customer not found" });
+        return;
+      }
+      res.json(customer);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid customer data" });
+    }
+  });
+
+  // Order routes
+  app.get("/api/orders", requireAuth, async (req, res) => {
+    try {
+      const orders = await storage.getOrders();
+      res.json(orders);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get orders" });
+    }
+  });
+
+  app.get("/api/orders/:id", async (req, res) => {
+    try {
+      const order = await storage.getOrderById(req.params.id);
+      if (!order) {
+        res.status(404).json({ message: "Order not found" });
+        return;
+      }
+      
+      // Include customer data if customerId exists
+      let customer = null;
+      if (order.customerId) {
+        customer = await storage.getCustomerById(order.customerId);
+      }
+      
+      res.json({ ...order, customer });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get order" });
+    }
+  });
+
+  app.get("/api/orders/customer/:customerId", requireAuth, async (req, res) => {
+    try {
+      const orders = await storage.getOrdersByCustomerId(req.params.customerId);
+      res.json(orders);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get customer orders" });
+    }
+  });
+
+  app.post("/api/orders", async (req, res) => {
+    try {
+      const validatedOrder = insertOrderSchema.parse(req.body);
+      const order = await storage.createOrder(validatedOrder);
+      res.status(201).json(order);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid order data" });
+    }
+  });
+
+  app.put("/api/orders/:id/status", requireAuth, async (req, res) => {
+    try {
+      const { status } = req.body;
+      if (!status) {
+        res.status(400).json({ message: "Status is required" });
+        return;
+      }
+      const order = await storage.updateOrderStatus(req.params.id, status);
+      if (!order) {
+        res.status(404).json({ message: "Order not found" });
+        return;
+      }
+      res.json(order);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update order status" });
+    }
+  });
+
+  // Merchandise Product routes
+  app.get("/api/merchandise", async (req, res) => {
+    try {
+      const products = await storage.getPublishedMerchandiseProducts();
+      res.json(products);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get merchandise products" });
+    }
+  });
+
+  app.get("/api/merchandise/all", requireAuth, async (req, res) => {
+    try {
+      const products = await storage.getMerchandiseProducts();
+      res.json(products);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get merchandise products" });
+    }
+  });
+
+  app.get("/api/merchandise/:id", async (req, res) => {
+    try {
+      const product = await storage.getMerchandiseProductById(req.params.id);
+      if (!product) {
+        res.status(404).json({ message: "Merchandise product not found" });
+        return;
+      }
+      res.json(product);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get merchandise product" });
+    }
+  });
+
+  app.post("/api/merchandise", requireAuth, async (req, res) => {
+    try {
+      const validatedProduct = insertMerchandiseProductSchema.parse(req.body);
+      const product = await storage.createMerchandiseProduct(validatedProduct);
+      res.status(201).json(product);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid merchandise product data" });
+    }
+  });
+
+  app.put("/api/merchandise/:id", requireAuth, async (req, res) => {
+    try {
+      const validatedProduct = insertMerchandiseProductSchema.partial().parse(req.body);
+      const product = await storage.updateMerchandiseProduct(req.params.id, validatedProduct);
+      if (!product) {
+        res.status(404).json({ message: "Merchandise product not found" });
+        return;
+      }
+      res.json(product);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid merchandise product data" });
+    }
+  });
+
+  app.delete("/api/merchandise/:id", requireAuth, async (req, res) => {
+    try {
+      const success = await storage.deleteMerchandiseProduct(req.params.id);
+      if (!success) {
+        res.status(404).json({ message: "Merchandise product not found" });
+        return;
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete merchandise product" });
+    }
+  });
+
+  // Cart Item routes
+  app.get("/api/cart/:sessionId", async (req, res) => {
+    try {
+      const items = await storage.getCartItems(req.params.sessionId);
+      res.json(items);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get cart items" });
+    }
+  });
+
+  app.post("/api/cart", async (req, res) => {
+    try {
+      const validatedItem = insertCartItemSchema.parse(req.body);
+      const item = await storage.addCartItem(validatedItem);
+      res.status(201).json(item);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid cart item data" });
+    }
+  });
+
+  app.put("/api/cart/:id", async (req, res) => {
+    try {
+      const { quantity } = req.body;
+      if (typeof quantity !== 'number' || quantity < 1) {
+        res.status(400).json({ message: "Valid quantity is required" });
+        return;
+      }
+      const item = await storage.updateCartItem(req.params.id, quantity);
+      if (!item) {
+        res.status(404).json({ message: "Cart item not found" });
+        return;
+      }
+      res.json(item);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update cart item" });
+    }
+  });
+
+  app.delete("/api/cart/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteCartItem(req.params.id);
+      if (!success) {
+        res.status(404).json({ message: "Cart item not found" });
+        return;
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete cart item" });
+    }
+  });
+
+  app.delete("/api/cart/session/:sessionId", async (req, res) => {
+    try {
+      await storage.clearCart(req.params.sessionId);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to clear cart" });
     }
   });
 

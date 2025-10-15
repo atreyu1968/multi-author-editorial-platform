@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/lib/protected-route";
 import { UiTextProvider } from "@/contexts/ui-text-context";
 import { DynamicTheme } from "@/components/dynamic-theme";
 import { AnalyticsProvider } from "@/components/analytics-provider";
+import { CartProvider } from "@/contexts/CartContext";
 import Home from "@/pages/home";
 import Admin from "@/pages/admin";
 import AuthPage from "@/pages/auth-page";
@@ -17,6 +18,8 @@ import BookLanding from "@/pages/book-landing";
 import SeriesLanding from "@/pages/series-landing";
 import AuthorPage from "@/pages/author-page";
 import AuthorsListPage from "@/pages/authors-list";
+import Checkout from "@/pages/checkout";
+import OrderConfirmation from "@/pages/order-confirmation";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -30,6 +33,8 @@ function Router() {
       <Route path="/libro/:id" component={BookLanding} />
       <Route path="/serie/:id" component={SeriesLanding} />
       <Route path="/autor/:slug" component={AuthorPage} />
+      <Route path="/checkout" component={Checkout} />
+      <Route path="/pedido/:orderId" component={OrderConfirmation} />
       <ProtectedRoute path="/admin" component={Admin} />
       <Route component={NotFound} />
     </Switch>
@@ -43,10 +48,12 @@ function App() {
         <DynamicTheme>
           <UiTextProvider locale="es-ES">
             <AuthProvider>
-              <TooltipProvider>
-                <Toaster />
-                <Router />
-              </TooltipProvider>
+              <CartProvider>
+                <TooltipProvider>
+                  <Toaster />
+                  <Router />
+                </TooltipProvider>
+              </CartProvider>
             </AuthProvider>
           </UiTextProvider>
         </DynamicTheme>

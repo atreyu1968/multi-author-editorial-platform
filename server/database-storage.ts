@@ -15,6 +15,10 @@ import {
   analyticsSessions,
   analyticsEvents,
   analyticsDailyMetrics,
+  customers,
+  orders,
+  merchandiseProducts,
+  cartItems,
   type Author,
   type InsertAuthor,
   type BookSeries,
@@ -40,9 +44,17 @@ import {
   type AnalyticsEvent,
   type InsertAnalyticsEvent,
   type AnalyticsDailyMetrics,
-  type InsertAnalyticsDailyMetrics
+  type InsertAnalyticsDailyMetrics,
+  type Customer,
+  type InsertCustomer,
+  type Order,
+  type InsertOrder,
+  type MerchandiseProduct,
+  type InsertMerchandiseProduct,
+  type CartItem,
+  type InsertCartItem
 } from "@shared/schema";
-import { IStorage } from "./storage";
+import { IStorage, CartItemWithDetails } from "./storage";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 
@@ -789,5 +801,126 @@ export class DatabaseStorage implements IStorage {
       .limit(limit);
     
     return result;
+  }
+
+  // Customer methods
+  async getCustomers(): Promise<Customer[]> {
+    return await db.select().from(customers);
+  }
+
+  async getCustomerById(id: string): Promise<Customer | undefined> {
+    const result = await db.select().from(customers).where(eq(customers.id, id));
+    return result[0];
+  }
+
+  async getCustomerByEmail(email: string): Promise<Customer | undefined> {
+    const result = await db.select().from(customers).where(eq(customers.email, email));
+    return result[0];
+  }
+
+  async createCustomer(insertCustomer: InsertCustomer): Promise<Customer> {
+    const result = await db.insert(customers).values(insertCustomer).returning();
+    return result[0];
+  }
+
+  async updateCustomer(id: string, updates: Partial<InsertCustomer>): Promise<Customer | undefined> {
+    const result = await db.update(customers).set(updates).where(eq(customers.id, id)).returning();
+    return result[0];
+  }
+
+  // Order methods
+  async getOrders(): Promise<Order[]> {
+    return await db.select().from(orders).orderBy(desc(orders.createdAt));
+  }
+
+  async getOrderById(id: string): Promise<Order | undefined> {
+    const result = await db.select().from(orders).where(eq(orders.id, id));
+    return result[0];
+  }
+
+  async getOrdersByCustomerId(customerId: string): Promise<Order[]> {
+    return await db.select().from(orders).where(eq(orders.customerId, customerId)).orderBy(desc(orders.createdAt));
+  }
+
+  async createOrder(insertOrder: InsertOrder): Promise<Order> {
+    const result = await db.insert(orders).values(insertOrder).returning();
+    return result[0];
+  }
+
+  async updateOrderStatus(id: string, status: string): Promise<Order | undefined> {
+    const result = await db.update(orders).set({ status }).where(eq(orders.id, id)).returning();
+    return result[0];
+  }
+
+  // Merchandise Product methods
+  async getMerchandiseProducts(): Promise<MerchandiseProduct[]> {
+    return await db.select().from(merchandiseProducts);
+  }
+
+  async getPublishedMerchandiseProducts(): Promise<MerchandiseProduct[]> {
+    return await db.select().from(merchandiseProducts).where(eq(merchandiseProducts.isActive, true));
+  }
+
+  async getMerchandiseProductById(id: string): Promise<MerchandiseProduct | undefined> {
+    const result = await db.select().from(merchandiseProducts).where(eq(merchandiseProducts.id, id));
+    return result[0];
+  }
+
+  async createMerchandiseProduct(insertProduct: InsertMerchandiseProduct): Promise<MerchandiseProduct> {
+    const result = await db.insert(merchandiseProducts).values(insertProduct).returning();
+    return result[0];
+  }
+
+  async updateMerchandiseProduct(id: string, updates: Partial<InsertMerchandiseProduct>): Promise<MerchandiseProduct | undefined> {
+    const result = await db.update(merchandiseProducts).set(updates).where(eq(merchandiseProducts.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteMerchandiseProduct(id: string): Promise<boolean> {
+    const result = await db.delete(merchandiseProducts).where(eq(merchandiseProducts.id, id)).returning();
+    return result.length > 0;
+  }
+
+  // Cart Item methods
+  async getCartItems(sessionId: string): Promise<CartItemWithDetails[]> {
+    const items = await db.select().from(cartItems).where(eq(cartItems.sessionId, sessionId));
+    
+    // Fetch related product data for each cart item
+    const itemsWithDetails: CartItemWithDetails[] = await Promise.all(
+      items.map(async (item) => {
+        const itemWithDetails: CartItemWithDetails = { ...item };
+        
+        if (item.productType === 'book') {
+          const [book] = await db.select().from(books).where(eq(books.id, item.productId));
+          itemWithDetails.book = book;
+        } else if (item.productType === 'merchandise') {
+          const [merchandise] = await db.select().from(merchandiseProducts).where(eq(merchandiseProducts.id, item.productId));
+          itemWithDetails.merchandise = merchandise;
+        }
+        
+        return itemWithDetails;
+      })
+    );
+    
+    return itemsWithDetails;
+  }
+
+  async addCartItem(insertItem: InsertCartItem): Promise<CartItem> {
+    const result = await db.insert(cartItems).values(insertItem).returning();
+    return result[0];
+  }
+
+  async updateCartItem(id: string, quantity: number): Promise<CartItem | undefined> {
+    const result = await db.update(cartItems).set({ quantity }).where(eq(cartItems.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteCartItem(id: string): Promise<boolean> {
+    const result = await db.delete(cartItems).where(eq(cartItems.id, id)).returning();
+    return result.length > 0;
+  }
+
+  async clearCart(sessionId: string): Promise<void> {
+    await db.delete(cartItems).where(eq(cartItems.sessionId, sessionId));
   }
 }

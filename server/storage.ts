@@ -24,7 +24,15 @@ import {
   type AnalyticsEvent,
   type InsertAnalyticsEvent,
   type AnalyticsDailyMetrics,
-  type InsertAnalyticsDailyMetrics
+  type InsertAnalyticsDailyMetrics,
+  type Customer,
+  type InsertCustomer,
+  type Order,
+  type InsertOrder,
+  type MerchandiseProduct,
+  type InsertMerchandiseProduct,
+  type CartItem,
+  type InsertCartItem
 } from "@shared/schema";
 import { randomUUID, scrypt, randomBytes, scryptSync } from "crypto";
 import { promisify } from "util";
@@ -37,6 +45,12 @@ async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const buf = (await scryptAsync(password, salt, 64)) as Buffer;
   return `${buf.toString("hex")}.${salt}`;
+}
+
+// Cart item with related product data
+export interface CartItemWithDetails extends CartItem {
+  book?: Book;
+  merchandise?: MerchandiseProduct;
 }
 
 export interface IStorage {
@@ -125,6 +139,36 @@ export interface IStorage {
   getTopBooks(limit?: number, startDate?: string, endDate?: string): Promise<any[]>;
   getTopAuthors(limit?: number, startDate?: string, endDate?: string): Promise<any[]>;
 
+  // E-commerce methods
+  // Customer methods
+  getCustomers(): Promise<Customer[]>;
+  getCustomerById(id: string): Promise<Customer | undefined>;
+  getCustomerByEmail(email: string): Promise<Customer | undefined>;
+  createCustomer(customer: InsertCustomer): Promise<Customer>;
+  updateCustomer(id: string, customer: Partial<InsertCustomer>): Promise<Customer | undefined>;
+  
+  // Order methods
+  getOrders(): Promise<Order[]>;
+  getOrderById(id: string): Promise<Order | undefined>;
+  getOrdersByCustomerId(customerId: string): Promise<Order[]>;
+  createOrder(order: InsertOrder): Promise<Order>;
+  updateOrderStatus(id: string, status: string): Promise<Order | undefined>;
+  
+  // Merchandise Product methods
+  getMerchandiseProducts(): Promise<MerchandiseProduct[]>;
+  getPublishedMerchandiseProducts(): Promise<MerchandiseProduct[]>;
+  getMerchandiseProductById(id: string): Promise<MerchandiseProduct | undefined>;
+  createMerchandiseProduct(product: InsertMerchandiseProduct): Promise<MerchandiseProduct>;
+  updateMerchandiseProduct(id: string, product: Partial<InsertMerchandiseProduct>): Promise<MerchandiseProduct | undefined>;
+  deleteMerchandiseProduct(id: string): Promise<boolean>;
+  
+  // Cart Item methods (for saved carts)
+  getCartItems(sessionId: string): Promise<CartItemWithDetails[]>;
+  addCartItem(item: InsertCartItem): Promise<CartItem>;
+  updateCartItem(id: string, quantity: number): Promise<CartItem | undefined>;
+  deleteCartItem(id: string): Promise<boolean>;
+  clearCart(sessionId: string): Promise<void>;
+
   // Session store for authentication
   sessionStore: session.Store;
 }
@@ -147,6 +191,10 @@ export class MemStorage implements IStorage {
   private analyticsSessions: Map<string, AnalyticsSession>;
   private analyticsEvents: Map<string, AnalyticsEvent>;
   private analyticsDailyMetrics: Map<string, AnalyticsDailyMetrics>;
+  private customers: Map<string, Customer>;
+  private orders: Map<string, Order>;
+  private merchandiseProducts: Map<string, MerchandiseProduct>;
+  private cartItems: Map<string, CartItem>;
   sessionStore: session.Store;
 
   constructor() {
@@ -162,6 +210,10 @@ export class MemStorage implements IStorage {
     this.analyticsSessions = new Map();
     this.analyticsEvents = new Map();
     this.analyticsDailyMetrics = new Map();
+    this.customers = new Map();
+    this.orders = new Map();
+    this.merchandiseProducts = new Map();
+    this.cartItems = new Map();
     
     // Initialize session store
     this.sessionStore = new MemoryStore({
@@ -305,7 +357,10 @@ export class MemStorage implements IStorage {
         seoKeywords: null,
         backgroundImageUrl: null,
         backgroundColor: null,
-        publicationDate: "2024-01-15"
+        publicationDate: "2024-01-15",
+        directSaleEnabled: false,
+        directSalePrice: null,
+        directSaleStock: null
       },
       {
         authorId: authorId,
@@ -344,7 +399,10 @@ export class MemStorage implements IStorage {
         seoKeywords: null,
         backgroundImageUrl: null,
         backgroundColor: null,
-        publicationDate: "2024-03-20"
+        publicationDate: "2024-03-20",
+        directSaleEnabled: false,
+        directSalePrice: null,
+        directSaleStock: null
       },
       {
         authorId: authorId,
@@ -383,7 +441,10 @@ export class MemStorage implements IStorage {
         seoKeywords: null,
         backgroundImageUrl: null,
         backgroundColor: null,
-        publicationDate: "2024-06-10"
+        publicationDate: "2024-06-10",
+        directSaleEnabled: false,
+        directSalePrice: null,
+        directSaleStock: null
       }
     ];
 
@@ -673,7 +734,10 @@ export class MemStorage implements IStorage {
       seoKeywords: insertBook.seoKeywords ?? null,
       backgroundImageUrl: insertBook.backgroundImageUrl ?? null,
       backgroundColor: insertBook.backgroundColor ?? null,
-      publicationDate: insertBook.publicationDate ?? null
+      publicationDate: insertBook.publicationDate ?? null,
+      directSaleEnabled: insertBook.directSaleEnabled ?? null,
+      directSalePrice: insertBook.directSalePrice ?? null,
+      directSaleStock: insertBook.directSaleStock ?? null
     };
     this.books.set(id, book);
     return book;
@@ -976,13 +1040,13 @@ export class MemStorage implements IStorage {
       events = events.filter(e => e.entityId === filters.entityId);
     }
     if (filters?.startDate) {
-      events = events.filter(e => e.createdAt >= filters.startDate!);
+      events = events.filter(e => (e.createdAt || '') >= filters.startDate!);
     }
     if (filters?.endDate) {
-      events = events.filter(e => e.createdAt <= filters.endDate!);
+      events = events.filter(e => (e.createdAt || '') <= filters.endDate!);
     }
     
-    return events.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    return events.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
   }
 
   async getDailyMetrics(filters?: { date?: string, entityType?: string, entityId?: string, startDate?: string, endDate?: string }): Promise<AnalyticsDailyMetrics[]> {
@@ -1086,8 +1150,8 @@ export class MemStorage implements IStorage {
     
     const events = Array.from(this.analyticsEvents.values()).filter(
       e => e.sessionId === sessionId && 
-           new Date(e.createdAt).getTime() >= dateStart && 
-           new Date(e.createdAt).getTime() <= dateEnd
+           new Date(e.createdAt || 0).getTime() >= dateStart && 
+           new Date(e.createdAt || 0).getTime() <= dateEnd
     );
     
     return events.length > 0;
@@ -1155,6 +1219,172 @@ export class MemStorage implements IStorage {
     return Array.from(authorMetrics.values())
       .sort((a, b) => b.totalPageviews - a.totalPageviews)
       .slice(0, limit);
+  }
+
+  async getCustomers(): Promise<Customer[]> {
+    return Array.from(this.customers.values());
+  }
+
+  async getCustomerById(id: string): Promise<Customer | undefined> {
+    return this.customers.get(id);
+  }
+
+  async getCustomerByEmail(email: string): Promise<Customer | undefined> {
+    return Array.from(this.customers.values()).find(c => c.email === email);
+  }
+
+  async createCustomer(insertCustomer: InsertCustomer): Promise<Customer> {
+    const id = randomUUID();
+    const customer: Customer = {
+      ...insertCustomer,
+      id,
+      phone: insertCustomer.phone ?? null,
+      billingAddress: insertCustomer.billingAddress ?? null,
+      shippingAddress: insertCustomer.shippingAddress ?? null,
+      isSubscribedToNewsletter: insertCustomer.isSubscribedToNewsletter ?? true,
+      createdAt: new Date().toISOString()
+    };
+    this.customers.set(id, customer);
+    return customer;
+  }
+
+  async updateCustomer(id: string, updates: Partial<InsertCustomer>): Promise<Customer | undefined> {
+    const customer = this.customers.get(id);
+    if (!customer) return undefined;
+    const updated = { ...customer, ...updates };
+    this.customers.set(id, updated);
+    return updated;
+  }
+
+  async getOrders(): Promise<Order[]> {
+    return Array.from(this.orders.values());
+  }
+
+  async getOrderById(id: string): Promise<Order | undefined> {
+    return this.orders.get(id);
+  }
+
+  async getOrdersByCustomerId(customerId: string): Promise<Order[]> {
+    return Array.from(this.orders.values()).filter(o => o.customerId === customerId);
+  }
+
+  async createOrder(insertOrder: InsertOrder): Promise<Order> {
+    const id = randomUUID();
+    const order: Order = {
+      ...insertOrder,
+      id,
+      status: insertOrder.status ?? "pending",
+      customerId: insertOrder.customerId ?? null,
+      paypalOrderId: insertOrder.paypalOrderId ?? null,
+      paypalPayerId: insertOrder.paypalPayerId ?? null,
+      shippingAddress: insertOrder.shippingAddress ?? null,
+      createdAt: new Date().toISOString(),
+      completedAt: null
+    };
+    this.orders.set(id, order);
+    return order;
+  }
+
+  async updateOrderStatus(id: string, status: string): Promise<Order | undefined> {
+    const order = this.orders.get(id);
+    if (!order) return undefined;
+    const updated = { ...order, status };
+    this.orders.set(id, updated);
+    return updated;
+  }
+
+  async getMerchandiseProducts(): Promise<MerchandiseProduct[]> {
+    return Array.from(this.merchandiseProducts.values());
+  }
+
+  async getPublishedMerchandiseProducts(): Promise<MerchandiseProduct[]> {
+    return Array.from(this.merchandiseProducts.values()).filter(p => p.isActive);
+  }
+
+  async getMerchandiseProductById(id: string): Promise<MerchandiseProduct | undefined> {
+    return this.merchandiseProducts.get(id);
+  }
+
+  async createMerchandiseProduct(insertProduct: InsertMerchandiseProduct): Promise<MerchandiseProduct> {
+    const id = randomUUID();
+    const product: MerchandiseProduct = {
+      ...insertProduct,
+      id,
+      imageUrl: insertProduct.imageUrl ?? null,
+      stock: insertProduct.stock ?? 0,
+      isActive: insertProduct.isActive ?? true,
+      linkedEntityType: insertProduct.linkedEntityType ?? null,
+      linkedEntityId: insertProduct.linkedEntityId ?? null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    this.merchandiseProducts.set(id, product);
+    return product;
+  }
+
+  async updateMerchandiseProduct(id: string, updates: Partial<InsertMerchandiseProduct>): Promise<MerchandiseProduct | undefined> {
+    const product = this.merchandiseProducts.get(id);
+    if (!product) return undefined;
+    const updated = { ...product, ...updates };
+    this.merchandiseProducts.set(id, updated);
+    return updated;
+  }
+
+  async deleteMerchandiseProduct(id: string): Promise<boolean> {
+    return this.merchandiseProducts.delete(id);
+  }
+
+  async getCartItems(sessionId: string): Promise<CartItemWithDetails[]> {
+    const items = Array.from(this.cartItems.values()).filter(item => item.sessionId === sessionId);
+    
+    // Fetch related product data for each cart item
+    const itemsWithDetails: CartItemWithDetails[] = await Promise.all(
+      items.map(async (item) => {
+        const itemWithDetails: CartItemWithDetails = { ...item };
+        
+        if (item.productType === 'book') {
+          itemWithDetails.book = this.books.get(item.productId);
+        } else if (item.productType === 'merchandise') {
+          itemWithDetails.merchandise = this.merchandiseProducts.get(item.productId);
+        }
+        
+        return itemWithDetails;
+      })
+    );
+    
+    return itemsWithDetails;
+  }
+
+  async addCartItem(insertItem: InsertCartItem): Promise<CartItem> {
+    const id = randomUUID();
+    const item: CartItem = {
+      ...insertItem,
+      id,
+      userId: insertItem.userId ?? null,
+      quantity: insertItem.quantity ?? 1,
+      createdAt: new Date().toISOString()
+    };
+    this.cartItems.set(id, item);
+    return item;
+  }
+
+  async updateCartItem(id: string, quantity: number): Promise<CartItem | undefined> {
+    const item = this.cartItems.get(id);
+    if (!item) return undefined;
+    const updated = { ...item, quantity };
+    this.cartItems.set(id, updated);
+    return updated;
+  }
+
+  async deleteCartItem(id: string): Promise<boolean> {
+    return this.cartItems.delete(id);
+  }
+
+  async clearCart(sessionId: string): Promise<void> {
+    const itemsToDelete = Array.from(this.cartItems.entries())
+      .filter(([_, item]) => item.sessionId === sessionId)
+      .map(([id, _]) => id);
+    itemsToDelete.forEach(id => this.cartItems.delete(id));
   }
 }
 
