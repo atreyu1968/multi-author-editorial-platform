@@ -35,6 +35,7 @@ function Router() {
       <Route path="/autor/:slug" component={AuthorPage} />
       <Route path="/checkout" component={Checkout} />
       <Route path="/pedido/:orderId" component={OrderConfirmation} />
+      <Route path="/order-confirmation/:orderId" component={OrderConfirmation} />
       <ProtectedRoute path="/admin" component={Admin} />
       <Route component={NotFound} />
     </Switch>
