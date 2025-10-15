@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Edit, Trash2, Upload, Copy, Download, QrCode } from "lucide-react";
+import { Plus, Edit, Trash2, Upload, Copy, Download, QrCode, Package, FileText, AlertCircle } from "lucide-react";
 import { useAdminAuthor } from "@/contexts/admin-author-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
@@ -79,6 +80,8 @@ export default function BookManagement() {
       directSaleEnabled: false,
       directSalePrice: 0,
       directSaleStock: 0,
+      saleFormatPhysical: false,
+      saleFormatDigital: false,
     },
   });
 
@@ -338,6 +341,8 @@ export default function BookManagement() {
       directSaleEnabled: false,
       directSalePrice: 0,
       directSaleStock: 0,
+      saleFormatPhysical: false,
+      saleFormatDigital: false,
     });
     setIsModalOpen(true);
   };
@@ -386,6 +391,8 @@ export default function BookManagement() {
       directSaleEnabled: book.directSaleEnabled || false,
       directSalePrice: book.directSalePrice || 0,
       directSaleStock: book.directSaleStock || 0,
+      saleFormatPhysical: book.saleFormatPhysical || false,
+      saleFormatDigital: book.saleFormatDigital || false,
     });
     setIsModalOpen(true);
   };
@@ -752,6 +759,139 @@ export default function BookManagement() {
                         )}
                       />
                     </div>
+                  </div>
+
+                  <div className="space-y-4 border-t pt-6 mt-6">
+                    <h3 className="text-lg font-semibold">Venta Directa</h3>
+                    <p className="text-sm text-muted-foreground">Configura la venta directa de este libro en la plataforma.</p>
+                    
+                    <FormField
+                      control={form.control}
+                      name="directSaleEnabled"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <Switch
+                              checked={field.value || false}
+                              onCheckedChange={field.onChange}
+                              data-testid="switch-direct-sale"
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>Habilitar venta directa</FormLabel>
+                            <FormDescription>
+                              Permite vender este libro directamente en la plataforma
+                            </FormDescription>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+
+                    {form.watch('directSaleEnabled') && (
+                      <div className="space-y-4 pl-4 border-l-2 border-primary/20">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <FormField
+                            control={form.control}
+                            name="directSalePrice"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Precio de Venta *</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="0.00"
+                                    data-testid="input-direct-sale-price"
+                                    value={field.value || 0}
+                                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="directSaleStock"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Stock Disponible *</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    type="number"
+                                    placeholder="0"
+                                    data-testid="input-direct-sale-stock"
+                                    value={field.value || 0}
+                                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        <div className="space-y-4">
+                          <h4 className="text-sm font-semibold">Formatos de Venta</h4>
+                          <p className="text-sm text-muted-foreground">Selecciona qué formatos quieres ofrecer</p>
+                          
+                          <FormField
+                            control={form.control}
+                            name="saleFormatPhysical"
+                            render={({ field }) => (
+                              <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                                <FormControl>
+                                  <Switch
+                                    checked={field.value || false}
+                                    onCheckedChange={field.onChange}
+                                    data-testid="switch-sale-physical"
+                                  />
+                                </FormControl>
+                                <div className="space-y-1 leading-none">
+                                  <FormLabel>Vender formato físico</FormLabel>
+                                  <FormDescription>
+                                    Libro físico enviado por correo
+                                  </FormDescription>
+                                </div>
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="saleFormatDigital"
+                            render={({ field }) => (
+                              <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                                <FormControl>
+                                  <Switch
+                                    checked={field.value || false}
+                                    onCheckedChange={field.onChange}
+                                    data-testid="switch-sale-digital"
+                                  />
+                                </FormControl>
+                                <div className="space-y-1 leading-none">
+                                  <FormLabel>Vender formato digital</FormLabel>
+                                  <FormDescription>
+                                    Archivo digital descargable (requiere configurar archivo digital abajo)
+                                  </FormDescription>
+                                </div>
+                              </FormItem>
+                            )}
+                          />
+
+                          {!form.watch("saleFormatPhysical") && !form.watch("saleFormatDigital") && (
+                            <Alert>
+                              <AlertCircle className="h-4 w-4" />
+                              <AlertTitle>Selecciona al menos un formato</AlertTitle>
+                              <AlertDescription>
+                                Debes habilitar al menos un formato de venta (físico o digital)
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-4 border-t pt-6 mt-6">

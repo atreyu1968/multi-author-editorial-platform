@@ -6,12 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { EditorialSettings } from "@shared/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertEditorialSettingsSchema } from "@shared/schema";
+import { getCurrencySymbol } from "@/lib/format-currency";
 import { useEffect } from "react";
 
 export default function EditorialSettingsManagement() {
@@ -60,6 +62,8 @@ export default function EditorialSettingsManagement() {
       paypalClientId: "",
       paypalClientSecret: "",
       paypalEnvironment: "sandbox",
+      currency: "USD",
+      currencySymbol: "$",
     },
   });
 
@@ -102,6 +106,8 @@ export default function EditorialSettingsManagement() {
         paypalClientId: settings.paypalClientId || "",
         paypalClientSecret: settings.paypalClientSecret || "",
         paypalEnvironment: settings.paypalEnvironment || "sandbox",
+        currency: settings.currency || "USD",
+        currencySymbol: settings.currencySymbol || "$",
       });
     }
   }, [settings, form]);
@@ -745,6 +751,67 @@ export default function EditorialSettingsManagement() {
             </TabsContent>
 
             <TabsContent value="paypal" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Configuración de Moneda</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="currency"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Moneda de Venta</FormLabel>
+                        <Select 
+                          value={field.value} 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            form.setValue("currencySymbol", getCurrencySymbol(value));
+                          }}
+                        >
+                          <FormControl>
+                            <SelectTrigger data-testid="select-currency">
+                              <SelectValue placeholder="Selecciona una moneda" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="USD">USD - Dólar Estadounidense ($)</SelectItem>
+                            <SelectItem value="EUR">EUR - Euro (€)</SelectItem>
+                            <SelectItem value="MXN">MXN - Peso Mexicano ($)</SelectItem>
+                            <SelectItem value="ARS">ARS - Peso Argentino ($)</SelectItem>
+                            <SelectItem value="COP">COP - Peso Colombiano ($)</SelectItem>
+                            <SelectItem value="CLP">CLP - Peso Chileno ($)</SelectItem>
+                            <SelectItem value="PEN">PEN - Sol Peruano (S/)</SelectItem>
+                            <SelectItem value="BRL">BRL - Real Brasileño (R$)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Moneda utilizada para mostrar precios en la plataforma
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="currencySymbol"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Símbolo de Moneda</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="$" data-testid="input-currency-symbol" />
+                        </FormControl>
+                        <FormDescription>
+                          Se actualizará automáticamente al cambiar la moneda
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+
               <Card>
                 <CardHeader>
                   <CardTitle>Configuración de PayPal</CardTitle>

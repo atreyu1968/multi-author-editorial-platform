@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
-import type { Order, Customer, Book } from "@shared/schema";
+import { formatCurrency } from "@/lib/format-currency";
+import type { Order, Customer, Book, EditorialSettings } from "@shared/schema";
 
 export default function OrderConfirmation() {
   const { orderId } = useParams();
@@ -18,6 +19,10 @@ export default function OrderConfirmation() {
   const { data: orderResponse, isLoading, error: orderError, refetch } = useQuery<Order & { customer?: Customer, downloadTokens?: Array<{ bookId: string, bookTitle: string, token: string, expiresAt: string }> }>({
     queryKey: [`/api/orders/${orderId}`],
     enabled: !!orderId,
+  });
+
+  const { data: settings } = useQuery<EditorialSettings>({
+    queryKey: ["/api/editorial-settings"],
   });
 
   const order = orderResponse;
@@ -227,12 +232,12 @@ export default function OrderConfirmation() {
                           Cantidad: {item.quantity}
                         </p>
                         <p className="text-sm text-muted-foreground" data-testid={`text-item-price-${index}`}>
-                          Precio unitario: ${item.price?.toFixed(2) || '0.00'} USD
+                          Precio unitario: {formatCurrency(item.price || 0, settings?.currency || "USD", settings?.currencySymbol || "$")}
                         </p>
                       </div>
                       <div className="text-right">
                         <p className="font-semibold" data-testid={`text-item-subtotal-${index}`}>
-                          ${((item.price || 0) * item.quantity).toFixed(2)} USD
+                          {formatCurrency((item.price || 0) * item.quantity, settings?.currency || "USD", settings?.currencySymbol || "$")}
                         </p>
                       </div>
                     </div>
@@ -270,7 +275,7 @@ export default function OrderConfirmation() {
 
           <div className="flex justify-between items-center text-lg font-bold" data-testid="section-total">
             <span data-testid="label-total">Total:</span>
-            <span data-testid="text-total">${order.totalAmount.toFixed(2)} USD</span>
+            <span data-testid="text-total">{formatCurrency(order.totalAmount, settings?.currency || "USD", settings?.currencySymbol || "$")}</span>
           </div>
 
           <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4" data-testid="section-next-steps">

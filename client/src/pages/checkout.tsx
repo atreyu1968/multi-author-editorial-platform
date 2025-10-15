@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { insertCustomerSchema, type Customer, type InsertOrder } from "@shared/schema";
+import { insertCustomerSchema, type Customer, type InsertOrder, type EditorialSettings } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ import { Loader2, ShoppingCart, Trash2, Plus, Minus, ArrowLeft } from "lucide-re
 import { Link, useLocation } from "wouter";
 import PayPalButton from "@/components/PayPalButton";
 import { SEOHead } from "@/components/seo/seo-head";
+import { formatCurrency } from "@/lib/format-currency";
 
 // Extend customer schema with proper validation
 const checkoutFormSchema = insertCustomerSchema.extend({
@@ -40,6 +41,10 @@ export default function Checkout() {
   const [customerData, setCustomerData] = useState<Customer | null>(null);
   const [orderCreated, setOrderCreated] = useState(false);
   const [preparingPayment, setPreparingPayment] = useState(false);
+
+  const { data: settings } = useQuery<EditorialSettings>({
+    queryKey: ["/api/editorial-settings"],
+  });
 
   const form = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutFormSchema),
@@ -332,7 +337,7 @@ export default function Checkout() {
                         {item.book?.title || item.merchandise?.title}
                       </h3>
                       <p className="text-sm text-muted-foreground" data-testid={`text-product-price-${item.id}`}>
-                        ${price.toFixed(2)} USD
+                        {formatCurrency(price, settings?.currency || "USD", settings?.currencySymbol || "$")}
                       </p>
                       <div className="flex items-center gap-2 mt-2">
                         <Button
@@ -357,7 +362,7 @@ export default function Checkout() {
                         </Button>
                       </div>
                       <p className="text-sm font-semibold mt-2" data-testid={`text-subtotal-${item.id}`}>
-                        Subtotal: ${subtotal.toFixed(2)} USD
+                        Subtotal: {formatCurrency(subtotal, settings?.currency || "USD", settings?.currencySymbol || "$")}
                       </p>
                     </div>
                     <Button
@@ -375,17 +380,17 @@ export default function Checkout() {
               <div className="border-t pt-4 space-y-2">
                 <div className="flex justify-between">
                   <span data-testid="text-subtotal-label">Subtotal:</span>
-                  <span data-testid="text-subtotal-value">${subtotal.toFixed(2)} USD</span>
+                  <span data-testid="text-subtotal-value">{formatCurrency(subtotal, settings?.currency || "USD", settings?.currencySymbol || "$")}</span>
                 </div>
                 {tax > 0 && (
                   <div className="flex justify-between">
                     <span data-testid="text-tax-label">Impuestos:</span>
-                    <span data-testid="text-tax-value">${tax.toFixed(2)} USD</span>
+                    <span data-testid="text-tax-value">{formatCurrency(tax, settings?.currency || "USD", settings?.currencySymbol || "$")}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-lg font-bold">
                   <span data-testid="text-total-label">Total:</span>
-                  <span data-testid="text-total-value">${total.toFixed(2)} USD</span>
+                  <span data-testid="text-total-value">{formatCurrency(total, settings?.currency || "USD", settings?.currencySymbol || "$")}</span>
                 </div>
               </div>
             </CardContent>
@@ -570,7 +575,7 @@ export default function Checkout() {
                     </p>
                     <PayPalButton 
                       amount={total.toFixed(2)} 
-                      currency="USD" 
+                      currency={settings?.currency || "USD"} 
                       intent="CAPTURE"
                     />
                     <Button

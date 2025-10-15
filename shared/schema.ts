@@ -113,6 +113,9 @@ export const books = pgTable("books", {
   digitalFileUrl: text("digital_file_url"),
   digitalFileFormat: text("digital_file_format"),
   isDigitalProduct: boolean("is_digital_product").default(false),
+  // Sale format configuration
+  saleFormatPhysical: boolean("sale_format_physical").default(false),
+  saleFormatDigital: boolean("sale_format_digital").default(false),
 });
 
 export const testimonials = pgTable("testimonials", {
@@ -237,6 +240,9 @@ export const editorialSettings = pgTable("editorial_settings", {
   paypalClientId: text("paypal_client_id"),
   paypalClientSecret: text("paypal_client_secret"),
   paypalEnvironment: text("paypal_environment").default("sandbox"), // "sandbox" | "production"
+  // Currency Configuration
+  currency: text("currency").notNull().default("USD"),
+  currencySymbol: text("currency_symbol").notNull().default("$"),
 });
 
 // Merchandise Products - products linked to authors, books, or series
@@ -411,6 +417,8 @@ export const insertBookSchema = createInsertSchema(books).omit({
   directSaleEnabled: z.boolean().optional(),
   directSalePrice: z.number().nullable().optional(),
   directSaleStock: z.number().int().nullable().optional(),
+  saleFormatPhysical: z.boolean().optional(),
+  saleFormatDigital: z.boolean().optional(),
 });
 
 export const insertTestimonialSchema = createInsertSchema(testimonials).omit({

@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Star, ExternalLink, Calendar, BookOpen, Award, Quote, MapPin, Users, Newspaper, Image as ImageIcon, Music, Video, ShoppingCart } from "lucide-react";
+import { ArrowLeft, Star, ExternalLink, Calendar, BookOpen, Award, Quote, MapPin, Users, Newspaper, Image as ImageIcon, Music, Video, ShoppingCart, Package, FileText } from "lucide-react";
 import { Link } from "wouter";
 import Navigation from "@/components/navigation";
 import Newsletter from "@/components/newsletter";
 import { SEOHead, generateStructuredData } from "@/components/seo/seo-head";
 import { buildBackgroundStyle } from "@/lib/utils";
-import type { Book } from "@shared/schema";
+import { formatCurrency } from "@/lib/format-currency";
+import type { Book, EditorialSettings } from "@shared/schema";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
@@ -60,6 +61,10 @@ export default function BookLanding() {
   const { data: series } = useQuery<any>({
     queryKey: ["/api/series", book?.seriesId],
     enabled: !!book?.seriesId,
+  });
+
+  const { data: settings } = useQuery<EditorialSettings>({
+    queryKey: ["/api/editorial-settings"],
   });
 
   const handleAddToCart = async () => {
@@ -185,6 +190,23 @@ export default function BookLanding() {
                       </Badge>
                     )}
                   </div>
+
+                  {book.directSaleEnabled && (
+                    <div className="flex gap-2 mb-4">
+                      {book.saleFormatPhysical && (
+                        <Badge variant="outline" data-testid="badge-format-physical">
+                          <Package className="h-3 w-3 mr-1" />
+                          Físico
+                        </Badge>
+                      )}
+                      {book.saleFormatDigital && (
+                        <Badge variant="outline" data-testid="badge-format-digital">
+                          <FileText className="h-3 w-3 mr-1" />
+                          Digital
+                        </Badge>
+                      )}
+                    </div>
+                  )}
                   
                   <h1 className="text-5xl lg:text-6xl font-serif font-bold mb-6 text-primary" data-testid="book-title">
                     {book.title}
@@ -200,7 +222,11 @@ export default function BookLanding() {
                 {book.directSaleEnabled && book.directSalePrice !== null && book.directSalePrice !== undefined && (
                   <div className="mb-6" data-testid={`text-price-${bookId}`}>
                     <div className="text-4xl font-bold text-primary">
-                      ${book.directSalePrice.toFixed(2)}
+                      {formatCurrency(
+                        book.directSalePrice, 
+                        settings?.currency || "USD", 
+                        settings?.currencySymbol || "$"
+                      )}
                     </div>
                     {book.isDigitalProduct && book.digitalFileFormat && (
                       <div className="text-lg text-muted-foreground mt-2" data-testid="text-digital-format">
