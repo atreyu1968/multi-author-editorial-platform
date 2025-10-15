@@ -76,6 +76,9 @@ export default function BookManagement() {
       digitalFileUrl: "",
       digitalFileFormat: "",
       isDigitalProduct: false,
+      directSaleEnabled: false,
+      directSalePrice: 0,
+      directSaleStock: 0,
     },
   });
 
@@ -329,6 +332,12 @@ export default function BookManagement() {
       seoKeywords: "",
       backgroundImageUrl: "",
       backgroundColor: "",
+      digitalFileUrl: "",
+      digitalFileFormat: "",
+      isDigitalProduct: false,
+      directSaleEnabled: false,
+      directSalePrice: 0,
+      directSaleStock: 0,
     });
     setIsModalOpen(true);
   };
@@ -371,6 +380,12 @@ export default function BookManagement() {
       seoKeywords: book.seoKeywords || "",
       backgroundImageUrl: book.backgroundImageUrl || "",
       backgroundColor: book.backgroundColor || "",
+      digitalFileUrl: book.digitalFileUrl || "",
+      digitalFileFormat: book.digitalFileFormat || "",
+      isDigitalProduct: book.isDigitalProduct || false,
+      directSaleEnabled: book.directSaleEnabled || false,
+      directSalePrice: book.directSalePrice || 0,
+      directSaleStock: book.directSaleStock || 0,
     });
     setIsModalOpen(true);
   };

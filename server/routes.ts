@@ -262,7 +262,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json(book);
     } catch (error) {
-      res.status(400).json({ message: "Invalid book data" });
+      console.error("Error updating book:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid book data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to update book" });
+      }
     }
   });
 

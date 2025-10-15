@@ -408,6 +408,9 @@ export const insertBookSchema = createInsertSchema(books).omit({
   digitalFileUrl: z.string().nullable().optional(),
   digitalFileFormat: z.string().nullable().optional(),
   isDigitalProduct: z.boolean().optional(),
+  directSaleEnabled: z.boolean().optional(),
+  directSalePrice: z.number().nullable().optional(),
+  directSaleStock: z.number().int().nullable().optional(),
 });
 
 export const insertTestimonialSchema = createInsertSchema(testimonials).omit({
