@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { Menu, X, Settings } from "lucide-react";
+import { Menu, X, Settings, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import type { Author, SiteSettings } from "@shared/schema";
 import { useUiText } from "@/contexts/ui-text-context";
+import { useCart } from "@/contexts/CartContext";
 
 interface NavigationProps {
   authorId?: string;
@@ -12,6 +14,7 @@ interface NavigationProps {
 
 export default function Navigation({ authorId }: NavigationProps = {}) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { totalItems } = useCart();
   
   const { data: author } = useQuery<Author>({
     queryKey: ["/api/authors", authorId],
@@ -78,6 +81,20 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
             <a href="#testimonios" className="text-muted-foreground hover:text-primary transition-colors" data-testid="nav-testimonios">
               {navTestimonials}
             </a>
+            <Link href="/checkout" data-testid="link-cart">
+              <Button variant="ghost" size="icon" className="relative">
+                <ShoppingCart className="h-5 w-5" />
+                {totalItems > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                    data-testid="badge-cart-count"
+                  >
+                    {totalItems}
+                  </Badge>
+                )}
+              </Button>
+            </Link>
             <Link href="/admin">
               <Button className="bg-primary text-primary-foreground hover:bg-primary/90" data-testid="button-admin">
                 <Settings className="h-4 w-4 mr-2" />
@@ -116,6 +133,21 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
             <a href="#testimonios" className="block py-2 text-muted-foreground hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
               {navTestimonials}
             </a>
+            <Link href="/checkout" className="block w-full text-left py-2 text-primary" onClick={() => setMobileMenuOpen(false)} data-testid="link-cart-mobile">
+              <div className="flex items-center">
+                <ShoppingCart className="h-4 w-4 mr-2 inline" />
+                Carrito
+                {totalItems > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="ml-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                    data-testid="badge-cart-count-mobile"
+                  >
+                    {totalItems}
+                  </Badge>
+                )}
+              </div>
+            </Link>
             <Link href="/admin" className="block w-full text-left py-2 text-primary" onClick={() => setMobileMenuOpen(false)}>
               <Settings className="h-4 w-4 mr-2 inline" />
               {navAdminPanel}

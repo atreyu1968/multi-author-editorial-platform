@@ -4,13 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Star, ExternalLink, Calendar, BookOpen, Award, Quote, MapPin, Users, Newspaper, Image as ImageIcon, Music, Video } from "lucide-react";
+import { ArrowLeft, Star, ExternalLink, Calendar, BookOpen, Award, Quote, MapPin, Users, Newspaper, Image as ImageIcon, Music, Video, ShoppingCart } from "lucide-react";
 import { Link } from "wouter";
 import Navigation from "@/components/navigation";
 import Newsletter from "@/components/newsletter";
 import { SEOHead, generateStructuredData } from "@/components/seo/seo-head";
 import { buildBackgroundStyle } from "@/lib/utils";
 import type { Book } from "@shared/schema";
+import { useCart } from "@/contexts/CartContext";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 // Helper functions for embedding
 function getYouTubeEmbedUrl(url: string): string {
@@ -45,6 +48,9 @@ function getSpotifyEmbedUrl(url: string): string {
 export default function BookLanding() {
   const [match, params] = useRoute("/libro/:id");
   const bookId = params?.id;
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const { addToCart } = useCart();
+  const { toast } = useToast();
 
   const { data: book, isLoading, error} = useQuery<Book>({
     queryKey: [`/api/books/${bookId}`],
@@ -55,6 +61,27 @@ export default function BookLanding() {
     queryKey: ["/api/series", book?.seriesId],
     enabled: !!book?.seriesId,
   });
+
+  const handleAddToCart = async () => {
+    if (!bookId) return;
+    
+    setIsAddingToCart(true);
+    try {
+      await addToCart("book", bookId, 1);
+      toast({
+        title: "¡Añadido al carrito!",
+        description: `"${book?.title}" ha sido añadido a tu carrito.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo añadir el libro al carrito. Intenta de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -165,9 +192,38 @@ export default function BookLanding() {
                   )}
                 </div>
 
+                {book.directSaleEnabled && book.directSalePrice !== null && book.directSalePrice !== undefined && (
+                  <div className="text-4xl font-bold text-primary mb-6" data-testid={`text-price-${bookId}`}>
+                    ${book.directSalePrice.toFixed(2)}
+                  </div>
+                )}
+
                 <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8">
+                  {book.directSaleEnabled && book.directSaleStock !== null && book.directSaleStock !== undefined && book.directSaleStock > 0 ? (
+                    <Button 
+                      onClick={handleAddToCart} 
+                      disabled={isAddingToCart}
+                      size="lg" 
+                      className="text-lg px-8 py-6" 
+                      data-testid={`button-add-to-cart-${bookId}`}
+                    >
+                      <ShoppingCart className="mr-2 h-5 w-5" />
+                      {isAddingToCart ? "Añadiendo..." : "Comprar ahora"}
+                    </Button>
+                  ) : book.directSaleEnabled && book.directSaleStock !== null && book.directSaleStock === 0 ? (
+                    <Button 
+                      disabled 
+                      size="lg" 
+                      variant="secondary"
+                      className="text-lg px-8 py-6" 
+                      data-testid={`button-out-of-stock-${bookId}`}
+                    >
+                      Agotado
+                    </Button>
+                  ) : null}
+                  
                   {book.amazonUrl && (
-                    <Button asChild size="lg" className="text-lg px-8 py-6" data-testid="button-amazon">
+                    <Button asChild size="lg" variant={book.directSaleEnabled ? "outline" : "default"} className="text-lg px-8 py-6" data-testid="button-amazon">
                       <a href={book.amazonUrl} target="_blank" rel="noopener noreferrer">
                         <ExternalLink className="mr-2 h-5 w-5" />
                         {book.landingCTA || "Comprar en Amazon"}
@@ -180,12 +236,6 @@ export default function BookLanding() {
                     </a>
                   </Button>
                 </div>
-
-                {book.price && (
-                  <div className="text-4xl font-bold text-primary mb-4">
-                    ${book.price.toFixed(2)}
-                  </div>
-                )}
               </div>
             </div>
           </div>
