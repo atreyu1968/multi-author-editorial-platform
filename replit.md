@@ -100,3 +100,23 @@ Preferred communication style: Simple, everyday language.
 - **File Upload Fix**: Fixed image upload functionality by adding Uppy CSS imports (@uppy/core/css/style.min.css and @uppy/dashboard/css/style.min.css) to main.tsx, enabling the upload modal to display and function correctly
 - **Admin Panel Menu Reorganization**: Separated sidebar menu into two clear sections - "Autor Seleccionado" (author-specific options: Dashboard, Libros, Biografía, Testimonios, Blog, Textos del Sitio, Configuración) and "Editorial (Global)" (editorial-wide options: Series, Autores, Página Editorial, Ayuda) with visual separators and section headers
 - **SEO Configuration for Authors & Books**: Added configurable SEO fields (seoTitle, seoDescription, seoKeywords) to both authors and books tables. Admin panels now include dedicated SEO sections for optimizing search engine visibility. If left empty, the system automatically generates SEO metadata from existing content (name/title, bio/description, etc.)
+
+### Background Customization System (October 15, 2025)
+- **Database Schema**: Added `background_image_url` and `background_color` fields (nullable text) to `editorial_settings`, `authors`, `book_series`, and `books` tables for customizable page backgrounds
+- **Admin Forms**: All management forms updated with "Personalización de Fondo" sections:
+  - Editorial Settings: In Branding tab
+  - Author Management: After SEO section
+  - Series Management: In Landing tab
+  - Book Management: In SEO tab
+- **Utility Function**: Created `buildBackgroundStyle()` in `client/src/lib/utils.ts` with:
+  - Input validation and sanitization (trimming whitespace)
+  - Security: Only accepts http://, https://, or relative (/) URLs to prevent XSS
+  - Returns `undefined` when no valid background set (allows theme fallback)
+  - Returns CSS properties object with backgroundImage, backgroundColor, backgroundSize, backgroundPosition, backgroundRepeat, backgroundAttachment
+- **Public Pages**: Dynamic background application on:
+  - `home.tsx`: Uses `editorial_settings` background fields
+  - `author-page.tsx`: Uses `authors` background fields
+  - `series-landing.tsx`: Uses `book_series` background fields
+  - `book-landing.tsx`: Uses `books` background fields
+- **Validation Fix**: Updated `insertBookSchema` to make `authorId`, SEO fields, and background fields optional/nullable (authorId added programmatically in mutation, preventing form validation blocking)
+- **Testing**: End-to-end tests confirm background customization works correctly - colors apply when set, pages fallback to default theme when cleared
