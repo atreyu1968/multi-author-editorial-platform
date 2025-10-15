@@ -36,6 +36,7 @@ Preferred communication style: Simple, everyday language.
 ### Admin Dashboard
 - Comprehensive management interfaces for authors, books, series, biographies, testimonials, blog posts, newsletter subscribers, site settings, UI text, and visual appearance.
 - QR code generation for book landing pages.
+- **Editorial Homepage Configuration**: Dedicated admin panel section ("Página Editorial") for managing global editorial homepage content including hero section, feature cards, SEO metadata, and footer information. All content is dynamically loaded from a single `editorial_settings` database record.
 
 ## External Dependencies
 
