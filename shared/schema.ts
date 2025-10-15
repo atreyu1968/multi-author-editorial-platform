@@ -251,6 +251,13 @@ export const insertBookSeriesSchema = createInsertSchema(bookSeries).omit({
 
 export const insertBookSchema = createInsertSchema(books).omit({
   id: true,
+}).extend({
+  authorId: z.string().optional(), // Made optional as it's added programmatically in the mutation
+  seoTitle: z.string().nullable().optional(),
+  seoDescription: z.string().nullable().optional(),
+  seoKeywords: z.string().nullable().optional(),
+  backgroundImageUrl: z.string().nullable().optional(),
+  backgroundColor: z.string().nullable().optional(),
 });
 
 export const insertTestimonialSchema = createInsertSchema(testimonials).omit({
