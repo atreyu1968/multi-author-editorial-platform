@@ -25,44 +25,29 @@ export default function AnalyticsManagement() {
   const [endDate, setEndDate] = useState<Date | undefined>(new Date());
 
   const dateRangeParams = useMemo(() => {
-    const params = new URLSearchParams();
+    const params: Record<string, string> = {};
     if (startDate) {
-      params.append("startDate", format(startDate, "yyyy-MM-dd"));
+      params.startDate = format(startDate, "yyyy-MM-dd");
     }
     if (endDate) {
-      params.append("endDate", format(endDate, "yyyy-MM-dd"));
+      params.endDate = format(endDate, "yyyy-MM-dd");
     }
-    return params.toString();
+    return params;
   }, [startDate, endDate]);
 
   // Fetch metrics for summary and chart
   const { data: metrics = [], isLoading: metricsLoading } = useQuery<AnalyticsDailyMetrics[]>({
     queryKey: ["/api/analytics/metrics", dateRangeParams],
-    queryFn: async () => {
-      const response = await fetch(`/api/analytics/metrics?${dateRangeParams}`);
-      if (!response.ok) throw new Error("Failed to fetch metrics");
-      return response.json();
-    },
   });
 
   // Fetch top books
   const { data: topBooks = [], isLoading: booksLoading } = useQuery<TopBook[]>({
-    queryKey: ["/api/analytics/top-books", dateRangeParams],
-    queryFn: async () => {
-      const response = await fetch(`/api/analytics/top-books?${dateRangeParams}&limit=10`);
-      if (!response.ok) throw new Error("Failed to fetch top books");
-      return response.json();
-    },
+    queryKey: ["/api/analytics/top-books", { ...dateRangeParams, limit: 10 }],
   });
 
   // Fetch top authors
   const { data: topAuthors = [], isLoading: authorsLoading } = useQuery<TopAuthor[]>({
-    queryKey: ["/api/analytics/top-authors", dateRangeParams],
-    queryFn: async () => {
-      const response = await fetch(`/api/analytics/top-authors?${dateRangeParams}&limit=10`);
-      if (!response.ok) throw new Error("Failed to fetch top authors");
-      return response.json();
-    },
+    queryKey: ["/api/analytics/top-authors", { ...dateRangeParams, limit: 10 }],
   });
 
   // Calculate summary metrics (global metrics only)
