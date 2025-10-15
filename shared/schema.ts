@@ -131,6 +131,20 @@ export const newsletters = pgTable("newsletters", {
   subscribedAt: text("subscribed_at").default(sql`current_timestamp`),
 });
 
+// Customers - registered users with billing information
+export const customers = pgTable("customers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: text("email").notNull().unique(),
+  fullName: text("full_name").notNull(),
+  phone: text("phone"),
+  // Address stored as JSON: {street, city, state, zipCode, country}
+  billingAddress: text("billing_address"),
+  shippingAddress: text("shipping_address"),
+  // Newsletter subscription
+  isSubscribedToNewsletter: boolean("is_subscribed_to_newsletter").default(true),
+  createdAt: text("created_at").default(sql`current_timestamp`),
+});
+
 export const siteSettings = pgTable("site_settings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   authorId: varchar("author_id").notNull(),
@@ -249,9 +263,12 @@ export const orders = pgTable("orders", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   orderNumber: text("order_number").notNull().unique(),
   paypalOrderId: text("paypal_order_id"),
+  paypalPayerId: text("paypal_payer_id"),
   totalAmount: real("total_amount").notNull(),
   status: text("status").notNull().default("pending"), // "pending" | "completed" | "failed" | "cancelled"
-  // Customer information
+  // Customer reference (optional - allows guest checkout)
+  customerId: varchar("customer_id"), // Foreign key to customers table
+  // Customer information (for guest checkout or as backup)
   customerName: text("customer_name").notNull(),
   customerEmail: text("customer_email").notNull(),
   shippingAddress: text("shipping_address"), // JSON string
@@ -380,6 +397,11 @@ export const insertNewsletterSchema = createInsertSchema(newsletters).omit({
   subscribedAt: true,
 });
 
+export const insertCustomerSchema = createInsertSchema(customers).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertSiteSettingsSchema = createInsertSchema(siteSettings).omit({
   id: true,
 });
@@ -416,6 +438,9 @@ export type InsertTestimonial = z.infer<typeof insertTestimonialSchema>;
 
 export type Newsletter = typeof newsletters.$inferSelect;
 export type InsertNewsletter = z.infer<typeof insertNewsletterSchema>;
+
+export type Customer = typeof customers.$inferSelect;
+export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
 
 export type SiteSettings = typeof siteSettings.$inferSelect;
 export type InsertSiteSettings = z.infer<typeof insertSiteSettingsSchema>;
