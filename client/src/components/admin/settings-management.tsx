@@ -226,7 +226,8 @@ export default function SettingsManagement() {
       const results = await Promise.allSettled(
         filteredData.map(async ([key, value]) => {
           try {
-            const response = await apiRequest("PUT", `/api/settings/${key}`, { value, authorId: selectedAuthorId });
+            const stringValue = value != null ? String(value) : '';
+            const response = await apiRequest("PUT", `/api/settings/${key}`, { value: stringValue, authorId: selectedAuthorId });
             const result = await response.json();
             return { key, status: 'success', data: result };
           } catch (error: any) {

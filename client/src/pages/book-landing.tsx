@@ -96,9 +96,9 @@ export default function BookLanding() {
   return (
     <div className="bg-background text-foreground font-sans">
       <SEOHead
-        title={`${book.title} - Novela ${book.genre}`}
-        description={synopsis || `Descubre "${book.title}", una fascinante novela de ${book.genre.toLowerCase()} que te mantendrá enganchado desde la primera página.`}
-        keywords={[book.title, book.genre, "novela", "libro", "María González"]}
+        title={`${book.title}${book.genre ? ` - Novela ${book.genre}` : ''}`}
+        description={synopsis || `Descubre "${book.title}", una fascinante novela${book.genre ? ` de ${book.genre.toLowerCase()}` : ''} que te mantendrá enganchado desde la primera página.`}
+        keywords={[book.title, book.genre || '', "novela", "libro", "María González"].filter(Boolean)}
         ogType="book"
         ogImage={heroImage || undefined}
         ogImageAlt={`Portada de ${book.title}`}
