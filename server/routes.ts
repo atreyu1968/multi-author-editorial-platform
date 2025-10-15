@@ -18,6 +18,8 @@ import {
 import { z } from "zod";
 // Referenced from blueprint:javascript_object_storage
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+// Referenced from blueprint:javascript_paypal
+import { createPaypalOrder, capturePaypalOrder, loadPaypalDefault } from "./paypal";
 
 // Authentication middleware to protect admin routes
 function requireAuth(req: any, res: any, next: any) {
@@ -912,6 +914,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ message: "Failed to get top authors" });
     }
+  });
+
+  // PayPal routes - Referenced from blueprint:javascript_paypal
+  app.get("/paypal/setup", async (req, res) => {
+    await loadPaypalDefault(req, res);
+  });
+
+  app.post("/paypal/order", async (req, res) => {
+    // Request body should contain: { intent, amount, currency }
+    await createPaypalOrder(req, res);
+  });
+
+  app.post("/paypal/order/:orderID/capture", async (req, res) => {
+    await capturePaypalOrder(req, res);
   });
 
   const httpServer = createServer(app);

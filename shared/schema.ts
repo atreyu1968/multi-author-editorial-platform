@@ -229,6 +229,10 @@ export const editorialSettings = pgTable("editorial_settings", {
   // Background customization
   backgroundImageUrl: text("background_image_url"),
   backgroundColor: text("background_color"),
+  // PayPal Configuration
+  paypalClientId: text("paypal_client_id"),
+  paypalClientSecret: text("paypal_client_secret"),
+  paypalEnvironment: text("paypal_environment").default("sandbox"), // "sandbox" | "production"
 });
 
 // Merchandise Products - products linked to authors, books, or series
