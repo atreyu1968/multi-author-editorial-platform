@@ -23,7 +23,7 @@ export const authors = pgTable("authors", {
 
 export const bookSeries = pgTable("book_series", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  authorId: varchar("author_id").notNull(),
+  authorId: varchar("author_id"), // Nullable - series can have books from multiple authors
   title: text("title").notNull(),
   description: text("description").notNull(),
   genre: text("genre").notNull(),

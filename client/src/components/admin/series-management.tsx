@@ -60,19 +60,20 @@ export default function SeriesManagement() {
     },
   });
 
+  // Get all series (not filtered by author - series can have books from multiple authors)
   const { data: series = [] } = useQuery<BookSeries[]>({
-    queryKey: ["/api/book-series", selectedAuthorId],
-    enabled: !!selectedAuthorId,
+    queryKey: ["/api/book-series"],
   });
 
-  const { data: books = [] } = useQuery<Book[]>({
-    queryKey: ["/api/books", selectedAuthorId],
-    enabled: !!selectedAuthorId,
+  // Get all books to show which authors are in each series
+  const { data: allBooks = [] } = useQuery<Book[]>({
+    queryKey: ["/api/books"],
   });
 
   const createSeriesMutation = useMutation({
     mutationFn: async (seriesData: SeriesFormData) => {
-      const response = await apiRequest("POST", "/api/book-series", { ...seriesData, authorId: selectedAuthorId });
+      // Series are now global and can have books from multiple authors
+      const response = await apiRequest("POST", "/api/book-series", seriesData);
       return response.json();
     },
     onSuccess: () => {
@@ -80,7 +81,7 @@ export default function SeriesManagement() {
         title: "Serie creada",
         description: "La serie ha sido creada exitosamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/book-series", selectedAuthorId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/book-series"] });
       setIsModalOpen(false);
       form.reset();
     },
@@ -95,7 +96,7 @@ export default function SeriesManagement() {
 
   const updateSeriesMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: SeriesFormData }) => {
-      const response = await apiRequest("PUT", `/api/book-series/${id}`, { ...data, authorId: selectedAuthorId });
+      const response = await apiRequest("PUT", `/api/book-series/${id}`, data);
       return response.json();
     },
     onSuccess: () => {
@@ -103,7 +104,7 @@ export default function SeriesManagement() {
         title: "Serie actualizada",
         description: "La serie ha sido actualizada exitosamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/book-series", selectedAuthorId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/book-series"] });
       setIsModalOpen(false);
       setEditingSeries(null);
       form.reset();
@@ -126,7 +127,7 @@ export default function SeriesManagement() {
         title: "Serie eliminada",
         description: "La serie ha sido eliminada exitosamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/book-series", selectedAuthorId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/book-series"] });
     },
     onError: () => {
       toast({
@@ -173,7 +174,7 @@ export default function SeriesManagement() {
   };
 
   const getSeriesBookCount = (seriesId: string) => {
-    return books.filter(book => book.seriesId === seriesId).length;
+    return allBooks.filter((book: Book) => book.seriesId === seriesId).length;
   };
 
   const handleOpenAddModal = () => {

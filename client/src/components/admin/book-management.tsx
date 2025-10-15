@@ -76,9 +76,9 @@ export default function BookManagement() {
     enabled: !!selectedAuthorId,
   });
 
+  // Get all series (not filtered by author) since books from any author can be added to any series
   const { data: series = [] } = useQuery<BookSeries[]>({
-    queryKey: ["/api/book-series", selectedAuthorId],
-    enabled: !!selectedAuthorId,
+    queryKey: ["/api/book-series"],
   });
 
   const createBookMutation = useMutation({
@@ -92,6 +92,7 @@ export default function BookManagement() {
         description: "El libro ha sido creado exitosamente.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/books", selectedAuthorId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/book-series"] }); // Invalidate series as they may now include this book
       setIsModalOpen(false);
       form.reset();
     },
@@ -115,6 +116,7 @@ export default function BookManagement() {
         description: "El libro ha sido actualizado exitosamente.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/books", selectedAuthorId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/book-series"] }); // Invalidate series as they may now include this book
       setIsModalOpen(false);
       setEditingBook(null);
       form.reset();
