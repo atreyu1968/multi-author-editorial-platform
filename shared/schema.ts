@@ -149,6 +149,43 @@ export const uiTexts = pgTable("ui_texts", {
   uniqueKey: unique("ui_texts_unique_key").on(table.namespace, table.key, table.locale),
 }));
 
+export const editorialSettings = pgTable("editorial_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  // Hero Section
+  heroTitle: text("hero_title").notNull(),
+  heroSubtitle: text("hero_subtitle").notNull(),
+  heroPrimaryButtonText: text("hero_primary_button_text").notNull(),
+  heroSecondaryButtonText: text("hero_secondary_button_text").notNull(),
+  // What We Offer Section
+  offerSectionTitle: text("offer_section_title").notNull(),
+  offerSectionDescription: text("offer_section_description").notNull(),
+  // Feature Cards (3 cards)
+  feature1Title: text("feature1_title").notNull(),
+  feature1Description: text("feature1_description").notNull(),
+  feature1Icon: text("feature1_icon").notNull(),
+  feature2Title: text("feature2_title").notNull(),
+  feature2Description: text("feature2_description").notNull(),
+  feature2Icon: text("feature2_icon").notNull(),
+  feature3Title: text("feature3_title").notNull(),
+  feature3Description: text("feature3_description").notNull(),
+  feature3Icon: text("feature3_icon").notNull(),
+  // Featured Authors Section
+  featuredSectionTitle: text("featured_section_title").notNull(),
+  featuredSectionDescription: text("featured_section_description").notNull(),
+  // Footer
+  footerDescription: text("footer_description").notNull(),
+  footerEmail: text("footer_email").notNull(),
+  footerLocation: text("footer_location").notNull(),
+  footerInstagramUrl: text("footer_instagram_url"),
+  footerTwitterUrl: text("footer_twitter_url"),
+  footerFacebookUrl: text("footer_facebook_url"),
+  footerCopyright: text("footer_copyright").notNull(),
+  // SEO
+  seoTitle: text("seo_title").notNull(),
+  seoDescription: text("seo_description").notNull(),
+  seoKeywords: text("seo_keywords").notNull(),
+});
+
 export const insertAuthorSchema = createInsertSchema(authors).omit({
   id: true,
 }).extend({
@@ -194,6 +231,10 @@ export const insertUiTextSchema = createInsertSchema(uiTexts).omit({
   id: true,
 });
 
+export const insertEditorialSettingsSchema = createInsertSchema(editorialSettings).omit({
+  id: true,
+});
+
 export type Author = typeof authors.$inferSelect;
 export type InsertAuthor = z.infer<typeof insertAuthorSchema>;
 
@@ -220,3 +261,6 @@ export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
 
 export type UiText = typeof uiTexts.$inferSelect;
 export type InsertUiText = z.infer<typeof insertUiTextSchema>;
+
+export type EditorialSettings = typeof editorialSettings.$inferSelect;
+export type InsertEditorialSettings = z.infer<typeof insertEditorialSettingsSchema>;
