@@ -163,10 +163,11 @@ Preferred communication style: Simple, everyday language.
   - Line chart showing pageviews trend over time (using recharts)
   - Top books and top authors tables with images and view counts
   - Date range filters for custom reporting periods
+  - Uses shared TanStack Query fetcher with structured query keys (dateRangeParams as Record<string, string>)
 - **Data Aggregation**: Real-time metric aggregation on event tracking, entity-specific and global metrics, JOIN queries for entity name resolution
 - **Security**: All reporting endpoints protected with requireAuth middleware, tracking endpoints public for seamless UX
 - **Bug Fixes**: 
-  - Fixed Navigation, HeroSection, and AuthorBio components to use correct `/api/authors/${authorId}` endpoint
+  - Fixed dashboard queries to use shared fetcher instead of custom queryFn
   - Fixed books endpoints error by adding missing direct_sale columns to database
   - Fixed publicationDate ordering with NULLS LAST for proper sorting
 - **Testing**: E2E tests confirm tracking works correctly, dashboard displays real data, all metrics aggregate properly
