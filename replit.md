@@ -120,3 +120,21 @@ Preferred communication style: Simple, everyday language.
   - `book-landing.tsx`: Uses `books` background fields
 - **Validation Fix**: Updated `insertBookSchema` to make `authorId`, SEO fields, and background fields optional/nullable (authorId added programmatically in mutation, preventing form validation blocking)
 - **Testing**: End-to-end tests confirm background customization works correctly - colors apply when set, pages fallback to default theme when cleared
+
+### Latest Publications Carousel (October 15, 2025)
+- **Homepage Feature**: Added dynamic carousel displaying the latest published books on editorial homepage
+- **Database Schema**: Added `publication_date` field (nullable text) to `books` table for chronological sorting
+- **API Endpoint**: Created `GET /api/books/latest?limit={n}` endpoint:
+  - Returns most recent published books sorted by publication date descending
+  - Validates limit parameter (defaults to 6, validates positive integers)
+  - Filters only published books (isPublished = true)
+- **Carousel Component**: Implemented `LatestBooksCarousel` using embla-carousel-react library:
+  - Responsive design with navigation controls (previous/next buttons)
+  - Book cards display: cover image, title, author name, publication date, "Ver Detalles" button
+  - Links to individual book landing pages (`/libro/${bookId}`)
+  - Auto-scroll and smooth transitions
+- **Homepage Integration**: Carousel section positioned between "What We Offer" and "Featured Authors" sections
+- **Type Safety**: Fixed TypeScript compatibility issues across MemStorage and DatabaseStorage implementations:
+  - Ensured proper undefined to null conversion in create methods
+  - Resolved faviconUrl type compatibility in SEOHead component
+- **Testing**: End-to-end tests confirm carousel displays correctly, navigation works, and book detail links function properly
