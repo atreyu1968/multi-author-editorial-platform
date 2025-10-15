@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import EditorialNavigation from "@/components/editorial-navigation";
 import { SEOHead, generateStructuredData } from "@/components/seo/seo-head";
+import { buildBackgroundStyle } from "@/lib/utils";
 import type { Author, EditorialSettings } from "@shared/schema";
 
 // Icon mapping for dynamic feature icons
@@ -43,7 +44,7 @@ export default function Home() {
   };
 
   return (
-    <div className="bg-background text-foreground font-sans">
+    <div className="bg-background text-foreground font-sans" style={buildBackgroundStyle({ imageUrl: settings?.backgroundImageUrl, color: settings?.backgroundColor })}>
       <SEOHead
         title={settings?.seoTitle || `${settings?.name || "Editorial"} - Descubre Nuevas Voces en Literatura`}
         description={settings?.seoDescription || `Bienvenido a ${settings?.name || "nuestra editorial"}. Descubre talentosos autores y sus cautivadoras historias.`}

@@ -9,6 +9,7 @@ import { Link } from "wouter";
 import Navigation from "@/components/navigation";
 import Newsletter from "@/components/newsletter";
 import { SEOHead, generateStructuredData } from "@/components/seo/seo-head";
+import { buildBackgroundStyle } from "@/lib/utils";
 import type { BookSeries, Book } from "@shared/schema";
 
 function getYouTubeEmbedUrl(url: string): string {
@@ -94,7 +95,7 @@ export default function SeriesLanding() {
   const sortedBooks = [...books].sort((a, b) => (a.orderInSeries || 0) - (b.orderInSeries || 0));
 
   return (
-    <div className="bg-background text-foreground font-sans">
+    <div className="bg-background text-foreground font-sans" style={buildBackgroundStyle({ imageUrl: series?.backgroundImageUrl, color: series?.backgroundColor })}>
       <SEOHead
         title={`${series.title} - Serie de ${series.genre}`}
         description={series.description}

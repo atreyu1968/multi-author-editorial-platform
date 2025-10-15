@@ -9,6 +9,7 @@ import { Link } from "wouter";
 import Navigation from "@/components/navigation";
 import Newsletter from "@/components/newsletter";
 import { SEOHead, generateStructuredData } from "@/components/seo/seo-head";
+import { buildBackgroundStyle } from "@/lib/utils";
 import type { Book } from "@shared/schema";
 
 // Helper functions for embedding
@@ -94,7 +95,7 @@ export default function BookLanding() {
   const synopsis = book.landingSynopsis || book.description;
 
   return (
-    <div className="bg-background text-foreground font-sans">
+    <div className="bg-background text-foreground font-sans" style={buildBackgroundStyle({ imageUrl: book?.backgroundImageUrl, color: book?.backgroundColor })}>
       <SEOHead
         title={book.seoTitle || `${book.title}${book.genre ? ` - Novela ${book.genre}` : ''}`}
         description={book.seoDescription || synopsis || `Descubre "${book.title}", una fascinante novela${book.genre ? ` de ${book.genre.toLowerCase()}` : ''} que te mantendrá enganchado desde la primera página.`}

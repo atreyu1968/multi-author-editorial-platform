@@ -9,6 +9,7 @@ import Navigation from "@/components/navigation";
 import Newsletter from "@/components/newsletter";
 import { SEOHead, generateStructuredData } from "@/components/seo/seo-head";
 import { DynamicTheme } from "@/components/dynamic-theme";
+import { buildBackgroundStyle } from "@/lib/utils";
 import type { Author, BookSeries, Book, Testimonial } from "@shared/schema";
 import { useState } from "react";
 import { apiRequest } from "@/lib/queryClient";
@@ -110,7 +111,7 @@ export default function AuthorPage() {
 
   return (
     <DynamicTheme authorId={author.id}>
-      <div className="bg-background text-foreground font-sans">
+      <div className="bg-background text-foreground font-sans" style={buildBackgroundStyle({ imageUrl: author?.backgroundImageUrl, color: author?.backgroundColor })}>
         <SEOHead
           title={author.seoTitle || `${author.name} - Autor`}
           description={author.seoDescription || author.bioParagraph1.substring(0, 160)}
