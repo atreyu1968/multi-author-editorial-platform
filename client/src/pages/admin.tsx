@@ -99,139 +99,159 @@ function AdminContent() {
       <div className="flex">
         {/* Sidebar */}
         <div className="w-64 bg-muted p-6 min-h-[calc(100vh-88px)] border-r border-border">
-          <nav className="space-y-2">
-            <button 
-              onClick={() => setCurrentSection('dashboard')}
-              className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
-                currentSection === 'dashboard' 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'hover:bg-primary hover:text-primary-foreground'
-              }`}
-              data-testid="nav-dashboard"
-            >
-              <Home className="h-5 w-5" />
-              Dashboard
-            </button>
-            <button 
-              onClick={() => setCurrentSection('books')}
-              className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
-                currentSection === 'books' 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'hover:bg-primary hover:text-primary-foreground'
-              }`}
-              data-testid="nav-books"
-            >
-              <BookOpen className="h-5 w-5" />
-              Gestión de Libros
-            </button>
-            <button 
-              onClick={() => setCurrentSection('series')}
-              className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
-                currentSection === 'series' 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'hover:bg-primary hover:text-primary-foreground'
-              }`}
-              data-testid="nav-series"
-            >
-              <Users className="h-5 w-5" />
-              Series
-            </button>
-            <button 
-              onClick={() => setCurrentSection('authors')}
-              className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
-                currentSection === 'authors' 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'hover:bg-primary hover:text-primary-foreground'
-              }`}
-              data-testid="nav-authors"
-            >
-              <UserCircle className="h-5 w-5" />
-              Autores
-            </button>
-            <button 
-              onClick={() => setCurrentSection('bio')}
-              className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
-                currentSection === 'bio' 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'hover:bg-primary hover:text-primary-foreground'
-              }`}
-              data-testid="nav-bio"
-            >
-              <User className="h-5 w-5" />
-              Biografía
-            </button>
-            <button 
-              onClick={() => setCurrentSection('testimonials')}
-              className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
-                currentSection === 'testimonials' 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'hover:bg-primary hover:text-primary-foreground'
-              }`}
-              data-testid="nav-testimonials"
-            >
-              <Star className="h-5 w-5" />
-              Testimonios
-            </button>
-            <button 
-              onClick={() => setCurrentSection('blog')}
-              className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
-                currentSection === 'blog' 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'hover:bg-primary hover:text-primary-foreground'
-              }`}
-              data-testid="nav-blog"
-            >
-              <FileText className="h-5 w-5" />
-              Blog
-            </button>
-            <button 
-              onClick={() => setCurrentSection('ui-texts')}
-              className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
-                currentSection === 'ui-texts' 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'hover:bg-primary hover:text-primary-foreground'
-              }`}
-              data-testid="nav-ui-texts"
-            >
-              <Type className="h-5 w-5" />
-              Textos del Sitio
-            </button>
-            <button 
-              onClick={() => setCurrentSection('settings')}
-              className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
-                currentSection === 'settings' 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'hover:bg-primary hover:text-primary-foreground'
-              }`}
-              data-testid="nav-settings"
-            >
-              <Settings className="h-5 w-5" />
-              Configuración
-            </button>
-            <button 
-              onClick={() => setCurrentSection('editorial-settings')}
-              className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
-                currentSection === 'editorial-settings' 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'hover:bg-primary hover:text-primary-foreground'
-              }`}
-              data-testid="nav-editorial-settings"
-            >
-              <Building2 className="h-5 w-5" />
-              Página Editorial
-            </button>
-            <button 
-              onClick={() => setCurrentSection('help')}
-              className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
-                currentSection === 'help' 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'hover:bg-primary hover:text-primary-foreground'
-              }`}
-              data-testid="nav-help"
-            >
-              <HelpCircle className="h-5 w-5" />
-              Ayuda e Instrucciones
-            </button>
+          <nav className="space-y-4">
+            {/* Sección del Autor */}
+            <div>
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-4">
+                Autor Seleccionado
+              </h3>
+              <div className="space-y-1">
+                <button 
+                  onClick={() => setCurrentSection('dashboard')}
+                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
+                    currentSection === 'dashboard' 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'hover:bg-primary hover:text-primary-foreground'
+                  }`}
+                  data-testid="nav-dashboard"
+                >
+                  <Home className="h-5 w-5" />
+                  Dashboard
+                </button>
+                <button 
+                  onClick={() => setCurrentSection('books')}
+                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
+                    currentSection === 'books' 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'hover:bg-primary hover:text-primary-foreground'
+                  }`}
+                  data-testid="nav-books"
+                >
+                  <BookOpen className="h-5 w-5" />
+                  Libros
+                </button>
+                <button 
+                  onClick={() => setCurrentSection('bio')}
+                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
+                    currentSection === 'bio' 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'hover:bg-primary hover:text-primary-foreground'
+                  }`}
+                  data-testid="nav-bio"
+                >
+                  <User className="h-5 w-5" />
+                  Biografía
+                </button>
+                <button 
+                  onClick={() => setCurrentSection('testimonials')}
+                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
+                    currentSection === 'testimonials' 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'hover:bg-primary hover:text-primary-foreground'
+                  }`}
+                  data-testid="nav-testimonials"
+                >
+                  <Star className="h-5 w-5" />
+                  Testimonios
+                </button>
+                <button 
+                  onClick={() => setCurrentSection('blog')}
+                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
+                    currentSection === 'blog' 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'hover:bg-primary hover:text-primary-foreground'
+                  }`}
+                  data-testid="nav-blog"
+                >
+                  <FileText className="h-5 w-5" />
+                  Blog
+                </button>
+                <button 
+                  onClick={() => setCurrentSection('ui-texts')}
+                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
+                    currentSection === 'ui-texts' 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'hover:bg-primary hover:text-primary-foreground'
+                  }`}
+                  data-testid="nav-ui-texts"
+                >
+                  <Type className="h-5 w-5" />
+                  Textos del Sitio
+                </button>
+                <button 
+                  onClick={() => setCurrentSection('settings')}
+                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
+                    currentSection === 'settings' 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'hover:bg-primary hover:text-primary-foreground'
+                  }`}
+                  data-testid="nav-settings"
+                >
+                  <Settings className="h-5 w-5" />
+                  Configuración
+                </button>
+              </div>
+            </div>
+
+            {/* Separador */}
+            <div className="border-t border-border my-4"></div>
+
+            {/* Sección de la Editorial */}
+            <div>
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-4">
+                Editorial (Global)
+              </h3>
+              <div className="space-y-1">
+                <button 
+                  onClick={() => setCurrentSection('series')}
+                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
+                    currentSection === 'series' 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'hover:bg-primary hover:text-primary-foreground'
+                  }`}
+                  data-testid="nav-series"
+                >
+                  <Users className="h-5 w-5" />
+                  Series
+                </button>
+                <button 
+                  onClick={() => setCurrentSection('authors')}
+                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
+                    currentSection === 'authors' 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'hover:bg-primary hover:text-primary-foreground'
+                  }`}
+                  data-testid="nav-authors"
+                >
+                  <UserCircle className="h-5 w-5" />
+                  Autores
+                </button>
+                <button 
+                  onClick={() => setCurrentSection('editorial-settings')}
+                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
+                    currentSection === 'editorial-settings' 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'hover:bg-primary hover:text-primary-foreground'
+                  }`}
+                  data-testid="nav-editorial-settings"
+                >
+                  <Building2 className="h-5 w-5" />
+                  Página Editorial
+                </button>
+                <button 
+                  onClick={() => setCurrentSection('help')}
+                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
+                    currentSection === 'help' 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'hover:bg-primary hover:text-primary-foreground'
+                  }`}
+                  data-testid="nav-help"
+                >
+                  <HelpCircle className="h-5 w-5" />
+                  Ayuda
+                </button>
+              </div>
+            </div>
           </nav>
         </div>
 
