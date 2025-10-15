@@ -151,6 +151,9 @@ export const uiTexts = pgTable("ui_texts", {
 
 export const editorialSettings = pgTable("editorial_settings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  // Branding
+  logoUrl: text("logo_url"),
+  faviconUrl: text("favicon_url"),
   // Hero Section
   heroTitle: text("hero_title").notNull(),
   heroSubtitle: text("hero_subtitle").notNull(),
@@ -180,6 +183,8 @@ export const editorialSettings = pgTable("editorial_settings", {
   footerTwitterUrl: text("footer_twitter_url"),
   footerFacebookUrl: text("footer_facebook_url"),
   footerCopyright: text("footer_copyright").notNull(),
+  // Footer Navigation - stored as JSON array: [{label: string, url: string}]
+  footerQuickLinks: text("footer_quick_links").array(),
   // SEO
   seoTitle: text("seo_title").notNull(),
   seoDescription: text("seo_description").notNull(),

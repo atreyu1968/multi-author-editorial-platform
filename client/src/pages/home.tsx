@@ -50,6 +50,7 @@ export default function Home() {
         keywords={settings?.seoKeywords?.split(',').map(k => k.trim()) || ["editorial", "libros", "autores", "literatura"]}
         ogType="website"
         structuredData={generateStructuredData.website()}
+        faviconUrl={settings?.faviconUrl}
       />
       <EditorialNavigation />
       
@@ -233,7 +234,11 @@ export default function Home() {
           <div className="grid md:grid-cols-3 gap-8">
             <div>
               <div className="text-2xl font-serif font-bold text-primary mb-4">
-                Editorial
+                {settings?.logoUrl ? (
+                  <img src={settings.logoUrl} alt="Logo Editorial" className="h-10 object-contain" />
+                ) : (
+                  "Editorial"
+                )}
               </div>
               <p className="text-muted-foreground mb-4">
                 {settings?.footerDescription || "Descubriendo nuevas voces en la literatura."}
@@ -259,21 +264,36 @@ export default function Home() {
             <div>
               <h3 className="font-semibold text-primary mb-4">Enlaces Rápidos</h3>
               <ul className="space-y-2">
-                <li>
-                  <Link href="/" className="text-muted-foreground hover:text-primary transition-colors">
-                    Inicio
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/autores" className="text-muted-foreground hover:text-primary transition-colors">
-                    Nuestros Autores
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/admin" className="text-muted-foreground hover:text-primary transition-colors">
-                    Admin
-                  </Link>
-                </li>
+                {settings?.footerQuickLinks && settings.footerQuickLinks.length > 0 ? (
+                  settings.footerQuickLinks.map((linkStr, index) => {
+                    const [label, url] = linkStr.split('|');
+                    return label && url ? (
+                      <li key={index}>
+                        <Link href={url.trim()} className="text-muted-foreground hover:text-primary transition-colors">
+                          {label.trim()}
+                        </Link>
+                      </li>
+                    ) : null;
+                  })
+                ) : (
+                  <>
+                    <li>
+                      <Link href="/" className="text-muted-foreground hover:text-primary transition-colors">
+                        Inicio
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/autores" className="text-muted-foreground hover:text-primary transition-colors">
+                        Nuestros Autores
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/admin" className="text-muted-foreground hover:text-primary transition-colors">
+                        Admin
+                      </Link>
+                    </li>
+                  </>
+                )}
               </ul>
             </div>
             <div>

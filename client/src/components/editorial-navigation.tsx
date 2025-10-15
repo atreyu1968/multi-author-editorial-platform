@@ -3,6 +3,8 @@ import { Link } from "wouter";
 import { Menu, X, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUiText } from "@/contexts/ui-text-context";
+import { useQuery } from "@tanstack/react-query";
+import type { EditorialSettings } from "@shared/schema";
 
 export default function EditorialNavigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -11,13 +13,21 @@ export default function EditorialNavigation() {
   const navAuthors = useUiText("navigation", "authors", "Autores");
   const navAdmin = useUiText("navigation", "admin", "Admin");
 
+  const { data: settings } = useQuery<EditorialSettings>({
+    queryKey: ["/api/editorial-settings"],
+  });
+
   return (
     <nav className="bg-card/80 backdrop-blur-md border-b border-border sticky top-0 z-50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link href="/" className="text-2xl font-serif font-bold text-primary cursor-pointer" data-testid="header-title">
-              Editorial
+            <Link href="/" className="text-2xl font-serif font-bold text-primary cursor-pointer flex items-center" data-testid="header-title">
+              {settings?.logoUrl ? (
+                <img src={settings.logoUrl} alt="Logo Editorial" className="h-8 object-contain" />
+              ) : (
+                "Editorial"
+              )}
             </Link>
           </div>
           <div className="hidden md:flex items-center space-x-8">

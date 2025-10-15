@@ -15,6 +15,7 @@ export interface SEOProps {
   articleSection?: string;
   articleTags?: string[];
   structuredData?: object;
+  faviconUrl?: string;
 }
 
 interface SEOConfig {
@@ -53,7 +54,8 @@ export function SEOHead({
   articleModifiedTime,
   articleSection,
   articleTags = [],
-  structuredData
+  structuredData,
+  faviconUrl
 }: SEOProps) {
   const fullTitle = title 
     ? `${title} | ${seoConfig.siteName}`
@@ -76,6 +78,10 @@ export function SEOHead({
     // Remove existing canonical link
     const existingCanonical = document.querySelector('link[rel="canonical"]');
     if (existingCanonical) existingCanonical.remove();
+
+    // Remove existing favicon
+    const existingFavicon = document.querySelector('link[rel="icon"][data-seo="true"]');
+    if (existingFavicon) existingFavicon.remove();
 
     // Remove existing structured data
     const existingStructuredData = document.querySelector('script[type="application/ld+json"][data-seo="true"]');
@@ -148,6 +154,16 @@ export function SEOHead({
     canonical.setAttribute("href", currentUrl);
     document.head.appendChild(canonical);
 
+    // Add favicon if provided
+    if (faviconUrl) {
+      const favicon = document.createElement("link");
+      favicon.setAttribute("rel", "icon");
+      favicon.setAttribute("type", "image/x-icon");
+      favicon.setAttribute("href", faviconUrl);
+      favicon.setAttribute("data-seo", "true");
+      document.head.appendChild(favicon);
+    }
+
     // Add structured data
     if (structuredData) {
       const script = document.createElement("script");
@@ -164,6 +180,9 @@ export function SEOHead({
       
       const canonicalLink = document.querySelector('link[rel="canonical"]');
       if (canonicalLink) canonicalLink.remove();
+      
+      const faviconLink = document.querySelector('link[rel="icon"][data-seo="true"]');
+      if (faviconLink) faviconLink.remove();
       
       const structuredDataScript = document.querySelector('script[type="application/ld+json"][data-seo="true"]');
       if (structuredDataScript) structuredDataScript.remove();
@@ -183,7 +202,8 @@ export function SEOHead({
     articleSection,
     articleTags,
     structuredData,
-    title
+    title,
+    faviconUrl
   ]);
 
   return null; // This component doesn't render anything visible

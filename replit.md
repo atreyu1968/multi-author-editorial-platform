@@ -87,3 +87,10 @@ Preferred communication style: Simple, everyday language.
 - **Cache Management**: Book mutations invalidate both author-scoped `['/api/books', authorId]` and global `['/api/books']` queries for real-time updates
 - **Validation Schema**: Updated `insertBookSeriesSchema` to properly handle all nullable and optional fields
 - **Testing**: End-to-end tests confirm multi-author series creation, display, and book count updates work correctly across admin and public pages
+
+### Editorial Branding & Navigation Configuration (October 15, 2025)
+- **Logo Configuration**: Added support for editorial logo in header and footer via `editorial_settings.logo_url`
+- **Favicon Support**: Added favicon configuration via `editorial_settings.favicon_url`, dynamically injected via SEOHead component
+- **Footer Navigation**: Added configurable footer quick links stored as array in `editorial_settings.footer_quick_links` (format: "Label|URL" per line)
+- **Admin Interface**: New "Branding" tab in editorial settings allows configuration of logo, favicon, and footer menu links
+- **UI Updates**: Logo displays in EditorialNavigation header and footer, favicon updates dynamically when configured

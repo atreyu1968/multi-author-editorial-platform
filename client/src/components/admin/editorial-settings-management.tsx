@@ -24,6 +24,8 @@ export default function EditorialSettingsManagement() {
   const form = useForm({
     resolver: zodResolver(insertEditorialSettingsSchema.partial()),
     defaultValues: {
+      logoUrl: "",
+      faviconUrl: "",
       heroTitle: "",
       heroSubtitle: "",
       heroPrimaryButtonText: "",
@@ -48,6 +50,7 @@ export default function EditorialSettingsManagement() {
       footerTwitterUrl: "",
       footerFacebookUrl: "",
       footerCopyright: "",
+      footerQuickLinks: [],
       seoTitle: "",
       seoDescription: "",
       seoKeywords: "",
@@ -57,6 +60,8 @@ export default function EditorialSettingsManagement() {
   useEffect(() => {
     if (settings) {
       form.reset({
+        logoUrl: settings.logoUrl || "",
+        faviconUrl: settings.faviconUrl || "",
         heroTitle: settings.heroTitle,
         heroSubtitle: settings.heroSubtitle,
         heroPrimaryButtonText: settings.heroPrimaryButtonText,
@@ -81,6 +86,7 @@ export default function EditorialSettingsManagement() {
         footerTwitterUrl: settings.footerTwitterUrl || "",
         footerFacebookUrl: settings.footerFacebookUrl || "",
         footerCopyright: settings.footerCopyright,
+        footerQuickLinks: settings.footerQuickLinks || [],
         seoTitle: settings.seoTitle,
         seoDescription: settings.seoDescription,
         seoKeywords: settings.seoKeywords,
@@ -129,14 +135,92 @@ export default function EditorialSettingsManagement() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <Tabs defaultValue="hero" className="w-full">
-            <TabsList className="grid w-full grid-cols-5 mb-6">
+          <Tabs defaultValue="branding" className="w-full">
+            <TabsList className="grid w-full grid-cols-6 mb-6">
+              <TabsTrigger value="branding" data-testid="tab-branding">Branding</TabsTrigger>
               <TabsTrigger value="hero" data-testid="tab-hero">Hero</TabsTrigger>
               <TabsTrigger value="features" data-testid="tab-features">Características</TabsTrigger>
               <TabsTrigger value="authors" data-testid="tab-authors">Autores</TabsTrigger>
               <TabsTrigger value="footer" data-testid="tab-footer">Footer</TabsTrigger>
               <TabsTrigger value="seo" data-testid="tab-seo">SEO</TabsTrigger>
             </TabsList>
+
+            <TabsContent value="branding" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Logo y Favicon</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="logoUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>URL del Logo de la Editorial</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="https://... o /objects/..." data-testid="input-logo-url" />
+                        </FormControl>
+                        <FormDescription>
+                          Logo que aparecerá en el header de la página principal
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="faviconUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>URL del Favicon</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="https://... o /objects/..." data-testid="input-favicon-url" />
+                        </FormControl>
+                        <FormDescription>
+                          Icono que aparecerá en la pestaña del navegador (formato .ico, .png o .svg recomendado)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Enlaces del Footer</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="footerQuickLinks"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Enlaces Rápidos (uno por línea, formato: Texto|URL)</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            {...field} 
+                            value={field.value?.join('\n') || ''} 
+                            onChange={(e) => {
+                              const lines = e.target.value.split('\n').filter(line => line.trim());
+                              field.onChange(lines);
+                            }}
+                            placeholder={`Inicio|/\nNuestros Autores|/autores\nAdmin|/admin`}
+                            rows={5} 
+                            data-testid="input-footer-links" 
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Escribe cada enlace en una línea separada con el formato: Texto del enlace|URL
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
 
             <TabsContent value="hero" className="space-y-6">
               <Card>
