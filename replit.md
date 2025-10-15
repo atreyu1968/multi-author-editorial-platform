@@ -96,3 +96,4 @@ Preferred communication style: Simple, everyday language.
 - **UI Updates**: Logo displays in EditorialNavigation header and footer, favicon updates dynamically when configured
 - **Modal Improvements**: Fixed transparent background issue in AlertDialog components - now use solid backgrounds (white/dark gray)
 - **Color Scheme Update**: Updated primary color to warm ochre tone (HSL: 40 65% 50% light mode, 42 70% 58% dark mode) for improved visual consistency across admin panel and public pages
+- **File Upload Fix**: Fixed image upload functionality by adding Uppy CSS imports (@uppy/core/css/style.min.css and @uppy/dashboard/css/style.min.css) to main.tsx, enabling the upload modal to display and function correctly
