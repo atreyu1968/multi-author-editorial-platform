@@ -18,7 +18,7 @@ export default function EditorialSettingsManagement() {
   const { toast } = useToast();
 
   const { data: settings, isLoading } = useQuery<EditorialSettings>({
-    queryKey: ["/api/editorial-settings"],
+    queryKey: ["/api/editorial-settings/admin"],
   });
 
   const form = useForm({
@@ -51,12 +51,15 @@ export default function EditorialSettingsManagement() {
       footerTwitterUrl: "",
       footerFacebookUrl: "",
       footerCopyright: "",
-      footerQuickLinks: [],
+      footerQuickLinks: [] as string[],
       seoTitle: "",
       seoDescription: "",
       seoKeywords: "",
       backgroundImageUrl: "",
       backgroundColor: "",
+      paypalClientId: "",
+      paypalClientSecret: "",
+      paypalEnvironment: "sandbox",
     },
   });
 
@@ -90,12 +93,15 @@ export default function EditorialSettingsManagement() {
         footerTwitterUrl: settings.footerTwitterUrl || "",
         footerFacebookUrl: settings.footerFacebookUrl || "",
         footerCopyright: settings.footerCopyright,
-        footerQuickLinks: settings.footerQuickLinks || [],
+        footerQuickLinks: (settings.footerQuickLinks || []) as string[],
         seoTitle: settings.seoTitle,
         seoDescription: settings.seoDescription,
         seoKeywords: settings.seoKeywords,
         backgroundImageUrl: settings.backgroundImageUrl || "",
         backgroundColor: settings.backgroundColor || "",
+        paypalClientId: settings.paypalClientId || "",
+        paypalClientSecret: settings.paypalClientSecret || "",
+        paypalEnvironment: settings.paypalEnvironment || "sandbox",
       });
     }
   }, [settings, form]);
@@ -105,6 +111,7 @@ export default function EditorialSettingsManagement() {
       return await apiRequest("PUT", "/api/editorial-settings", data);
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/editorial-settings/admin"] });
       queryClient.invalidateQueries({ queryKey: ["/api/editorial-settings"] });
       toast({
         title: "Configuración actualizada",
@@ -142,13 +149,14 @@ export default function EditorialSettingsManagement() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <Tabs defaultValue="branding" className="w-full">
-            <TabsList className="grid w-full grid-cols-6 mb-6">
+            <TabsList className="grid w-full grid-cols-7 mb-6">
               <TabsTrigger value="branding" data-testid="tab-branding">Branding</TabsTrigger>
               <TabsTrigger value="hero" data-testid="tab-hero">Hero</TabsTrigger>
               <TabsTrigger value="features" data-testid="tab-features">Características</TabsTrigger>
               <TabsTrigger value="authors" data-testid="tab-authors">Autores</TabsTrigger>
               <TabsTrigger value="footer" data-testid="tab-footer">Footer</TabsTrigger>
               <TabsTrigger value="seo" data-testid="tab-seo">SEO</TabsTrigger>
+              <TabsTrigger value="paypal" data-testid="tab-paypal">PayPal</TabsTrigger>
             </TabsList>
 
             <TabsContent value="branding" className="space-y-6">
@@ -728,6 +736,73 @@ export default function EditorialSettingsManagement() {
                           <Input {...field} placeholder="editorial, libros, autores, literatura, novelas, escritores" data-testid="input-seo-keywords" />
                         </FormControl>
                         <FormDescription>Separadas por comas</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="paypal" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Configuración de PayPal</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="paypalClientId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>PayPal Client ID</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Client ID de PayPal" data-testid="input-paypal-client-id" />
+                        </FormControl>
+                        <FormDescription>
+                          El Client ID de tu cuenta de desarrollador de PayPal
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="paypalClientSecret"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>PayPal Client Secret</FormLabel>
+                        <FormControl>
+                          <Input {...field} type="password" placeholder="Client Secret de PayPal" data-testid="input-paypal-client-secret" />
+                        </FormControl>
+                        <FormDescription>
+                          El Client Secret de tu cuenta de desarrollador de PayPal (se mantendrá privado)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="paypalEnvironment"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Entorno de PayPal</FormLabel>
+                        <FormControl>
+                          <select 
+                            {...field} 
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            data-testid="select-paypal-environment"
+                          >
+                            <option value="sandbox">Sandbox (Pruebas)</option>
+                            <option value="production">Production (Producción)</option>
+                          </select>
+                        </FormControl>
+                        <FormDescription>
+                          Usa "Sandbox" para pruebas y "Production" cuando estés listo para aceptar pagos reales
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}

@@ -674,7 +674,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Editorial Settings routes
+  // Public endpoint - excludes sensitive PayPal credentials
   app.get("/api/editorial-settings", async (req, res) => {
+    try {
+      const settings = await storage.getEditorialSettings();
+      if (!settings) {
+        res.status(404).json({ message: "Editorial settings not found" });
+        return;
+      }
+      // Remove sensitive PayPal credentials from public response
+      const { paypalClientId, paypalClientSecret, paypalEnvironment, ...publicSettings } = settings;
+      res.json(publicSettings);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get editorial settings" });
+    }
+  });
+
+  // Protected admin endpoint - includes all fields including PayPal credentials
+  app.get("/api/editorial-settings/admin", requireAuth, async (req, res) => {
     try {
       const settings = await storage.getEditorialSettings();
       if (!settings) {
