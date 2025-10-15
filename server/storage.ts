@@ -16,7 +16,9 @@ import {
   type BlogPost,
   type InsertBlogPost,
   type UiText,
-  type InsertUiText
+  type InsertUiText,
+  type EditorialSettings,
+  type InsertEditorialSettings
 } from "@shared/schema";
 import { randomUUID, scrypt, randomBytes, scryptSync } from "crypto";
 import { promisify } from "util";
@@ -94,6 +96,10 @@ export interface IStorage {
   getUiTextById(id: string): Promise<UiText | undefined>;
   updateUiText(id: string, text: Partial<InsertUiText>): Promise<UiText | undefined>;
   upsertUiText(text: InsertUiText): Promise<UiText>;
+
+  // Editorial Settings methods
+  getEditorialSettings(): Promise<EditorialSettings | undefined>;
+  updateEditorialSettings(settings: Partial<InsertEditorialSettings>): Promise<EditorialSettings | undefined>;
 
   // Session store for authentication
   sessionStore: session.Store;
@@ -809,6 +815,16 @@ export class MemStorage implements IStorage {
     const newText: UiText = { ...text, id, locale };
     this.uiTexts.set(id, newText);
     return newText;
+  }
+
+  async getEditorialSettings(): Promise<EditorialSettings | undefined> {
+    // MemStorage doesn't use editorial settings
+    return undefined;
+  }
+
+  async updateEditorialSettings(settings: Partial<InsertEditorialSettings>): Promise<EditorialSettings | undefined> {
+    // MemStorage doesn't use editorial settings
+    return undefined;
   }
 }
 

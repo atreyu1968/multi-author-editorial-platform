@@ -11,6 +11,7 @@ import {
   users,
   blogPosts,
   uiTexts,
+  editorialSettings,
   type Author,
   type InsertAuthor,
   type BookSeries,
@@ -28,7 +29,9 @@ import {
   type BlogPost,
   type InsertBlogPost,
   type UiText,
-  type InsertUiText
+  type InsertUiText,
+  type EditorialSettings,
+  type InsertEditorialSettings
 } from "@shared/schema";
 import { IStorage } from "./storage";
 import session from "express-session";
@@ -494,5 +497,24 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return upsertedText;
+  }
+
+  async getEditorialSettings(): Promise<EditorialSettings | undefined> {
+    const [settings] = await db.select().from(editorialSettings).limit(1);
+    return settings || undefined;
+  }
+
+  async updateEditorialSettings(settings: Partial<InsertEditorialSettings>): Promise<EditorialSettings | undefined> {
+    const existing = await this.getEditorialSettings();
+    if (!existing) {
+      return undefined;
+    }
+    
+    const [updated] = await db
+      .update(editorialSettings)
+      .set(settings)
+      .where(eq(editorialSettings.id, existing.id))
+      .returning();
+    return updated || undefined;
   }
 }
