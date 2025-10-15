@@ -160,6 +160,7 @@ export const uiTexts = pgTable("ui_texts", {
 export const editorialSettings = pgTable("editorial_settings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   // Branding
+  name: text("name").notNull(),
   logoUrl: text("logo_url"),
   faviconUrl: text("favicon_url"),
   // Hero Section
