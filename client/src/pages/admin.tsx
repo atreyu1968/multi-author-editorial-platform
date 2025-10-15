@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { ArrowLeft, Home, BookOpen, Users, User, Star, Settings, FileText, HelpCircle, Type, UserCircle, Building2 } from "lucide-react";
+import { ArrowLeft, Home, BookOpen, Users, User, Star, Settings, FileText, HelpCircle, Type, UserCircle, Building2, BarChart3 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DynamicTheme } from "@/components/dynamic-theme";
 import AdminDashboard from "@/components/admin/admin-dashboard";
@@ -14,9 +14,10 @@ import HelpInstructions from "@/components/admin/help-instructions";
 import UiTextsManagement from "@/components/admin/ui-texts-management";
 import AuthorManagement from "@/components/admin/author-management";
 import EditorialSettingsManagement from "@/components/admin/editorial-settings-management";
+import AnalyticsManagement from "@/components/admin/analytics-management";
 import { AdminAuthorProvider, useAdminAuthor } from "@/contexts/admin-author-context";
 
-type AdminSection = 'dashboard' | 'books' | 'series' | 'authors' | 'bio' | 'testimonials' | 'blog' | 'settings' | 'ui-texts' | 'editorial-settings' | 'help';
+type AdminSection = 'dashboard' | 'books' | 'series' | 'authors' | 'bio' | 'testimonials' | 'blog' | 'settings' | 'ui-texts' | 'editorial-settings' | 'analytics' | 'help';
 
 function AdminContent() {
   const [currentSection, setCurrentSection] = useState<AdminSection>('dashboard');
@@ -44,6 +45,8 @@ function AdminContent() {
         return <UiTextsManagement />;
       case 'editorial-settings':
         return <EditorialSettingsManagement />;
+      case 'analytics':
+        return <AnalyticsManagement />;
       case 'help':
         return <HelpInstructions />;
       default:
@@ -237,6 +240,18 @@ function AdminContent() {
                 >
                   <Building2 className="h-5 w-5" />
                   Página Editorial
+                </button>
+                <button 
+                  onClick={() => setCurrentSection('analytics')}
+                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
+                    currentSection === 'analytics' 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'hover:bg-primary hover:text-primary-foreground'
+                  }`}
+                  data-testid="nav-analytics"
+                >
+                  <BarChart3 className="h-5 w-5" />
+                  Analíticas
                 </button>
                 <button 
                   onClick={() => setCurrentSection('help')}

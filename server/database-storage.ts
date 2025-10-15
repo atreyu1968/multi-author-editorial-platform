@@ -12,6 +12,9 @@ import {
   blogPosts,
   uiTexts,
   editorialSettings,
+  analyticsSessions,
+  analyticsEvents,
+  analyticsDailyMetrics,
   type Author,
   type InsertAuthor,
   type BookSeries,
@@ -31,7 +34,13 @@ import {
   type UiText,
   type InsertUiText,
   type EditorialSettings,
-  type InsertEditorialSettings
+  type InsertEditorialSettings,
+  type AnalyticsSession,
+  type InsertAnalyticsSession,
+  type AnalyticsEvent,
+  type InsertAnalyticsEvent,
+  type AnalyticsDailyMetrics,
+  type InsertAnalyticsDailyMetrics
 } from "@shared/schema";
 import { IStorage } from "./storage";
 import session from "express-session";
@@ -180,7 +189,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(books)
       .where(eq(books.isPublished, true))
-      .orderBy(desc(books.publicationDate))
+      .orderBy(sql`publication_date DESC NULLS LAST`)
       .limit(limit);
   }
 
@@ -525,5 +534,260 @@ export class DatabaseStorage implements IStorage {
       .where(eq(editorialSettings.id, existing.id))
       .returning();
     return updated || undefined;
+  }
+
+  // Analytics methods
+  async createAnalyticsSession(insertSession: InsertAnalyticsSession): Promise<AnalyticsSession> {
+    const [session] = await db
+      .insert(analyticsSessions)
+      .values(insertSession)
+      .returning();
+    return session;
+  }
+
+  async getAnalyticsSession(sessionId: string): Promise<AnalyticsSession | undefined> {
+    const [session] = await db
+      .select()
+      .from(analyticsSessions)
+      .where(eq(analyticsSessions.sessionId, sessionId));
+    return session || undefined;
+  }
+
+  async updateAnalyticsSessionActivity(sessionId: string): Promise<void> {
+    const now = new Date().toISOString();
+    await db
+      .update(analyticsSessions)
+      .set({ lastActiveAt: now })
+      .where(eq(analyticsSessions.sessionId, sessionId));
+  }
+
+  async createAnalyticsEvent(insertEvent: InsertAnalyticsEvent): Promise<AnalyticsEvent> {
+    const [event] = await db
+      .insert(analyticsEvents)
+      .values(insertEvent)
+      .returning();
+    return event;
+  }
+
+  async getAnalyticsEvents(filters?: { sessionId?: string, entityType?: string, entityId?: string, startDate?: string, endDate?: string }): Promise<AnalyticsEvent[]> {
+    const conditions = [];
+    
+    if (filters?.sessionId) {
+      conditions.push(eq(analyticsEvents.sessionId, filters.sessionId));
+    }
+    if (filters?.entityType) {
+      conditions.push(eq(analyticsEvents.entityType, filters.entityType));
+    }
+    if (filters?.entityId) {
+      conditions.push(eq(analyticsEvents.entityId, filters.entityId));
+    }
+    if (filters?.startDate) {
+      conditions.push(sql`${analyticsEvents.createdAt} >= ${filters.startDate}`);
+    }
+    if (filters?.endDate) {
+      conditions.push(sql`${analyticsEvents.createdAt} <= ${filters.endDate}`);
+    }
+    
+    if (conditions.length === 0) {
+      return await db
+        .select()
+        .from(analyticsEvents)
+        .orderBy(desc(analyticsEvents.createdAt));
+    }
+    
+    return await db
+      .select()
+      .from(analyticsEvents)
+      .where(and(...conditions))
+      .orderBy(desc(analyticsEvents.createdAt));
+  }
+
+  async getDailyMetrics(filters?: { date?: string, entityType?: string, entityId?: string, startDate?: string, endDate?: string }): Promise<AnalyticsDailyMetrics[]> {
+    const conditions = [];
+    
+    if (filters?.date) {
+      conditions.push(eq(analyticsDailyMetrics.date, filters.date));
+    }
+    if (filters?.entityType) {
+      conditions.push(eq(analyticsDailyMetrics.entityType, filters.entityType));
+    }
+    if (filters?.entityId) {
+      conditions.push(eq(analyticsDailyMetrics.entityId, filters.entityId));
+    }
+    if (filters?.startDate) {
+      conditions.push(sql`${analyticsDailyMetrics.date} >= ${filters.startDate}`);
+    }
+    if (filters?.endDate) {
+      conditions.push(sql`${analyticsDailyMetrics.date} <= ${filters.endDate}`);
+    }
+    
+    if (conditions.length === 0) {
+      return await db
+        .select()
+        .from(analyticsDailyMetrics)
+        .orderBy(desc(analyticsDailyMetrics.date));
+    }
+    
+    return await db
+      .select()
+      .from(analyticsDailyMetrics)
+      .where(and(...conditions))
+      .orderBy(desc(analyticsDailyMetrics.date));
+  }
+
+  async incrementDailyMetric(date: string, entityType: string | null, entityId: string | null, metricType: string, value: number = 1): Promise<void> {
+    const now = new Date().toISOString();
+    
+    // Build the update object based on metricType
+    const updateObj: any = { updatedAt: now };
+    
+    switch (metricType) {
+      case 'totalPageviews':
+        updateObj.totalPageviews = sql`COALESCE(${analyticsDailyMetrics.totalPageviews}, 0) + ${value}`;
+        break;
+      case 'uniqueVisitors':
+        updateObj.uniqueVisitors = sql`COALESCE(${analyticsDailyMetrics.uniqueVisitors}, 0) + ${value}`;
+        break;
+      case 'totalSessions':
+        updateObj.totalSessions = sql`COALESCE(${analyticsDailyMetrics.totalSessions}, 0) + ${value}`;
+        break;
+      case 'newsletterSignups':
+        updateObj.newsletterSignups = sql`COALESCE(${analyticsDailyMetrics.newsletterSignups}, 0) + ${value}`;
+        break;
+      case 'bookDownloads':
+        updateObj.bookDownloads = sql`COALESCE(${analyticsDailyMetrics.bookDownloads}, 0) + ${value}`;
+        break;
+      case 'purchases':
+        updateObj.purchases = sql`COALESCE(${analyticsDailyMetrics.purchases}, 0) + ${value}`;
+        break;
+      case 'revenue':
+        updateObj.revenue = sql`COALESCE(${analyticsDailyMetrics.revenue}, 0) + ${value}`;
+        break;
+    }
+    
+    await db
+      .insert(analyticsDailyMetrics)
+      .values({
+        date,
+        entityType,
+        entityId,
+        entityName: null,
+        totalPageviews: metricType === 'totalPageviews' ? value : 0,
+        uniqueVisitors: metricType === 'uniqueVisitors' ? value : 0,
+        totalSessions: metricType === 'totalSessions' ? value : 0,
+        newsletterSignups: metricType === 'newsletterSignups' ? value : 0,
+        bookDownloads: metricType === 'bookDownloads' ? value : 0,
+        purchases: metricType === 'purchases' ? value : 0,
+        revenue: metricType === 'revenue' ? value : 0,
+        avgSessionDuration: 0,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: [analyticsDailyMetrics.date, analyticsDailyMetrics.entityType, analyticsDailyMetrics.entityId],
+        set: updateObj,
+      });
+  }
+
+  async updateAvgSessionDuration(date: string, entityType: string | null, entityId: string | null, sessionDuration: number): Promise<void> {
+    const now = new Date().toISOString();
+    
+    // Get current metrics for this date/entity combination
+    const conditions = [
+      eq(analyticsDailyMetrics.date, date),
+      entityType ? eq(analyticsDailyMetrics.entityType, entityType) : isNull(analyticsDailyMetrics.entityType),
+      entityId ? eq(analyticsDailyMetrics.entityId, entityId) : isNull(analyticsDailyMetrics.entityId),
+    ];
+    
+    const [currentMetrics] = await db
+      .select()
+      .from(analyticsDailyMetrics)
+      .where(and(...conditions));
+    
+    if (currentMetrics) {
+      // Calculate new average: (old_avg * old_count + new_duration) / (old_count + 1)
+      const oldAvg = currentMetrics.avgSessionDuration || 0;
+      const oldCount = currentMetrics.totalSessions || 1;
+      const newAvg = (oldAvg * oldCount + sessionDuration) / (oldCount + 1);
+      
+      await db
+        .update(analyticsDailyMetrics)
+        .set({
+          avgSessionDuration: newAvg,
+          updatedAt: now,
+        })
+        .where(and(...conditions));
+    }
+  }
+
+  async hasSessionEventOnDate(sessionId: string, date: string): Promise<boolean> {
+    const dateStart = `${date}T00:00:00.000Z`;
+    const dateEnd = `${date}T23:59:59.999Z`;
+    
+    const [event] = await db
+      .select()
+      .from(analyticsEvents)
+      .where(
+        and(
+          eq(analyticsEvents.sessionId, sessionId),
+          sql`${analyticsEvents.createdAt} >= ${dateStart}`,
+          sql`${analyticsEvents.createdAt} <= ${dateEnd}`
+        )
+      )
+      .limit(1);
+    
+    return !!event;
+  }
+
+  async getTopBooks(limit: number = 10, startDate?: string, endDate?: string): Promise<any[]> {
+    const conditions = [eq(analyticsDailyMetrics.entityType, 'book')];
+    
+    if (startDate) {
+      conditions.push(sql`${analyticsDailyMetrics.date} >= ${startDate}`);
+    }
+    if (endDate) {
+      conditions.push(sql`${analyticsDailyMetrics.date} <= ${endDate}`);
+    }
+    
+    const result = await db
+      .select({
+        entityId: analyticsDailyMetrics.entityId,
+        entityName: books.title,
+        totalPageviews: sql<number>`SUM(COALESCE(${analyticsDailyMetrics.totalPageviews}, 0))`.as('total_pageviews'),
+      })
+      .from(analyticsDailyMetrics)
+      .leftJoin(books, eq(analyticsDailyMetrics.entityId, books.id))
+      .where(and(...conditions))
+      .groupBy(analyticsDailyMetrics.entityId, books.title)
+      .orderBy(desc(sql`total_pageviews`))
+      .limit(limit);
+    
+    return result;
+  }
+
+  async getTopAuthors(limit: number = 10, startDate?: string, endDate?: string): Promise<any[]> {
+    const conditions = [eq(analyticsDailyMetrics.entityType, 'author')];
+    
+    if (startDate) {
+      conditions.push(sql`${analyticsDailyMetrics.date} >= ${startDate}`);
+    }
+    if (endDate) {
+      conditions.push(sql`${analyticsDailyMetrics.date} <= ${endDate}`);
+    }
+    
+    const result = await db
+      .select({
+        entityId: analyticsDailyMetrics.entityId,
+        entityName: authors.name,
+        totalPageviews: sql<number>`SUM(COALESCE(${analyticsDailyMetrics.totalPageviews}, 0))`.as('total_pageviews'),
+      })
+      .from(analyticsDailyMetrics)
+      .leftJoin(authors, eq(analyticsDailyMetrics.entityId, authors.id))
+      .where(and(...conditions))
+      .groupBy(analyticsDailyMetrics.entityId, authors.name)
+      .orderBy(desc(sql`total_pageviews`))
+      .limit(limit);
+    
+    return result;
   }
 }

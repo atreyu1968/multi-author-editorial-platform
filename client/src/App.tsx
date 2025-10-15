@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { UiTextProvider } from "@/contexts/ui-text-context";
 import { DynamicTheme } from "@/components/dynamic-theme";
+import { AnalyticsProvider } from "@/components/analytics-provider";
 import Home from "@/pages/home";
 import Admin from "@/pages/admin";
 import AuthPage from "@/pages/auth-page";
@@ -38,16 +39,18 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <DynamicTheme>
-        <UiTextProvider locale="es-ES">
-          <AuthProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Router />
-            </TooltipProvider>
-          </AuthProvider>
-        </UiTextProvider>
-      </DynamicTheme>
+      <AnalyticsProvider>
+        <DynamicTheme>
+          <UiTextProvider locale="es-ES">
+            <AuthProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Router />
+              </TooltipProvider>
+            </AuthProvider>
+          </UiTextProvider>
+        </DynamicTheme>
+      </AnalyticsProvider>
     </QueryClientProvider>
   );
 }

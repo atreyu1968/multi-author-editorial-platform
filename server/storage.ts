@@ -18,7 +18,13 @@ import {
   type UiText,
   type InsertUiText,
   type EditorialSettings,
-  type InsertEditorialSettings
+  type InsertEditorialSettings,
+  type AnalyticsSession,
+  type InsertAnalyticsSession,
+  type AnalyticsEvent,
+  type InsertAnalyticsEvent,
+  type AnalyticsDailyMetrics,
+  type InsertAnalyticsDailyMetrics
 } from "@shared/schema";
 import { randomUUID, scrypt, randomBytes, scryptSync } from "crypto";
 import { promisify } from "util";
@@ -102,6 +108,23 @@ export interface IStorage {
   getEditorialSettings(): Promise<EditorialSettings | undefined>;
   updateEditorialSettings(settings: Partial<InsertEditorialSettings>): Promise<EditorialSettings | undefined>;
 
+  // Analytics methods
+  createAnalyticsSession(session: InsertAnalyticsSession): Promise<AnalyticsSession>;
+  getAnalyticsSession(sessionId: string): Promise<AnalyticsSession | undefined>;
+  updateAnalyticsSessionActivity(sessionId: string): Promise<void>;
+  
+  createAnalyticsEvent(event: InsertAnalyticsEvent): Promise<AnalyticsEvent>;
+  getAnalyticsEvents(filters?: { sessionId?: string, entityType?: string, entityId?: string, startDate?: string, endDate?: string }): Promise<AnalyticsEvent[]>;
+  
+  getDailyMetrics(filters?: { date?: string, entityType?: string, entityId?: string, startDate?: string, endDate?: string }): Promise<AnalyticsDailyMetrics[]>;
+  incrementDailyMetric(date: string, entityType: string | null, entityId: string | null, metricType: string, value?: number): Promise<void>;
+  updateAvgSessionDuration(date: string, entityType: string | null, entityId: string | null, sessionDuration: number): Promise<void>;
+  
+  hasSessionEventOnDate(sessionId: string, date: string): Promise<boolean>;
+  
+  getTopBooks(limit?: number, startDate?: string, endDate?: string): Promise<any[]>;
+  getTopAuthors(limit?: number, startDate?: string, endDate?: string): Promise<any[]>;
+
   // Session store for authentication
   sessionStore: session.Store;
 }
@@ -121,6 +144,9 @@ export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private blogPosts: Map<string, BlogPost>;
   private uiTexts: Map<string, UiText>;
+  private analyticsSessions: Map<string, AnalyticsSession>;
+  private analyticsEvents: Map<string, AnalyticsEvent>;
+  private analyticsDailyMetrics: Map<string, AnalyticsDailyMetrics>;
   sessionStore: session.Store;
 
   constructor() {
@@ -133,6 +159,9 @@ export class MemStorage implements IStorage {
     this.users = new Map();
     this.blogPosts = new Map();
     this.uiTexts = new Map();
+    this.analyticsSessions = new Map();
+    this.analyticsEvents = new Map();
+    this.analyticsDailyMetrics = new Map();
     
     // Initialize session store
     this.sessionStore = new MemoryStore({
@@ -879,6 +908,253 @@ export class MemStorage implements IStorage {
   async updateEditorialSettings(settings: Partial<InsertEditorialSettings>): Promise<EditorialSettings | undefined> {
     // MemStorage doesn't use editorial settings
     return undefined;
+  }
+
+  // Analytics methods
+  async createAnalyticsSession(insertSession: InsertAnalyticsSession): Promise<AnalyticsSession> {
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    const session: AnalyticsSession = {
+      ...insertSession,
+      id,
+      userId: insertSession.userId || null,
+      userAgent: insertSession.userAgent || null,
+      browser: insertSession.browser || null,
+      os: insertSession.os || null,
+      device: insertSession.device || null,
+      referrer: insertSession.referrer || null,
+      landingPage: insertSession.landingPage || null,
+      startedAt: now,
+      lastActiveAt: now,
+    };
+    this.analyticsSessions.set(session.sessionId, session);
+    return session;
+  }
+
+  async getAnalyticsSession(sessionId: string): Promise<AnalyticsSession | undefined> {
+    return Array.from(this.analyticsSessions.values()).find(s => s.sessionId === sessionId);
+  }
+
+  async updateAnalyticsSessionActivity(sessionId: string): Promise<void> {
+    const session = await this.getAnalyticsSession(sessionId);
+    if (session) {
+      session.lastActiveAt = new Date().toISOString();
+      this.analyticsSessions.set(session.sessionId, session);
+    }
+  }
+
+  async createAnalyticsEvent(insertEvent: InsertAnalyticsEvent): Promise<AnalyticsEvent> {
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    const event: AnalyticsEvent = {
+      ...insertEvent,
+      id,
+      pagePath: insertEvent.pagePath || null,
+      pageTitle: insertEvent.pageTitle || null,
+      entityType: insertEvent.entityType || null,
+      entityId: insertEvent.entityId || null,
+      entityName: insertEvent.entityName || null,
+      elementId: insertEvent.elementId || null,
+      elementText: insertEvent.elementText || null,
+      metadata: insertEvent.metadata || null,
+      createdAt: now,
+    };
+    this.analyticsEvents.set(id, event);
+    return event;
+  }
+
+  async getAnalyticsEvents(filters?: { sessionId?: string, entityType?: string, entityId?: string, startDate?: string, endDate?: string }): Promise<AnalyticsEvent[]> {
+    let events = Array.from(this.analyticsEvents.values());
+    
+    if (filters?.sessionId) {
+      events = events.filter(e => e.sessionId === filters.sessionId);
+    }
+    if (filters?.entityType) {
+      events = events.filter(e => e.entityType === filters.entityType);
+    }
+    if (filters?.entityId) {
+      events = events.filter(e => e.entityId === filters.entityId);
+    }
+    if (filters?.startDate) {
+      events = events.filter(e => e.createdAt >= filters.startDate!);
+    }
+    if (filters?.endDate) {
+      events = events.filter(e => e.createdAt <= filters.endDate!);
+    }
+    
+    return events.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async getDailyMetrics(filters?: { date?: string, entityType?: string, entityId?: string, startDate?: string, endDate?: string }): Promise<AnalyticsDailyMetrics[]> {
+    let metrics = Array.from(this.analyticsDailyMetrics.values());
+    
+    if (filters?.date) {
+      metrics = metrics.filter(m => m.date === filters.date);
+    }
+    if (filters?.entityType) {
+      metrics = metrics.filter(m => m.entityType === filters.entityType);
+    }
+    if (filters?.entityId) {
+      metrics = metrics.filter(m => m.entityId === filters.entityId);
+    }
+    if (filters?.startDate) {
+      metrics = metrics.filter(m => m.date >= filters.startDate!);
+    }
+    if (filters?.endDate) {
+      metrics = metrics.filter(m => m.date <= filters.endDate!);
+    }
+    
+    return metrics.sort((a, b) => b.date.localeCompare(a.date));
+  }
+
+  async incrementDailyMetric(date: string, entityType: string | null, entityId: string | null, metricType: string, value: number = 1): Promise<void> {
+    const key = `${date}_${entityType || 'global'}_${entityId || 'all'}`;
+    let metric = Array.from(this.analyticsDailyMetrics.values()).find(
+      m => m.date === date && m.entityType === entityType && m.entityId === entityId
+    );
+    
+    if (!metric) {
+      const id = randomUUID();
+      const now = new Date().toISOString();
+      metric = {
+        id,
+        date,
+        totalPageviews: 0,
+        uniqueVisitors: 0,
+        totalSessions: 0,
+        avgSessionDuration: 0,
+        entityType,
+        entityId,
+        entityName: null,
+        newsletterSignups: 0,
+        bookDownloads: 0,
+        purchases: 0,
+        revenue: 0,
+        createdAt: now,
+        updatedAt: now,
+      };
+      this.analyticsDailyMetrics.set(id, metric);
+    }
+    
+    const now = new Date().toISOString();
+    metric.updatedAt = now;
+    
+    switch (metricType) {
+      case 'totalPageviews':
+        metric.totalPageviews = (metric.totalPageviews || 0) + value;
+        break;
+      case 'uniqueVisitors':
+        metric.uniqueVisitors = (metric.uniqueVisitors || 0) + value;
+        break;
+      case 'totalSessions':
+        metric.totalSessions = (metric.totalSessions || 0) + value;
+        break;
+      case 'newsletterSignups':
+        metric.newsletterSignups = (metric.newsletterSignups || 0) + value;
+        break;
+      case 'bookDownloads':
+        metric.bookDownloads = (metric.bookDownloads || 0) + value;
+        break;
+      case 'purchases':
+        metric.purchases = (metric.purchases || 0) + value;
+        break;
+      case 'revenue':
+        metric.revenue = (metric.revenue || 0) + value;
+        break;
+    }
+    
+    this.analyticsDailyMetrics.set(metric.id, metric);
+  }
+
+  async updateAvgSessionDuration(date: string, entityType: string | null, entityId: string | null, sessionDuration: number): Promise<void> {
+    let metric = Array.from(this.analyticsDailyMetrics.values()).find(
+      m => m.date === date && m.entityType === entityType && m.entityId === entityId
+    );
+    
+    if (metric) {
+      const oldAvg = metric.avgSessionDuration || 0;
+      const oldCount = metric.totalSessions || 1;
+      metric.avgSessionDuration = (oldAvg * oldCount + sessionDuration) / (oldCount + 1);
+      metric.updatedAt = new Date().toISOString();
+      this.analyticsDailyMetrics.set(metric.id, metric);
+    }
+  }
+
+  async hasSessionEventOnDate(sessionId: string, date: string): Promise<boolean> {
+    const dateStart = new Date(`${date}T00:00:00.000Z`).getTime();
+    const dateEnd = new Date(`${date}T23:59:59.999Z`).getTime();
+    
+    const events = Array.from(this.analyticsEvents.values()).filter(
+      e => e.sessionId === sessionId && 
+           new Date(e.createdAt).getTime() >= dateStart && 
+           new Date(e.createdAt).getTime() <= dateEnd
+    );
+    
+    return events.length > 0;
+  }
+
+  async getTopBooks(limit: number = 10, startDate?: string, endDate?: string): Promise<any[]> {
+    let metrics = Array.from(this.analyticsDailyMetrics.values()).filter(m => m.entityType === 'book');
+    
+    if (startDate) {
+      metrics = metrics.filter(m => m.date >= startDate);
+    }
+    if (endDate) {
+      metrics = metrics.filter(m => m.date <= endDate);
+    }
+    
+    const bookMetrics = new Map<string, { entityId: string, entityName: string | null, totalPageviews: number }>();
+    
+    metrics.forEach(m => {
+      if (m.entityId) {
+        const existing = bookMetrics.get(m.entityId);
+        if (existing) {
+          existing.totalPageviews += (m.totalPageviews || 0);
+        } else {
+          bookMetrics.set(m.entityId, {
+            entityId: m.entityId,
+            entityName: m.entityName,
+            totalPageviews: m.totalPageviews || 0,
+          });
+        }
+      }
+    });
+    
+    return Array.from(bookMetrics.values())
+      .sort((a, b) => b.totalPageviews - a.totalPageviews)
+      .slice(0, limit);
+  }
+
+  async getTopAuthors(limit: number = 10, startDate?: string, endDate?: string): Promise<any[]> {
+    let metrics = Array.from(this.analyticsDailyMetrics.values()).filter(m => m.entityType === 'author');
+    
+    if (startDate) {
+      metrics = metrics.filter(m => m.date >= startDate);
+    }
+    if (endDate) {
+      metrics = metrics.filter(m => m.date <= endDate);
+    }
+    
+    const authorMetrics = new Map<string, { entityId: string, entityName: string | null, totalPageviews: number }>();
+    
+    metrics.forEach(m => {
+      if (m.entityId) {
+        const existing = authorMetrics.get(m.entityId);
+        if (existing) {
+          existing.totalPageviews += (m.totalPageviews || 0);
+        } else {
+          authorMetrics.set(m.entityId, {
+            entityId: m.entityId,
+            entityName: m.entityName,
+            totalPageviews: m.totalPageviews || 0,
+          });
+        }
+      }
+    });
+    
+    return Array.from(authorMetrics.values())
+      .sort((a, b) => b.totalPageviews - a.totalPageviews)
+      .slice(0, limit);
   }
 }
 

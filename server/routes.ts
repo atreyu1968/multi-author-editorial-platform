@@ -11,8 +11,11 @@ import {
   insertSiteSettingsSchema,
   insertBlogPostSchema,
   insertUiTextSchema,
-  insertEditorialSettingsSchema
+  insertEditorialSettingsSchema,
+  insertAnalyticsSessionSchema,
+  insertAnalyticsEventSchema
 } from "@shared/schema";
+import { z } from "zod";
 // Referenced from blueprint:javascript_object_storage
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 
@@ -693,6 +696,221 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(settings);
     } catch (error) {
       res.status(400).json({ message: "Invalid editorial settings data" });
+    }
+  });
+
+  // Analytics routes
+  app.post("/api/analytics/session", async (req, res) => {
+    try {
+      const validatedSession = insertAnalyticsSessionSchema.parse(req.body);
+      
+      // Check if session already exists
+      const existingSession = await storage.getAnalyticsSession(validatedSession.sessionId);
+      
+      if (existingSession) {
+        // Update last activity and calculate session duration
+        await storage.updateAnalyticsSessionActivity(validatedSession.sessionId);
+        
+        // Calculate session duration for metrics update
+        try {
+          const startedAt = new Date(existingSession.startedAt).getTime();
+          const now = Date.now();
+          const durationMinutes = Math.round((now - startedAt) / 1000 / 60);
+          
+          if (durationMinutes > 0) {
+            const today = new Date().toISOString().split('T')[0];
+            await storage.updateAvgSessionDuration(today, null, null, durationMinutes);
+          }
+        } catch (error) {
+          console.error('Failed to update session duration:', error);
+        }
+        
+        res.json(existingSession);
+        return;
+      }
+      
+      // Create new session
+      const session = await storage.createAnalyticsSession(validatedSession);
+      
+      // Increment total sessions metric (don't block if this fails)
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        await storage.incrementDailyMetric(today, null, null, 'totalSessions', 1);
+      } catch (error) {
+        console.error('Failed to increment totalSessions metric:', error);
+      }
+      
+      res.status(201).json(session);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid session data" });
+    }
+  });
+
+  app.post("/api/analytics/track", async (req, res) => {
+    try {
+      const validatedEvent = insertAnalyticsEventSchema.parse(req.body);
+      
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Check if this is the first event from this session today BEFORE creating the event
+      let isFirstEventToday = false;
+      try {
+        const hasEventToday = await storage.hasSessionEventOnDate(validatedEvent.sessionId, today);
+        isFirstEventToday = !hasEventToday;
+      } catch (error) {
+        console.error('Failed to check session event history:', error);
+      }
+      
+      // Update session activity
+      await storage.updateAnalyticsSessionActivity(validatedEvent.sessionId);
+      
+      // Create analytics event
+      const event = await storage.createAnalyticsEvent(validatedEvent);
+      
+      // Track unique visitors (only count once per session per day)
+      if (isFirstEventToday) {
+        try {
+          // This is the first event from this session today, increment unique visitors
+          await storage.incrementDailyMetric(today, null, null, 'uniqueVisitors', 1);
+          
+          // Also track entity-specific unique visitors if entity info is provided
+          if (validatedEvent.entityType && validatedEvent.entityId) {
+            await storage.incrementDailyMetric(
+              today,
+              validatedEvent.entityType,
+              validatedEvent.entityId,
+              'uniqueVisitors',
+              1
+            );
+          }
+        } catch (error) {
+          console.error('Failed to track unique visitors:', error);
+        }
+      }
+      
+      // Update daily metrics based on event type
+      try {
+        if (validatedEvent.eventType === 'pageview') {
+          await storage.incrementDailyMetric(today, null, null, 'totalPageviews', 1);
+          
+          // Also track entity-specific pageviews if entity info is provided
+          if (validatedEvent.entityType && validatedEvent.entityId) {
+            await storage.incrementDailyMetric(
+              today,
+              validatedEvent.entityType,
+              validatedEvent.entityId,
+              'totalPageviews',
+              1
+            );
+          }
+        } else if (validatedEvent.eventType === 'newsletter_signup') {
+          await storage.incrementDailyMetric(today, null, null, 'newsletterSignups', 1);
+          
+          // Also track entity-specific conversions if entity info is provided
+          if (validatedEvent.entityType && validatedEvent.entityId) {
+            await storage.incrementDailyMetric(
+              today,
+              validatedEvent.entityType,
+              validatedEvent.entityId,
+              'newsletterSignups',
+              1
+            );
+          }
+        } else if (validatedEvent.eventType === 'download') {
+          await storage.incrementDailyMetric(today, null, null, 'bookDownloads', 1);
+          
+          // Also track entity-specific conversions if entity info is provided
+          if (validatedEvent.entityType && validatedEvent.entityId) {
+            await storage.incrementDailyMetric(
+              today,
+              validatedEvent.entityType,
+              validatedEvent.entityId,
+              'bookDownloads',
+              1
+            );
+          }
+        } else if (validatedEvent.eventType === 'purchase') {
+          await storage.incrementDailyMetric(today, null, null, 'purchases', 1);
+          
+          // Also track entity-specific conversions if entity info is provided
+          if (validatedEvent.entityType && validatedEvent.entityId) {
+            await storage.incrementDailyMetric(
+              today,
+              validatedEvent.entityType,
+              validatedEvent.entityId,
+              'purchases',
+              1
+            );
+          }
+          
+          // Track revenue if metadata contains purchase amount
+          if (validatedEvent.metadata && typeof validatedEvent.metadata === 'object') {
+            const metadata = validatedEvent.metadata as any;
+            if (metadata.amount && typeof metadata.amount === 'number') {
+              await storage.incrementDailyMetric(today, null, null, 'revenue', metadata.amount);
+              
+              if (validatedEvent.entityType && validatedEvent.entityId) {
+                await storage.incrementDailyMetric(
+                  today,
+                  validatedEvent.entityType,
+                  validatedEvent.entityId,
+                  'revenue',
+                  metadata.amount
+                );
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to update metrics:', error);
+      }
+      
+      res.status(201).json(event);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid event data" });
+    }
+  });
+
+  app.get("/api/analytics/metrics", requireAuth, async (req, res) => {
+    try {
+      const filters = {
+        date: req.query.date as string | undefined,
+        entityType: req.query.entityType as string | undefined,
+        entityId: req.query.entityId as string | undefined,
+        startDate: req.query.startDate as string | undefined,
+        endDate: req.query.endDate as string | undefined,
+      };
+      
+      const metrics = await storage.getDailyMetrics(filters);
+      res.json(metrics);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get metrics" });
+    }
+  });
+
+  app.get("/api/analytics/top-books", requireAuth, async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+      const startDate = req.query.startDate as string | undefined;
+      const endDate = req.query.endDate as string | undefined;
+      
+      const topBooks = await storage.getTopBooks(limit, startDate, endDate);
+      res.json(topBooks);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get top books" });
+    }
+  });
+
+  app.get("/api/analytics/top-authors", requireAuth, async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+      const startDate = req.query.startDate as string | undefined;
+      const endDate = req.query.endDate as string | undefined;
+      
+      const topAuthors = await storage.getTopAuthors(limit, startDate, endDate);
+      res.json(topAuthors);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get top authors" });
     }
   });
 
