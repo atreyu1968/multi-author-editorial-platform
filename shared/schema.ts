@@ -198,6 +198,29 @@ export const insertAuthorSchema = createInsertSchema(authors).omit({
 
 export const insertBookSeriesSchema = createInsertSchema(bookSeries).omit({
   id: true,
+}).extend({
+  authorId: z.string().nullable().optional(),
+  isActive: z.boolean().optional(),
+  cardBackgroundImage: z.string().nullable().optional(),
+  landingHeroImage: z.string().nullable().optional(),
+  landingTagline: z.string().nullable().optional(),
+  landingWorldDescription: z.string().nullable().optional(),
+  landingCharacters: z.string().nullable().optional(),
+  landingReadingOrder: z.string().nullable().optional(),
+  landingThemes: z.array(z.string()).nullable().optional(),
+  promoConceptMap: z.string().nullable().optional(),
+  promoShowConceptMap: z.boolean().optional(),
+  promoFamilyTree: z.string().nullable().optional(),
+  promoShowFamilyTree: z.boolean().optional(),
+  promoPressNotes: z.array(z.string()).nullable().optional(),
+  promoShowPressNotes: z.boolean().optional(),
+  promoAdditionalMedia: z.array(z.string()).nullable().optional(),
+  promoShowAdditionalMedia: z.boolean().optional(),
+  promoSpotifyPlaylist: z.string().nullable().optional(),
+  promoShowSpotifyPlaylist: z.boolean().optional(),
+  promoYoutubeBooktrailer: z.string().nullable().optional(),
+  promoShowYoutubeBooktrailer: z.boolean().optional(),
+  amazonUrl: z.string().nullable().optional(),
 });
 
 export const insertBookSchema = createInsertSchema(books).omit({

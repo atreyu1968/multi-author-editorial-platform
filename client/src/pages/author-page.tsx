@@ -105,7 +105,7 @@ export default function AuthorPage() {
     );
   }
 
-  const activeSeries = (seriesWithBooks.data || []).filter((s: { series: BookSeries; books: Book[] }) => s.series.isActive);
+  const activeSeries = (seriesWithBooks.data || []).filter((s: { series: BookSeries; books: Book[] }) => s.series.isActive !== false);
   const publishedStandaloneBooks = standaloneBooks.filter(b => b.isPublished);
 
   return (
