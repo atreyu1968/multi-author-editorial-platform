@@ -23,6 +23,9 @@ export const authors = pgTable("authors", {
   seoTitle: text("seo_title"),
   seoDescription: text("seo_description"),
   seoKeywords: text("seo_keywords"),
+  // Background customization
+  backgroundImageUrl: text("background_image_url"),
+  backgroundColor: text("background_color"),
 });
 
 export const bookSeries = pgTable("book_series", {
@@ -54,6 +57,9 @@ export const bookSeries = pgTable("book_series", {
   promoShowSpotifyPlaylist: boolean("promo_show_spotify_playlist").default(true),
   promoYoutubeBooktrailer: text("promo_youtube_booktrailer"),
   promoShowYoutubeBooktrailer: boolean("promo_show_youtube_booktrailer").default(true),
+  // Background customization
+  backgroundImageUrl: text("background_image_url"),
+  backgroundColor: text("background_color"),
 });
 
 export const books = pgTable("books", {
@@ -95,6 +101,9 @@ export const books = pgTable("books", {
   seoTitle: text("seo_title"),
   seoDescription: text("seo_description"),
   seoKeywords: text("seo_keywords"),
+  // Background customization
+  backgroundImageUrl: text("background_image_url"),
+  backgroundColor: text("background_color"),
 });
 
 export const testimonials = pgTable("testimonials", {
@@ -198,6 +207,9 @@ export const editorialSettings = pgTable("editorial_settings", {
   seoTitle: text("seo_title").notNull(),
   seoDescription: text("seo_description").notNull(),
   seoKeywords: text("seo_keywords").notNull(),
+  // Background customization
+  backgroundImageUrl: text("background_image_url"),
+  backgroundColor: text("background_color"),
 });
 
 export const insertAuthorSchema = createInsertSchema(authors).omit({
