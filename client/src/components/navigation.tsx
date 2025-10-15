@@ -12,8 +12,10 @@ interface NavigationProps {
 
 export default function Navigation({ authorId }: NavigationProps = {}) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
   const { data: author } = useQuery<Author>({
-    queryKey: ["/api/author"]
+    queryKey: ["/api/authors", authorId],
+    enabled: !!authorId
   });
   
   const { data: settings = [] } = useQuery<SiteSettings[]>({
@@ -42,17 +44,21 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link href="/">
-              {logoUrl ? (
-                <img 
-                  src={logoUrl} 
-                  alt={author?.name || "Logo"} 
-                  className="h-10 object-contain"
-                  data-testid="header-logo"
-                />
-              ) : (
-                <div className="text-2xl font-serif font-bold text-primary" data-testid="header-title">
-                  {author?.name || commonLoading}
-                </div>
+              {authorId && (
+                <>
+                  {logoUrl ? (
+                    <img 
+                      src={logoUrl} 
+                      alt={author?.name || "Logo"} 
+                      className="h-10 object-contain"
+                      data-testid="header-logo"
+                    />
+                  ) : (
+                    <div className="text-2xl font-serif font-bold text-primary" data-testid="header-title">
+                      {author?.name || commonLoading}
+                    </div>
+                  )}
+                </>
               )}
             </Link>
           </div>

@@ -45,7 +45,7 @@ export function LatestBooksCarousel({ books }: LatestBooksCarouselProps) {
 
   return (
     <div className="relative">
-      <div className="overflow-hidden" ref={emblaRef}>
+      <div className="overflow-hidden px-6" ref={emblaRef}>
         <div className="flex gap-6">
           {books.map((book) => (
             <div
