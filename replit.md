@@ -1,8 +1,8 @@
-# Author Website
+# Multi-Author Editorial Management Platform
 
 ## Overview
 
-This is a full-stack web application for an author's personal website, built as a modern single-page application with an admin panel. The site showcases the author's books (both standalone and series), biography, testimonials, and includes a newsletter subscription system. The application features a clean, responsive design with a professional author portfolio layout.
+This is a full-stack web application for managing multiple authors (~30) within a single editorial platform. Built as a modern single-page application with a centralized admin panel, the site provides individual customizable landing pages for each author at `/autor/[slug]` URLs. Each author has their own books (standalone and series), biography, testimonials, newsletter system, blog, and completely customizable visual theme (colors, logo, favicon). The platform is managed by editorial staff, not individual authors, with all content centralized in a single PostgreSQL database with proper data scoping via `authorId` foreign keys.
 
 ## User Preferences
 
@@ -38,18 +38,38 @@ Preferred communication style: Simple, everyday language.
 - No complex authentication system implemented yet
 - Session management prepared with connect-pg-simple for future implementation
 
-### Component Architecture
-- **Modular component structure** with clear separation of concerns
-- **Admin dashboard** with dedicated management interfaces for:
-  - Books and book series management
-  - Author biography editing
-  - Testimonial management
-  - Newsletter subscriber management
-  - Site settings configuration
-  - **UI Text Personalization** - Complete customization of all visible text
-  - **Visual Personalization** - Logo, favicon, and color scheme customization
-- **Public-facing components** for author portfolio display
-- **Reusable UI components** from shadcn/ui library
+### Multi-Author Architecture
+- **Author Management System**:
+  - Centralized author CRUD operations in admin panel
+  - Authors table with `slug` field for URL routing (auto-generated from name)
+  - All content tables (books, series, testimonials, newsletters, blog_posts, site_settings) have `authorId` foreign key
+  - Admin context (`AdminAuthorContext`) for selecting current author with localStorage persistence
+  - Author dropdown in admin header for easy switching between authors
+  - Public author pages at `/autor/:slug` with proper SEO and 404 handling
+- **Per-Author Data Scoping**:
+  - All API routes support `?authorId=` query parameter for filtering
+  - Storage interface methods accept `authorId` parameter
+  - Admin components (books, series, blog, testimonials, settings) automatically scope to selected author
+  - Proper data isolation ensures authors only see their own content
+- **Per-Author Visual Themes**:
+  - Each author can have custom colors (primary, secondary, accent, background, text)
+  - Custom logo and favicon per author stored in object storage
+  - `DynamicTheme` component loads and applies author-specific CSS variables
+  - Homepage uses default theme; author pages use custom themes with proper CSS variable reset
+- **Component Architecture**:
+  - **Modular component structure** with clear separation of concerns
+  - **Admin dashboard** with dedicated management interfaces for:
+    - Author management (create, edit, delete authors)
+    - Books and book series management (scoped to selected author)
+    - Author biography editing
+    - Testimonial management
+    - Blog post management
+    - Newsletter subscriber management
+    - Site settings configuration (per-author theme customization)
+    - **UI Text Personalization** - Complete customization of all visible text
+    - **Visual Personalization** - Logo, favicon, and color scheme customization (per author)
+  - **Public-facing components** for author portfolio display
+  - **Reusable UI components** from shadcn/ui library
 
 ### API Design
 - RESTful endpoints for all major entities (authors, books, series, testimonials, newsletter)

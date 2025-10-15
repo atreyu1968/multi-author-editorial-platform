@@ -151,6 +151,12 @@ export const uiTexts = pgTable("ui_texts", {
 
 export const insertAuthorSchema = createInsertSchema(authors).omit({
   id: true,
+}).extend({
+  heroTitle: z.string(),
+  heroSubtitle: z.string(),
+  bioParagraph1: z.string(),
+  bioParagraph2: z.string(),
+  bioParagraph3: z.string(),
 });
 
 export const insertBookSeriesSchema = createInsertSchema(bookSeries).omit({

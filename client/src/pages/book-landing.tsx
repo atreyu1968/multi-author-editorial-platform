@@ -198,7 +198,11 @@ export default function BookLanding() {
                 Sinopsis
               </h2>
               <div className="prose prose-lg max-w-none leading-relaxed text-center">
-                <p className="text-xl">{synopsis}</p>
+                {synopsis ? (
+                  <p className="text-xl whitespace-pre-line">{synopsis}</p>
+                ) : (
+                  <p className="text-xl text-muted-foreground">Sinopsis no disponible</p>
+                )}
               </div>
             </div>
           </div>
