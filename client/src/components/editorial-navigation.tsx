@@ -1,0 +1,68 @@
+import { useState } from "react";
+import { Link } from "wouter";
+import { Menu, X, Settings } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useUiText } from "@/contexts/ui-text-context";
+
+export default function EditorialNavigation() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  const navHome = useUiText("navigation", "editorial_home", "Inicio");
+  const navAuthors = useUiText("navigation", "authors", "Autores");
+  const navAdmin = useUiText("navigation", "admin", "Admin");
+
+  return (
+    <nav className="bg-card/80 backdrop-blur-md border-b border-border sticky top-0 z-50">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
+          <div className="flex items-center">
+            <Link href="/" className="text-2xl font-serif font-bold text-primary cursor-pointer" data-testid="header-title">
+              Editorial
+            </Link>
+          </div>
+          <div className="hidden md:flex items-center space-x-8">
+            <Link href="/" className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="nav-home">
+              {navHome}
+            </Link>
+            <Link href="/autores" className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="nav-authors">
+              {navAuthors}
+            </Link>
+            <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90" data-testid="button-admin">
+              <Link href="/admin">
+                <Settings className="h-4 w-4 mr-2" />
+                {navAdmin}
+              </Link>
+            </Button>
+          </div>
+          <div className="md:hidden flex items-center">
+            <button 
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="text-muted-foreground hover:text-primary"
+              data-testid="button-mobile-menu"
+            >
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-card border-t border-border">
+          <div className="px-4 py-2 space-y-2">
+            <Link href="/" className="block py-2 text-muted-foreground hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+              {navHome}
+            </Link>
+            <Link href="/autores" className="block py-2 text-muted-foreground hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+              {navAuthors}
+            </Link>
+            <Link href="/admin" className="block w-full text-left py-2 text-primary" onClick={() => setMobileMenuOpen(false)}>
+              <Settings className="h-4 w-4 mr-2 inline" />
+              {navAdmin}
+            </Link>
+          </div>
+        </div>
+      )}
+    </nav>
+  );
+}

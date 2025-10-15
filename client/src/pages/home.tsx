@@ -1,47 +1,217 @@
-import Navigation from "@/components/navigation";
-import HeroSection from "@/components/hero-section";
-import BookSeries from "@/components/book-series";
-import StandaloneBooks from "@/components/standalone-books";
-import AuthorBio from "@/components/author-bio";
-import Testimonials from "@/components/testimonials";
-import Newsletter from "@/components/newsletter";
-import { SEOHead, generateStructuredData } from "@/components/seo/seo-head";
 import { useQuery } from "@tanstack/react-query";
+import { Link, useLocation } from "wouter";
+import { BookOpen, Users, ArrowRight, Sparkles, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import EditorialNavigation from "@/components/editorial-navigation";
+import { SEOHead, generateStructuredData } from "@/components/seo/seo-head";
 import type { Author } from "@shared/schema";
 
 export default function Home() {
-  const { data: author } = useQuery<Author>({
-    queryKey: ["/api/author"]
+  const [, setLocation] = useLocation();
+  const { data: authors = [], isLoading } = useQuery<Author[]>({
+    queryKey: ["/api/authors"],
   });
+
+  const activeAuthors = authors.filter(author => author.isActive);
+  const featuredAuthors = activeAuthors.slice(0, 4);
 
   return (
     <div className="bg-background text-foreground font-sans">
       <SEOHead
-        title={`${author?.name || "María González"} - Autora de Novelas Románticas y Suspenso`}
-        description={`Descubre las cautivadoras novelas de ${author?.name || "María González"}. Desde romances apasionados hasta misterios que te mantendrán despierto toda la noche. Explora mis series y libros independientes.`}
-        keywords={["novelas románticas", "thriller", "suspenso", "ficción", "bestseller", "autora española"]}
+        title="Editorial - Descubre Nuevas Voces en Literatura"
+        description="Bienvenido a nuestra editorial. Descubre talentosos autores y sus cautivadoras historias. Desde romance hasta thriller, tenemos el libro perfecto para ti."
+        keywords={["editorial", "libros", "autores", "literatura", "novelas", "escritores"]}
         ogType="website"
         structuredData={generateStructuredData.website()}
       />
-      <Navigation />
-      <HeroSection />
-      <BookSeries />
-      <StandaloneBooks />
-      <AuthorBio />
-      <Testimonials />
-      <Newsletter />
+      <EditorialNavigation />
       
+      {/* Hero Section */}
+      <section className="hero-gradient relative overflow-hidden">
+        <div className="absolute inset-0 bg-black/10"></div>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32 relative z-10">
+          <div className="max-w-4xl mx-auto text-center text-white">
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif font-bold mb-6 leading-tight">
+              Descubre Historias que<br />
+              <span className="text-accent">Transforman Vidas</span>
+            </h1>
+            <p className="text-xl md:text-2xl mb-8 opacity-90 max-w-3xl mx-auto leading-relaxed">
+              Una editorial comprometida con nuevas voces literarias. Conectamos lectores apasionados con autores excepcionales.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <Button 
+                className="bg-accent text-accent-foreground px-8 py-4 text-lg font-semibold hover:bg-accent/90 transition-all transform hover:scale-105 shadow-xl"
+                data-testid="button-explore-authors"
+                onClick={() => setLocation('/autores')}
+              >
+                <Users className="h-5 w-5 mr-2" />
+                Conocer Autores
+              </Button>
+              <Button 
+                variant="outline" 
+                className="bg-white/20 backdrop-blur-sm text-white border-2 border-white/30 px-8 py-4 text-lg font-semibold hover:bg-white/30 transition-all"
+                data-testid="button-featured-authors"
+                onClick={() => document.getElementById('autores-destacados')?.scrollIntoView({ behavior: 'smooth' })}
+              >
+                <Sparkles className="h-5 w-5 mr-2" />
+                Ver Destacados
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* What We Offer Section */}
+      <section className="py-20 bg-muted/30">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary mb-6">
+                ¿Qué Ofrecemos?
+              </h2>
+              <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+                Somos más que una editorial, somos un puente entre grandes historias y lectores ávidos
+              </p>
+            </div>
+            
+            <div className="grid md:grid-cols-3 gap-8">
+              <Card className="p-8 text-center bg-card border border-border rounded-xl shadow-lg hover:shadow-2xl transition-all">
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <BookOpen className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-2xl font-serif font-bold text-primary mb-4">
+                  Calidad Literaria
+                </h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  Seleccionamos cuidadosamente cada obra para garantizar historias que cautiven, emocionen y perduren.
+                </p>
+              </Card>
+              
+              <Card className="p-8 text-center bg-card border border-border rounded-xl shadow-lg hover:shadow-2xl transition-all">
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Users className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-2xl font-serif font-bold text-primary mb-4">
+                  Autores Diversos
+                </h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  Promovemos voces únicas con perspectivas frescas en diversos géneros literarios.
+                </p>
+              </Card>
+              
+              <Card className="p-8 text-center bg-card border border-border rounded-xl shadow-lg hover:shadow-2xl transition-all">
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Sparkles className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-2xl font-serif font-bold text-primary mb-4">
+                  Experiencia Única
+                </h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  Creamos conexiones significativas entre autores y lectores a través de contenido exclusivo.
+                </p>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Authors Section */}
+      <section id="autores-destacados" className="py-20 bg-background">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary mb-6">
+              Autores Destacados
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Conoce a algunos de los talentosos escritores que forman parte de nuestra editorial
+            </p>
+          </div>
+
+          {isLoading ? (
+            <div className="text-center py-12">
+              <div className="text-xl text-muted-foreground">Cargando autores...</div>
+            </div>
+          ) : featuredAuthors.length === 0 ? (
+            <div className="text-center py-12">
+              <User className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+              <p className="text-xl text-muted-foreground">
+                Próximamente agregaremos nuevos autores
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto mb-12">
+                {featuredAuthors.map((author) => (
+                  <Card 
+                    key={author.id} 
+                    className="bg-card rounded-xl shadow-lg border border-border overflow-hidden hover:shadow-2xl transition-all transform hover:scale-105"
+                    data-testid={`featured-author-${author.id}`}
+                  >
+                    <div className="relative h-64 bg-gradient-to-br from-primary/20 to-accent/20">
+                      {author.photo ? (
+                        <img 
+                          src={author.photo} 
+                          alt={`Foto de ${author.name}`}
+                          className="w-full h-full object-cover"
+                          data-testid={`featured-author-photo-${author.id}`}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <User className="h-24 w-24 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-6">
+                      <h3 className="text-xl font-serif font-bold text-primary mb-2" data-testid={`featured-author-name-${author.id}`}>
+                        {author.name}
+                      </h3>
+                      {author.heroTitle && (
+                        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                          {author.heroTitle}
+                        </p>
+                      )}
+                      <Button 
+                        variant="outline"
+                        className="w-full transition-all"
+                        data-testid={`button-view-featured-${author.id}`}
+                        onClick={() => setLocation(`/autor/${author.slug}`)}
+                      >
+                        Ver perfil
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+
+              {activeAuthors.length > 4 && (
+                <div className="text-center">
+                  <Button 
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 px-8 py-4 text-lg font-semibold transition-all transform hover:scale-105"
+                    data-testid="button-view-all-authors"
+                    onClick={() => setLocation('/autores')}
+                  >
+                    Ver Todos los Autores
+                    <ArrowRight className="h-5 w-5 ml-2" />
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="bg-muted py-12">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-3 gap-8">
             <div>
               <div className="text-2xl font-serif font-bold text-primary mb-4">
-                {author?.name || "Cargando..."}
+                Editorial
               </div>
               <p className="text-muted-foreground mb-4">
-                Autora bestseller especializada en romance, thriller y fantasía. 
-                Creando historias que tocan el corazón desde 2012.
+                Descubriendo nuevas voces en la literatura. Conectamos historias extraordinarias con lectores apasionados desde 2024.
               </p>
               <div className="flex space-x-4">
                 <a href="#" className="text-muted-foreground hover:text-primary transition-colors" data-testid="footer-instagram">
@@ -53,31 +223,38 @@ export default function Home() {
                 <a href="#" className="text-muted-foreground hover:text-primary transition-colors" data-testid="footer-facebook">
                   <i className="fab fa-facebook text-xl"></i>
                 </a>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors" data-testid="footer-amazon">
-                  <i className="fab fa-amazon text-xl"></i>
-                </a>
               </div>
             </div>
             <div>
               <h3 className="font-semibold text-primary mb-4">Enlaces Rápidos</h3>
               <ul className="space-y-2">
-                <li><a href="#series" className="text-muted-foreground hover:text-primary transition-colors">Series de Libros</a></li>
-                <li><a href="#standalone" className="text-muted-foreground hover:text-primary transition-colors">Libros Independientes</a></li>
-                <li><a href="#biografia" className="text-muted-foreground hover:text-primary transition-colors">Biografía</a></li>
-                <li><a href="#testimonios" className="text-muted-foreground hover:text-primary transition-colors">Reseñas</a></li>
+                <li>
+                  <Link href="/" className="text-muted-foreground hover:text-primary transition-colors">
+                    Inicio
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/autores" className="text-muted-foreground hover:text-primary transition-colors">
+                    Nuestros Autores
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/admin" className="text-muted-foreground hover:text-primary transition-colors">
+                    Admin
+                  </Link>
+                </li>
               </ul>
             </div>
             <div>
               <h3 className="font-semibold text-primary mb-4">Contacto</h3>
               <ul className="space-y-2 text-muted-foreground">
-                <li><i className="fas fa-envelope mr-2"></i>info@mariagonzalez.com</li>
-                <li><i className="fas fa-phone mr-2"></i>+34 600 123 456</li>
+                <li><i className="fas fa-envelope mr-2"></i>info@editorial.com</li>
                 <li><i className="fas fa-map-marker-alt mr-2"></i>Barcelona, España</li>
               </ul>
             </div>
           </div>
           <div className="border-t border-border mt-8 pt-8 text-center text-muted-foreground">
-            <p>&copy; 2024 {author?.name || "María González"}. Todos los derechos reservados.</p>
+            <p>&copy; 2024 Editorial. Todos los derechos reservados.</p>
           </div>
         </div>
       </footer>

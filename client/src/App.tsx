@@ -15,12 +15,14 @@ import BlogPost from "@/pages/blog-post";
 import BookLanding from "@/pages/book-landing";
 import SeriesLanding from "@/pages/series-landing";
 import AuthorPage from "@/pages/author-page";
+import AuthorsListPage from "@/pages/authors-list";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/autores" component={AuthorsListPage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/blog" component={BlogList} />
       <Route path="/blog/:id" component={BlogPost} />
