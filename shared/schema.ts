@@ -262,6 +262,67 @@ export const orders = pgTable("orders", {
   completedAt: text("completed_at"),
 });
 
+// Analytics - Event tracking system
+export const analyticsSessions = pgTable("analytics_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: text("session_id").notNull().unique(), // Browser-generated session ID
+  userId: varchar("user_id"), // For authenticated users (optional)
+  // Session metadata
+  userAgent: text("user_agent"),
+  browser: text("browser"),
+  os: text("os"),
+  device: text("device"), // "desktop" | "mobile" | "tablet"
+  referrer: text("referrer"),
+  landingPage: text("landing_page"),
+  // Timestamps
+  startedAt: text("started_at").default(sql`current_timestamp`),
+  lastActiveAt: text("last_active_at").default(sql`current_timestamp`),
+});
+
+export const analyticsEvents = pgTable("analytics_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: text("session_id").notNull(),
+  eventType: text("event_type").notNull(), // "pageview" | "click" | "download" | "newsletter_signup" | "purchase"
+  // Event details
+  pagePath: text("page_path"),
+  pageTitle: text("page_title"),
+  // Entity references (for book/author/series specific events)
+  entityType: text("entity_type"), // "book" | "author" | "series" | "merchandise" | null
+  entityId: varchar("entity_id"),
+  entityName: text("entity_name"), // Cached name for quick reports
+  // Interaction details
+  elementId: text("element_id"), // Button/link ID that was clicked
+  elementText: text("element_text"),
+  // Additional metadata (stored as JSON)
+  metadata: text("metadata"), // JSON string for additional event-specific data
+  // Timestamp
+  createdAt: text("created_at").default(sql`current_timestamp`),
+});
+
+export const analyticsDailyMetrics = pgTable("analytics_daily_metrics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  date: text("date").notNull(), // Format: YYYY-MM-DD
+  // Aggregated metrics
+  totalPageviews: integer("total_pageviews").default(0),
+  uniqueVisitors: integer("unique_visitors").default(0),
+  totalSessions: integer("total_sessions").default(0),
+  avgSessionDuration: real("avg_session_duration").default(0), // in seconds
+  // Entity-specific metrics (nullable for global metrics)
+  entityType: text("entity_type"), // "book" | "author" | "series" | null (global)
+  entityId: varchar("entity_id"),
+  entityName: text("entity_name"),
+  // Conversion metrics
+  newsletterSignups: integer("newsletter_signups").default(0),
+  bookDownloads: integer("book_downloads").default(0),
+  purchases: integer("purchases").default(0),
+  revenue: real("revenue").default(0),
+  // Timestamps
+  createdAt: text("created_at").default(sql`current_timestamp`),
+  updatedAt: text("updated_at").default(sql`current_timestamp`),
+}, (table) => ({
+  uniqueDateEntity: unique("analytics_daily_metrics_date_entity").on(table.date, table.entityType, table.entityId),
+}));
+
 export const insertAuthorSchema = createInsertSchema(authors).omit({
   id: true,
 }).extend({
@@ -396,3 +457,29 @@ export type InsertCartItem = z.infer<typeof insertCartItemSchema>;
 
 export type Order = typeof orders.$inferSelect;
 export type InsertOrder = z.infer<typeof insertOrderSchema>;
+
+export const insertAnalyticsSessionSchema = createInsertSchema(analyticsSessions).omit({
+  id: true,
+  startedAt: true,
+  lastActiveAt: true,
+});
+
+export const insertAnalyticsEventSchema = createInsertSchema(analyticsEvents).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertAnalyticsDailyMetricsSchema = createInsertSchema(analyticsDailyMetrics).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type AnalyticsSession = typeof analyticsSessions.$inferSelect;
+export type InsertAnalyticsSession = z.infer<typeof insertAnalyticsSessionSchema>;
+
+export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;
+export type InsertAnalyticsEvent = z.infer<typeof insertAnalyticsEventSchema>;
+
+export type AnalyticsDailyMetrics = typeof analyticsDailyMetrics.$inferSelect;
+export type InsertAnalyticsDailyMetrics = z.infer<typeof insertAnalyticsDailyMetricsSchema>;
