@@ -10,7 +10,8 @@ import {
   insertNewsletterSchema,
   insertSiteSettingsSchema,
   insertBlogPostSchema,
-  insertUiTextSchema
+  insertUiTextSchema,
+  insertEditorialSettingsSchema
 } from "@shared/schema";
 // Referenced from blueprint:javascript_object_storage
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
@@ -653,6 +654,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(text);
     } catch (error) {
       res.status(400).json({ message: "Invalid UI text data" });
+    }
+  });
+
+  // Editorial Settings routes
+  app.get("/api/editorial-settings", async (req, res) => {
+    try {
+      const settings = await storage.getEditorialSettings();
+      if (!settings) {
+        res.status(404).json({ message: "Editorial settings not found" });
+        return;
+      }
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get editorial settings" });
+    }
+  });
+
+  app.put("/api/editorial-settings", requireAuth, async (req, res) => {
+    try {
+      const validatedSettings = insertEditorialSettingsSchema.partial().parse(req.body);
+      const settings = await storage.updateEditorialSettings(validatedSettings);
+      if (!settings) {
+        res.status(404).json({ message: "Editorial settings not found" });
+        return;
+      }
+      res.json(settings);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid editorial settings data" });
     }
   });
 
