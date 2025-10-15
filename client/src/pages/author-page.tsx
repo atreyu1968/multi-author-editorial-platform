@@ -28,14 +28,14 @@ export default function AuthorPage() {
     enabled: !!slug,
   });
 
-  const { data: series = [], isLoading: seriesLoading } = useQuery<BookSeries[]>({
-    queryKey: ["/api/book-series", { authorId: author?.id }],
+  // Get all series (they can have books from multiple authors now)
+  const { data: allSeries = [], isLoading: seriesLoading } = useQuery<BookSeries[]>({
+    queryKey: ["/api/book-series"],
     queryFn: async () => {
-      const response = await fetch(`/api/book-series?authorId=${author?.id}`);
+      const response = await fetch(`/api/book-series`);
       if (!response.ok) throw new Error("Failed to fetch series");
       return response.json();
     },
-    enabled: !!author?.id,
   });
 
   const { data: standaloneBooks = [], isLoading: booksLoading } = useQuery<Book[]>({
@@ -58,21 +58,24 @@ export default function AuthorPage() {
     enabled: !!author?.id,
   });
 
-  // Fetch books for each series
+  // Fetch books for each series and filter to show only series that have books from this author
   const seriesWithBooks = useQuery({
-    queryKey: ["/api/books/series/all", { series: series.map(s => s.id) }],
+    queryKey: ["/api/books/series/all", { series: allSeries.map(s => s.id), authorId: author?.id }],
     queryFn: async () => {
       const results = await Promise.all(
-        series.map(async (s) => {
+        allSeries.map(async (s) => {
           const response = await fetch(`/api/books/series/${s.id}`);
           if (!response.ok) return { series: s, books: [] };
-          const books = await response.json();
-          return { series: s, books };
+          const books: Book[] = await response.json();
+          // Filter to show only books from this author
+          const authorBooks = books.filter(book => book.authorId === author?.id);
+          return { series: s, books: authorBooks };
         })
       );
-      return results;
+      // Only return series that have at least one book from this author
+      return results.filter(result => result.books.length > 0);
     },
-    enabled: series.length > 0,
+    enabled: allSeries.length > 0 && !!author?.id,
   });
 
   if (authorLoading) {
@@ -102,7 +105,7 @@ export default function AuthorPage() {
     );
   }
 
-  const activeSeries = series.filter(s => s.isActive);
+  const activeSeries = (seriesWithBooks.data || []).filter((s: { series: BookSeries; books: Book[] }) => s.series.isActive);
   const publishedStandaloneBooks = standaloneBooks.filter(b => b.isPublished);
 
   return (

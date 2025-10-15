@@ -32,6 +32,7 @@ Preferred communication style: Simple, everyday language.
 - **Visual Theming**: Each author can customize colors, logo, and favicon, applied dynamically.
 - **Content Personalization**: UI text customization system allowing all visible text to be edited via the admin panel, supporting multi-locale.
 - **Promotional Content**: System for adding optional promotional materials (concept maps, family trees, press notes, media, Spotify playlists, YouTube booktrailers) to books/series, with visibility toggles.
+- **Multi-Author Series/Collections**: Series are global entities that can contain books from multiple authors (e.g., anthologies, collaborative collections). The `authorId` field in `book_series` is nullable. Admin manages series globally, and author pages display series containing their books.
 
 ### Admin Dashboard
 - Comprehensive management interfaces for authors, books, series, biographies, testimonials, blog posts, newsletter subscribers, site settings, UI text, and visual appearance.

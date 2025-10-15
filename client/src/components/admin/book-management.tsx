@@ -92,6 +92,7 @@ export default function BookManagement() {
         description: "El libro ha sido creado exitosamente.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/books", selectedAuthorId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/books"] }); // Invalidate global books for series management
       queryClient.invalidateQueries({ queryKey: ["/api/book-series"] }); // Invalidate series as they may now include this book
       setIsModalOpen(false);
       form.reset();
@@ -116,6 +117,7 @@ export default function BookManagement() {
         description: "El libro ha sido actualizado exitosamente.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/books", selectedAuthorId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/books"] }); // Invalidate global books for series management
       queryClient.invalidateQueries({ queryKey: ["/api/book-series"] }); // Invalidate series as they may now include this book
       setIsModalOpen(false);
       setEditingBook(null);
@@ -140,6 +142,8 @@ export default function BookManagement() {
         description: "El libro ha sido eliminado exitosamente.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/books", selectedAuthorId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/books"] }); // Invalidate global books for series management
+      queryClient.invalidateQueries({ queryKey: ["/api/book-series"] }); // Invalidate series as the deleted book may have been in a series
     },
     onError: () => {
       toast({
