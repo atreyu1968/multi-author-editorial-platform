@@ -35,7 +35,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   // Fetch cart items from API
   const { data: items = [], isLoading } = useQuery<CartItemWithDetails[]>({
-    queryKey: ["/api/cart", sessionId],
+    queryKey: [`/api/cart/${sessionId}`],
   });
 
   // Add to cart mutation
@@ -53,7 +53,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cart", sessionId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/cart/${sessionId}`] });
     }
   });
 
@@ -63,7 +63,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return await apiRequest("PUT", `/api/cart/${itemId}`, { quantity });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cart", sessionId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/cart/${sessionId}`] });
     }
   });
 
@@ -73,7 +73,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return await apiRequest("DELETE", `/api/cart/${itemId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cart", sessionId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/cart/${sessionId}`] });
     }
   });
 
@@ -83,7 +83,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return await apiRequest("DELETE", `/api/cart/session/${sessionId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cart", sessionId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/cart/${sessionId}`] });
     }
   });
 
