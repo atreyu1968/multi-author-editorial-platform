@@ -57,6 +57,8 @@ export default function SeriesManagement() {
       promoShowSpotifyPlaylist: true,
       promoYoutubeBooktrailer: "",
       promoShowYoutubeBooktrailer: true,
+      backgroundImageUrl: "",
+      backgroundColor: "",
     },
   });
 
@@ -204,6 +206,8 @@ export default function SeriesManagement() {
       promoShowSpotifyPlaylist: true,
       promoYoutubeBooktrailer: "",
       promoShowYoutubeBooktrailer: true,
+      backgroundImageUrl: "",
+      backgroundColor: "",
     });
     setIsModalOpen(true);
   };
@@ -235,6 +239,8 @@ export default function SeriesManagement() {
       promoShowSpotifyPlaylist: serie.promoShowSpotifyPlaylist ?? true,
       promoYoutubeBooktrailer: serie.promoYoutubeBooktrailer || "",
       promoShowYoutubeBooktrailer: serie.promoShowYoutubeBooktrailer ?? true,
+      backgroundImageUrl: serie.backgroundImageUrl || "",
+      backgroundColor: serie.backgroundColor || "",
     });
     setIsModalOpen(true);
   };
@@ -624,6 +630,45 @@ export default function SeriesManagement() {
                       </FormItem>
                     )}
                   />
+
+                  <div className="space-y-4 border-t pt-6 mt-6">
+                    <h3 className="text-lg font-semibold">Personalización de Fondo</h3>
+                    <p className="text-sm text-muted-foreground">Configura el fondo personalizado para la página de la serie.</p>
+                    
+                    <FormField
+                      control={form.control}
+                      name="backgroundImageUrl"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>URL de Imagen de Fondo</FormLabel>
+                          <FormControl>
+                            <Input {...field} value={field.value || ""} placeholder="https://... o /objects/..." data-testid="input-series-bg-image" />
+                          </FormControl>
+                          <FormDescription>
+                            Imagen de fondo para la página de la serie (opcional)
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="backgroundColor"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Color de Fondo</FormLabel>
+                          <FormControl>
+                            <Input {...field} value={field.value || ""} placeholder="#ffffff o rgb(255,255,255)" data-testid="input-series-bg-color" />
+                          </FormControl>
+                          <FormDescription>
+                            Color de fondo para la página de la serie (opcional, se usa si no hay imagen)
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="promo" className="space-y-6 mt-6">

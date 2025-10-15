@@ -68,6 +68,11 @@ export default function BookManagement() {
       promoShowSpotifyPlaylist: true,
       promoYoutubeBooktrailer: "",
       promoShowYoutubeBooktrailer: true,
+      seoTitle: "",
+      seoDescription: "",
+      seoKeywords: "",
+      backgroundImageUrl: "",
+      backgroundColor: "",
     },
   });
 
@@ -301,6 +306,11 @@ export default function BookManagement() {
       promoShowSpotifyPlaylist: true,
       promoYoutubeBooktrailer: "",
       promoShowYoutubeBooktrailer: true,
+      seoTitle: "",
+      seoDescription: "",
+      seoKeywords: "",
+      backgroundImageUrl: "",
+      backgroundColor: "",
     });
     setIsModalOpen(true);
   };
@@ -338,6 +348,11 @@ export default function BookManagement() {
       promoShowSpotifyPlaylist: book.promoShowSpotifyPlaylist ?? true,
       promoYoutubeBooktrailer: book.promoYoutubeBooktrailer || "",
       promoShowYoutubeBooktrailer: book.promoShowYoutubeBooktrailer ?? true,
+      seoTitle: book.seoTitle || "",
+      seoDescription: book.seoDescription || "",
+      seoKeywords: book.seoKeywords || "",
+      backgroundImageUrl: book.backgroundImageUrl || "",
+      backgroundColor: book.backgroundColor || "",
     });
     setIsModalOpen(true);
   };
@@ -760,6 +775,45 @@ export default function BookManagement() {
                         </FormItem>
                       )}
                     />
+
+                    <div className="space-y-4 border-t pt-6 mt-6">
+                      <h3 className="text-lg font-semibold">Personalización de Fondo</h3>
+                      <p className="text-sm text-muted-foreground">Configura el fondo personalizado para la página del libro.</p>
+                      
+                      <FormField
+                        control={form.control}
+                        name="backgroundImageUrl"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>URL de Imagen de Fondo</FormLabel>
+                            <FormControl>
+                              <Input {...field} value={field.value || ""} placeholder="https://... o /objects/..." data-testid="input-book-bg-image" />
+                            </FormControl>
+                            <FormDescription>
+                              Imagen de fondo para la página del libro (opcional)
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="backgroundColor"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Color de Fondo</FormLabel>
+                            <FormControl>
+                              <Input {...field} value={field.value || ""} placeholder="#ffffff o rgb(255,255,255)" data-testid="input-book-bg-color" />
+                            </FormControl>
+                            <FormDescription>
+                              Color de fondo para la página del libro (opcional, se usa si no hay imagen)
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                   </div>
                 </TabsContent>
 

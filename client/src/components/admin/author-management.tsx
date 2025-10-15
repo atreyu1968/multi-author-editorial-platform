@@ -61,6 +61,8 @@ export default function AuthorManagement() {
       seoTitle: "",
       seoDescription: "",
       seoKeywords: "",
+      backgroundImageUrl: "",
+      backgroundColor: "",
     },
   });
 
@@ -205,6 +207,8 @@ export default function AuthorManagement() {
       seoTitle: "",
       seoDescription: "",
       seoKeywords: "",
+      backgroundImageUrl: "",
+      backgroundColor: "",
     });
     setIsModalOpen(true);
   };
@@ -229,6 +233,8 @@ export default function AuthorManagement() {
       seoTitle: author.seoTitle || "",
       seoDescription: author.seoDescription || "",
       seoKeywords: author.seoKeywords || "",
+      backgroundImageUrl: author.backgroundImageUrl || "",
+      backgroundColor: author.backgroundColor || "",
     });
     setIsModalOpen(true);
   };
@@ -620,6 +626,45 @@ export default function AuthorManagement() {
                       </FormControl>
                       <div className="text-xs text-muted-foreground">
                         Separa las palabras clave con comas
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="space-y-4 border-t pt-6 mt-6">
+                <h3 className="text-lg font-semibold">Personalización de Fondo</h3>
+                <p className="text-sm text-muted-foreground">Configura el fondo personalizado para la página del autor.</p>
+                
+                <FormField
+                  control={form.control}
+                  name="backgroundImageUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>URL de Imagen de Fondo</FormLabel>
+                      <FormControl>
+                        <Input {...field} value={field.value || ""} placeholder="https://... o /objects/..." data-testid="input-author-bg-image" />
+                      </FormControl>
+                      <div className="text-xs text-muted-foreground">
+                        Imagen de fondo para la página del autor (opcional)
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="backgroundColor"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Color de Fondo</FormLabel>
+                      <FormControl>
+                        <Input {...field} value={field.value || ""} placeholder="#ffffff o rgb(255,255,255)" data-testid="input-author-bg-color" />
+                      </FormControl>
+                      <div className="text-xs text-muted-foreground">
+                        Color de fondo para la página del autor (opcional, se usa si no hay imagen)
                       </div>
                       <FormMessage />
                     </FormItem>

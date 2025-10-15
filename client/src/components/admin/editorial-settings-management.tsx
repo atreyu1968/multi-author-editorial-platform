@@ -55,6 +55,8 @@ export default function EditorialSettingsManagement() {
       seoTitle: "",
       seoDescription: "",
       seoKeywords: "",
+      backgroundImageUrl: "",
+      backgroundColor: "",
     },
   });
 
@@ -92,6 +94,8 @@ export default function EditorialSettingsManagement() {
         seoTitle: settings.seoTitle,
         seoDescription: settings.seoDescription,
         seoKeywords: settings.seoKeywords,
+        backgroundImageUrl: settings.backgroundImageUrl || "",
+        backgroundColor: settings.backgroundColor || "",
       });
     }
   }, [settings, form]);
@@ -232,6 +236,47 @@ export default function EditorialSettingsManagement() {
                         </FormControl>
                         <FormDescription>
                           Escribe cada enlace en una línea separada con el formato: Texto del enlace|URL
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Personalización de Fondo</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="backgroundImageUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>URL de Imagen de Fondo</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="https://... o /objects/..." data-testid="input-bg-image" />
+                        </FormControl>
+                        <FormDescription>
+                          Imagen de fondo para la página principal (opcional)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="backgroundColor"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Color de Fondo</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="#ffffff o rgb(255,255,255)" data-testid="input-bg-color" />
+                        </FormControl>
+                        <FormDescription>
+                          Color de fondo para la página principal (opcional, se usa si no hay imagen)
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
