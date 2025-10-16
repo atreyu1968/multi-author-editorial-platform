@@ -255,12 +255,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return;
         }
         
-        // If digital format is enabled, ensure digital file is configured
-        if (validatedBook.saleFormatDigital && !validatedBook.digitalFileUrl) {
-          res.status(400).json({ 
-            message: "Se requiere un archivo digital cuando el formato digital está habilitado" 
-          });
-          return;
+        // If digital format is enabled, ensure at least one digital file is configured
+        if (validatedBook.saleFormatDigital) {
+          const hasDigitalFiles = validatedBook.digitalFiles && 
+            validatedBook.digitalFiles.trim() !== '' && 
+            validatedBook.digitalFiles !== '{}';
+          
+          if (!hasDigitalFiles) {
+            res.status(400).json({ 
+              message: "Se requiere al menos un archivo digital cuando el formato digital está habilitado" 
+            });
+            return;
+          }
         }
       }
       
@@ -297,12 +303,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return;
         }
         
-        // If digital format is enabled, ensure digital file is configured
-        if (mergedBook.saleFormatDigital && !mergedBook.digitalFileUrl) {
-          res.status(400).json({ 
-            message: "Se requiere un archivo digital cuando el formato digital está habilitado" 
-          });
-          return;
+        // If digital format is enabled, ensure at least one digital file is configured
+        if (mergedBook.saleFormatDigital) {
+          const hasDigitalFiles = mergedBook.digitalFiles && 
+            mergedBook.digitalFiles.trim() !== '' && 
+            mergedBook.digitalFiles !== '{}';
+          
+          if (!hasDigitalFiles) {
+            res.status(400).json({ 
+              message: "Se requiere al menos un archivo digital cuando el formato digital está habilitado" 
+            });
+            return;
+          }
         }
       }
       
@@ -792,13 +804,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Calculate session duration for metrics update
         try {
-          const startedAt = new Date(existingSession.startedAt).getTime();
-          const now = Date.now();
-          const durationMinutes = Math.round((now - startedAt) / 1000 / 60);
-          
-          if (durationMinutes > 0) {
-            const today = new Date().toISOString().split('T')[0];
-            await storage.updateAvgSessionDuration(today, null, null, durationMinutes);
+          if (existingSession.startedAt) {
+            const startedAt = new Date(existingSession.startedAt).getTime();
+            const now = Date.now();
+            const durationMinutes = Math.round((now - startedAt) / 1000 / 60);
+            
+            if (durationMinutes > 0) {
+              const today = new Date().toISOString().split('T')[0];
+              await storage.updateAvgSessionDuration(today, null, null, durationMinutes);
+            }
           }
         } catch (error) {
           console.error('Failed to update session duration:', error);
@@ -1121,7 +1135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (item.productType === 'book') {
             const book = await storage.getBookById(item.productId);
             
-            if (book && book.isDigitalProduct && book.digitalFileUrl) {
+            if (book && book.isDigitalProduct && book.digitalFiles) {
               // Generate secure token with crypto.randomUUID()
               const { randomUUID } = await import('crypto');
               const token = randomUUID();
@@ -1215,8 +1229,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get book details
       const book = await storage.getBookById(downloadToken.bookId);
-      if (!book || !book.digitalFileUrl || !book.isDigitalProduct) {
+      if (!book || !book.digitalFiles || !book.isDigitalProduct) {
         res.status(404).json({ message: "Digital file not available" });
+        return;
+      }
+
+      // Parse digital files JSON and get first available format
+      let downloadUrl: string | null = null;
+      try {
+        const digitalFiles = JSON.parse(book.digitalFiles);
+        // Get first available format (epub, pdf, mobi, or azw3)
+        downloadUrl = digitalFiles.epub || digitalFiles.pdf || digitalFiles.mobi || digitalFiles.azw3;
+      } catch (parseError) {
+        console.error('Failed to parse digitalFiles:', parseError);
+      }
+
+      if (!downloadUrl) {
+        res.status(404).json({ message: "No download URL available" });
         return;
       }
 
@@ -1238,7 +1267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Redirect to the digital file URL
-      res.redirect(book.digitalFileUrl);
+      res.redirect(downloadUrl);
     } catch (error) {
       console.error('Download error:', error);
       res.status(500).json({ message: "Failed to download file" });

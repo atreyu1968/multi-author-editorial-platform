@@ -109,9 +109,8 @@ export const books = pgTable("books", {
   directSaleEnabled: boolean("direct_sale_enabled").default(false),
   directSalePrice: real("direct_sale_price"),
   directSaleStock: integer("direct_sale_stock").default(0),
-  // Digital file configuration
-  digitalFileUrl: text("digital_file_url"),
-  digitalFileFormat: text("digital_file_format"),
+  // Digital files configuration - JSON object with format keys: { epub: "url", pdf: "url", mobi: "url", azw3: "url" }
+  digitalFiles: text("digital_files"),
   isDigitalProduct: boolean("is_digital_product").default(false),
   // Sale format configuration
   saleFormatPhysical: boolean("sale_format_physical").default(false),
@@ -411,8 +410,7 @@ export const insertBookSchema = createInsertSchema(books).omit({
   seoKeywords: z.string().nullable().optional(),
   backgroundImageUrl: z.string().nullable().optional(),
   backgroundColor: z.string().nullable().optional(),
-  digitalFileUrl: z.string().nullable().optional(),
-  digitalFileFormat: z.string().nullable().optional(),
+  digitalFiles: z.string().nullable().optional(),
   isDigitalProduct: z.boolean().optional(),
   directSaleEnabled: z.boolean().optional(),
   directSalePrice: z.number().nullable().optional(),

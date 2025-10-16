@@ -24,7 +24,14 @@ import { ObjectUploader } from "@/components/ObjectUploader";
 import type { UploadResult } from "@uppy/core";
 import QRCode from "qrcode";
 
-type BookFormData = z.infer<typeof insertBookSchema>;
+const bookFormSchema = insertBookSchema.extend({
+  digitalFileEpub: z.string().nullable().optional(),
+  digitalFilePdf: z.string().nullable().optional(),
+  digitalFileMobi: z.string().nullable().optional(),
+  digitalFileAzw3: z.string().nullable().optional(),
+});
+
+type BookFormData = z.infer<typeof bookFormSchema>;
 
 export default function BookManagement() {
   const { selectedAuthorId } = useAdminAuthor();
@@ -37,7 +44,7 @@ export default function BookManagement() {
   const queryClient = useQueryClient();
 
   const form = useForm<BookFormData>({
-    resolver: zodResolver(insertBookSchema),
+    resolver: zodResolver(bookFormSchema),
     defaultValues: {
       title: "",
       description: "",
@@ -74,8 +81,10 @@ export default function BookManagement() {
       seoKeywords: "",
       backgroundImageUrl: "",
       backgroundColor: "",
-      digitalFileUrl: "",
-      digitalFileFormat: "",
+      digitalFileEpub: null,
+      digitalFilePdf: null,
+      digitalFileMobi: null,
+      digitalFileAzw3: null,
       isDigitalProduct: false,
       directSaleEnabled: false,
       directSalePrice: 0,
@@ -203,17 +212,50 @@ export default function BookManagement() {
     }
   };
 
-  const handleDigitalFileUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+  const handleEpubUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
     if (result.successful && result.successful.length > 0) {
       const uploadedFile = result.successful[0];
       const fileURL = uploadedFile.uploadURL;
-      
-      // Store the URL directly - no need to set public ACL for private files
-      form.setValue('digitalFileUrl', fileURL);
-      
+      form.setValue('digitalFileEpub', fileURL);
       toast({
-        title: "Archivo subido",
-        description: "El archivo digital ha sido subido exitosamente.",
+        title: "Archivo EPUB subido",
+        description: "El archivo EPUB ha sido subido exitosamente.",
+      });
+    }
+  };
+
+  const handlePdfUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+    if (result.successful && result.successful.length > 0) {
+      const uploadedFile = result.successful[0];
+      const fileURL = uploadedFile.uploadURL;
+      form.setValue('digitalFilePdf', fileURL);
+      toast({
+        title: "Archivo PDF subido",
+        description: "El archivo PDF ha sido subido exitosamente.",
+      });
+    }
+  };
+
+  const handleMobiUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+    if (result.successful && result.successful.length > 0) {
+      const uploadedFile = result.successful[0];
+      const fileURL = uploadedFile.uploadURL;
+      form.setValue('digitalFileMobi', fileURL);
+      toast({
+        title: "Archivo MOBI subido",
+        description: "El archivo MOBI ha sido subido exitosamente.",
+      });
+    }
+  };
+
+  const handleAzw3UploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+    if (result.successful && result.successful.length > 0) {
+      const uploadedFile = result.successful[0];
+      const fileURL = uploadedFile.uploadURL;
+      form.setValue('digitalFileAzw3', fileURL);
+      toast({
+        title: "Archivo AZW3 subido",
+        description: "El archivo AZW3 ha sido subido exitosamente.",
       });
     }
   };
@@ -335,8 +377,10 @@ export default function BookManagement() {
       seoKeywords: "",
       backgroundImageUrl: "",
       backgroundColor: "",
-      digitalFileUrl: "",
-      digitalFileFormat: "",
+      digitalFileEpub: null,
+      digitalFilePdf: null,
+      digitalFileMobi: null,
+      digitalFileAzw3: null,
       isDigitalProduct: false,
       directSaleEnabled: false,
       directSalePrice: 0,
@@ -349,6 +393,25 @@ export default function BookManagement() {
 
   const handleOpenEditModal = (book: Book) => {
     setEditingBook(book);
+    
+    // Parse digitalFiles JSON if it exists
+    let digitalFileEpub = null;
+    let digitalFilePdf = null;
+    let digitalFileMobi = null;
+    let digitalFileAzw3 = null;
+    
+    if (book.digitalFiles) {
+      try {
+        const parsedFiles = JSON.parse(book.digitalFiles);
+        digitalFileEpub = parsedFiles.epub || null;
+        digitalFilePdf = parsedFiles.pdf || null;
+        digitalFileMobi = parsedFiles.mobi || null;
+        digitalFileAzw3 = parsedFiles.azw3 || null;
+      } catch (error) {
+        console.error('Error parsing digitalFiles:', error);
+      }
+    }
+    
     form.reset({
       title: book.title,
       description: book.description || "",
@@ -385,8 +448,10 @@ export default function BookManagement() {
       seoKeywords: book.seoKeywords || "",
       backgroundImageUrl: book.backgroundImageUrl || "",
       backgroundColor: book.backgroundColor || "",
-      digitalFileUrl: book.digitalFileUrl || "",
-      digitalFileFormat: book.digitalFileFormat || "",
+      digitalFileEpub,
+      digitalFilePdf,
+      digitalFileMobi,
+      digitalFileAzw3,
       isDigitalProduct: book.isDigitalProduct || false,
       directSaleEnabled: book.directSaleEnabled || false,
       directSalePrice: book.directSalePrice || 0,
@@ -409,21 +474,36 @@ export default function BookManagement() {
         return;
       }
       
-      // If digital format is enabled, ensure digital file is configured
-      if (data.saleFormatDigital && !data.digitalFileUrl) {
+      // If digital format is enabled, ensure at least one digital file is configured
+      const hasAnyDigitalFile = !!(data.digitalFileEpub || data.digitalFilePdf || data.digitalFileMobi || data.digitalFileAzw3);
+      if (data.saleFormatDigital && !hasAnyDigitalFile) {
         toast({
           title: "Error de validación",
-          description: "Se requiere un archivo digital cuando el formato digital está habilitado",
+          description: "Se requiere al menos un archivo digital cuando el formato digital está habilitado",
           variant: "destructive",
         });
         return;
       }
     }
     
+    // Build digitalFiles JSON from individual format fields
+    const digitalFiles: Record<string, string> = {};
+    if (data.digitalFileEpub) digitalFiles.epub = data.digitalFileEpub;
+    if (data.digitalFilePdf) digitalFiles.pdf = data.digitalFilePdf;
+    if (data.digitalFileMobi) digitalFiles.mobi = data.digitalFileMobi;
+    if (data.digitalFileAzw3) digitalFiles.azw3 = data.digitalFileAzw3;
+    
     const processedData = {
       ...data,
       seriesId: data.seriesId === "none" ? null : data.seriesId,
+      digitalFiles: Object.keys(digitalFiles).length > 0 ? JSON.stringify(digitalFiles) : null,
     };
+    
+    // Remove temporary fields from the payload
+    delete (processedData as any).digitalFileEpub;
+    delete (processedData as any).digitalFilePdf;
+    delete (processedData as any).digitalFileMobi;
+    delete (processedData as any).digitalFileAzw3;
     
     if (editingBook) {
       updateBookMutation.mutate({ id: editingBook.id, data: processedData });
@@ -943,85 +1023,218 @@ export default function BookManagement() {
                     />
 
                     {form.watch('isDigitalProduct') && (
-                      <div className="space-y-4 pl-4 border-l-2 border-primary/20">
-                        <FormField
-                          control={form.control}
-                          name="digitalFileFormat"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Formato del archivo *</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value || ""}>
-                                <FormControl>
-                                  <SelectTrigger data-testid="select-digital-format">
-                                    <SelectValue placeholder="Selecciona el formato" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="EPUB">EPUB</SelectItem>
-                                  <SelectItem value="PDF">PDF</SelectItem>
-                                  <SelectItem value="MOBI">MOBI</SelectItem>
-                                  <SelectItem value="AZW3">AZW3</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="digitalFileUrl"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Archivo Digital (máx 50 MB)</FormLabel>
-                              <div className="space-y-2">
-                                <div className="flex gap-2">
-                                  <FormControl>
-                                    <Input 
-                                      placeholder="URL del archivo digital"
-                                      data-testid="input-digital-file"
-                                      {...field}
-                                      value={field.value || ""} 
-                                      className="flex-1"
-                                      readOnly
-                                    />
-                                  </FormControl>
-                                  <ObjectUploader
-                                    maxNumberOfFiles={1}
-                                    maxFileSize={52428800}
-                                    allowedFileTypes={[
-                                      'application/epub+zip',
-                                      'application/pdf',
-                                      'application/x-mobipocket-ebook',
-                                      'application/vnd.amazon.ebook'
-                                    ]}
-                                    onGetUploadParameters={handleGetUploadParameters}
-                                    onComplete={handleDigitalFileUploadComplete}
-                                    buttonClassName="shrink-0"
-                                  >
-                                    <Upload className="h-4 w-4 mr-2" />
-                                    Subir
-                                  </ObjectUploader>
-                                  {field.value && (
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="icon"
-                                      onClick={() => form.setValue('digitalFileUrl', '')}
-                                      data-testid="button-clear-digital-file"
+                      <div className="space-y-6 pl-4 border-l-2 border-primary/20">
+                        <p className="text-sm text-muted-foreground">
+                          Sube archivos en los formatos que desees ofrecer. Puedes subir múltiples formatos.
+                        </p>
+                        
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                          <FormField
+                            control={form.control}
+                            name="digitalFileEpub"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Archivo EPUB</FormLabel>
+                                <div className="space-y-2">
+                                  <div className="flex gap-2">
+                                    <FormControl>
+                                      <Input 
+                                        placeholder="URL del archivo EPUB"
+                                        data-testid="input-digital-file-epub"
+                                        {...field}
+                                        value={field.value || ""} 
+                                        className="flex-1"
+                                        readOnly
+                                      />
+                                    </FormControl>
+                                    <ObjectUploader
+                                      maxNumberOfFiles={1}
+                                      maxFileSize={52428800}
+                                      allowedFileTypes={['application/epub+zip']}
+                                      onGetUploadParameters={handleGetUploadParameters}
+                                      onComplete={handleEpubUploadComplete}
+                                      buttonClassName="shrink-0"
                                     >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  )}
+                                      <Upload className="h-4 w-4 mr-2" />
+                                      Subir
+                                    </ObjectUploader>
+                                    {field.value && (
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => form.setValue('digitalFileEpub', null)}
+                                        data-testid="button-clear-digital-file-epub"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                  <FormDescription className="text-xs">
+                                    Formato compatible con la mayoría de lectores
+                                  </FormDescription>
                                 </div>
-                                <FormDescription>
-                                  Archivo almacenado de forma segura en Object Storage privado
-                                </FormDescription>
-                              </div>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="digitalFilePdf"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Archivo PDF</FormLabel>
+                                <div className="space-y-2">
+                                  <div className="flex gap-2">
+                                    <FormControl>
+                                      <Input 
+                                        placeholder="URL del archivo PDF"
+                                        data-testid="input-digital-file-pdf"
+                                        {...field}
+                                        value={field.value || ""} 
+                                        className="flex-1"
+                                        readOnly
+                                      />
+                                    </FormControl>
+                                    <ObjectUploader
+                                      maxNumberOfFiles={1}
+                                      maxFileSize={52428800}
+                                      allowedFileTypes={['application/pdf']}
+                                      onGetUploadParameters={handleGetUploadParameters}
+                                      onComplete={handlePdfUploadComplete}
+                                      buttonClassName="shrink-0"
+                                    >
+                                      <Upload className="h-4 w-4 mr-2" />
+                                      Subir
+                                    </ObjectUploader>
+                                    {field.value && (
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => form.setValue('digitalFilePdf', null)}
+                                        data-testid="button-clear-digital-file-pdf"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                  <FormDescription className="text-xs">
+                                    Formato universal compatible con todos los dispositivos
+                                  </FormDescription>
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="digitalFileMobi"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Archivo MOBI</FormLabel>
+                                <div className="space-y-2">
+                                  <div className="flex gap-2">
+                                    <FormControl>
+                                      <Input 
+                                        placeholder="URL del archivo MOBI"
+                                        data-testid="input-digital-file-mobi"
+                                        {...field}
+                                        value={field.value || ""} 
+                                        className="flex-1"
+                                        readOnly
+                                      />
+                                    </FormControl>
+                                    <ObjectUploader
+                                      maxNumberOfFiles={1}
+                                      maxFileSize={52428800}
+                                      allowedFileTypes={['application/x-mobipocket-ebook']}
+                                      onGetUploadParameters={handleGetUploadParameters}
+                                      onComplete={handleMobiUploadComplete}
+                                      buttonClassName="shrink-0"
+                                    >
+                                      <Upload className="h-4 w-4 mr-2" />
+                                      Subir
+                                    </ObjectUploader>
+                                    {field.value && (
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => form.setValue('digitalFileMobi', null)}
+                                        data-testid="button-clear-digital-file-mobi"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                  <FormDescription className="text-xs">
+                                    Formato compatible con Kindle (versiones antiguas)
+                                  </FormDescription>
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="digitalFileAzw3"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Archivo AZW3</FormLabel>
+                                <div className="space-y-2">
+                                  <div className="flex gap-2">
+                                    <FormControl>
+                                      <Input 
+                                        placeholder="URL del archivo AZW3"
+                                        data-testid="input-digital-file-azw3"
+                                        {...field}
+                                        value={field.value || ""} 
+                                        className="flex-1"
+                                        readOnly
+                                      />
+                                    </FormControl>
+                                    <ObjectUploader
+                                      maxNumberOfFiles={1}
+                                      maxFileSize={52428800}
+                                      allowedFileTypes={['application/vnd.amazon.ebook']}
+                                      onGetUploadParameters={handleGetUploadParameters}
+                                      onComplete={handleAzw3UploadComplete}
+                                      buttonClassName="shrink-0"
+                                    >
+                                      <Upload className="h-4 w-4 mr-2" />
+                                      Subir
+                                    </ObjectUploader>
+                                    {field.value && (
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => form.setValue('digitalFileAzw3', null)}
+                                        data-testid="button-clear-digital-file-azw3"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                  <FormDescription className="text-xs">
+                                    Formato Kindle Format 8 (KF8) para dispositivos modernos
+                                  </FormDescription>
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        <div className="bg-muted/30 p-3 rounded-md">
+                          <p className="text-xs text-muted-foreground">
+                            Todos los archivos se almacenan de forma segura en Object Storage privado (máx 50 MB por archivo).
+                          </p>
+                        </div>
                       </div>
                     )}
                   </div>

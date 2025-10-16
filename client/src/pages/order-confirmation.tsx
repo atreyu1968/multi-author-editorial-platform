@@ -201,7 +201,7 @@ export default function OrderConfirmation() {
                 const book = item.productType === 'book' 
                   ? books.find((b: Book) => b.id === item.productId)
                   : null;
-                const isDigital = book?.isDigitalProduct && book?.digitalFileUrl;
+                const isDigital = book?.isDigitalProduct && book?.digitalFiles;
                 const downloadToken = downloadTokens.find(dt => dt.bookId === item.productId);
                 
                 const formatExpirationDate = (dateString: string) => {
@@ -252,7 +252,15 @@ export default function OrderConfirmation() {
                         >
                           <a href={`/api/download/${downloadToken.token}`} target="_blank" rel="noopener noreferrer">
                             <Download className="h-4 w-4 mr-2" />
-                            Descargar {book?.digitalFileFormat || 'Archivo'}
+                            Descargar {(() => {
+                              try {
+                                if (book?.digitalFiles) {
+                                  const formats = JSON.parse(book.digitalFiles);
+                                  return Object.keys(formats).map(f => f.toUpperCase()).join('/');
+                                }
+                              } catch {}
+                              return 'Archivo';
+                            })()}
                           </a>
                         </Button>
                         <p className="text-xs text-muted-foreground text-center" data-testid={`text-expiration-${item.productId}`}>

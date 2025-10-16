@@ -228,9 +228,17 @@ export default function BookLanding() {
                         settings?.currencySymbol || "$"
                       )}
                     </div>
-                    {book.isDigitalProduct && book.digitalFileFormat && (
+                    {book.isDigitalProduct && book.digitalFiles && (
                       <div className="text-lg text-muted-foreground mt-2" data-testid="text-digital-format">
-                        Formato Digital ({book.digitalFileFormat})
+                        {(() => {
+                          try {
+                            const formats = JSON.parse(book.digitalFiles);
+                            const availableFormats = Object.keys(formats).map(f => f.toUpperCase()).join(', ');
+                            return `Formatos Digitales: ${availableFormats}`;
+                          } catch {
+                            return 'Formato Digital';
+                          }
+                        })()}
                       </div>
                     )}
                   </div>
