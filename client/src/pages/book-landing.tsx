@@ -11,10 +11,12 @@ import Newsletter from "@/components/newsletter";
 import { SEOHead, generateStructuredData } from "@/components/seo/seo-head";
 import { buildBackgroundStyle } from "@/lib/utils";
 import { formatCurrency } from "@/lib/format-currency";
-import type { Book, EditorialSettings } from "@shared/schema";
+import type { Book, EditorialSettings, Author } from "@shared/schema";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { useUiText } from "@/contexts/ui-text-context";
+import { SiInstagram, SiX, SiFacebook, SiAmazon } from "react-icons/si";
 
 // Helper functions for embedding
 function getYouTubeEmbedUrl(url: string): string {
@@ -52,6 +54,63 @@ export default function BookLanding() {
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const { addToCart } = useCart();
   const { toast } = useToast();
+  
+  // Load all UI texts
+  const t = {
+    premio: useUiText("book_landing", "premio", "Premio"),
+    productoDigital: useUiText("book_landing", "producto_digital", "Producto Digital"),
+    fisico: useUiText("book_landing", "fisico", "Físico"),
+    digital: useUiText("book_landing", "digital", "Digital"),
+    formatosDigitales: useUiText("book_landing", "formatos_digitales", "Formatos Digitales:"),
+    formatoDigital: useUiText("book_landing", "formato_digital", "Formato Digital"),
+    anadiendo: useUiText("book_landing", "anadiendo", "Añadiendo..."),
+    comprarAhora: useUiText("book_landing", "comprar_ahora", "Comprar ahora"),
+    agotado: useUiText("book_landing", "agotado", "Agotado"),
+    comprarAmazon: useUiText("book_landing", "comprar_amazon", "Comprar en Amazon"),
+    verMasDetalles: useUiText("book_landing", "ver_mas_detalles", "Ver más detalles"),
+    sinopsis: useUiText("book_landing", "sinopsis", "Sinopsis"),
+    sinopsisNoDisponible: useUiText("book_landing", "sinopsis_no_disponible", "Sinopsis no disponible"),
+    loQueEncontraras: useUiText("book_landing", "lo_que_encontraras", "Lo que encontrarás en este libro"),
+    momentosMemo: useUiText("book_landing", "momentos_memorables", "Momentos memorables"),
+    galeria: useUiText("book_landing", "galeria", "Galería"),
+    premiosRecon: useUiText("book_landing", "premios_reconocimientos", "Premios y Reconocimientos"),
+    contenidoAd: useUiText("book_landing", "contenido_adicional", "Contenido Adicional"),
+    booktrailer: useUiText("book_landing", "booktrailer", "Booktrailer"),
+    playlistLec: useUiText("book_landing", "playlist_lectura", "Playlist de Lectura"),
+    mapaConcep: useUiText("book_landing", "mapa_conceptual", "Mapa Conceptual"),
+    mapaConceptDesc: useUiText("book_landing", "mapa_conceptual_desc", "Explora el mundo y los conceptos de la historia"),
+    verMapa: useUiText("book_landing", "ver_mapa", "Ver mapa"),
+    arbolGen: useUiText("book_landing", "arbol_genealogico", "Árbol Genealógico"),
+    arbolGenDesc: useUiText("book_landing", "arbol_genealogico_desc", "Descubre las relaciones entre los personajes"),
+    verArbol: useUiText("book_landing", "ver_arbol", "Ver árbol"),
+    notasPrensa: useUiText("book_landing", "notas_prensa", "Notas de Prensa"),
+    notasPrenseDesc: useUiText("book_landing", "notas_prensa_desc", "Lee reseñas y artículos sobre este libro"),
+    articulo: useUiText("book_landing", "articulo", "Artículo"),
+    materialGraf: useUiText("book_landing", "material_grafico", "Material Gráfico"),
+    materialGrafDesc: useUiText("book_landing", "material_grafico_desc", "Ilustraciones, mapas y material visual"),
+    recurso: useUiText("book_landing", "recurso", "Recurso"),
+    parteSerie: useUiText("book_landing", "parte_serie", "Parte de la serie:"),
+    explorarSerie: useUiText("book_landing", "explorar_serie", "Explorar toda la serie"),
+    listoSum: useUiText("book_landing", "listo_sumergirte", "¿Listo para sumergirte en esta historia?"),
+    comienzaAv: useUiText("book_landing", "comienza_aventura", "Comienza tu aventura ahora y descubre por qué miles de lectores han quedado cautivados con esta historia."),
+    libroNoEnc: useUiText("book_landing", "libro_no_encontrado", "Libro no encontrado"),
+    libroNoExiste: useUiText("book_landing", "libro_no_existe", "El libro que buscas no existe o ha sido eliminado."),
+    volverInicio: useUiText("book_landing", "volver_inicio", "Volver al inicio"),
+    anadidoCarrito: useUiText("book_landing", "anadido_carrito", "¡Añadido al carrito!"),
+    anadidoCarritoDesc: useUiText("book_landing", "anadido_carrito_desc", "ha sido añadido a tu carrito."),
+    error: useUiText("book_landing", "error", "Error"),
+    errorCarrito: useUiText("book_landing", "error_carrito", "No se pudo añadir el libro al carrito. Intenta de nuevo."),
+    libro: useUiText("book_landing", "libro", "Libro"),
+    embedBooktrailer: useUiText("book_landing", "embed_booktrailer", "Booktrailer"),
+    seoTitleNovela: useUiText("book_landing", "seo_title_novela", "Novela"),
+    seoDescPrefix: useUiText("book_landing", "seo_desc_prefix", "Descubre"),
+    seoDescFascinante: useUiText("book_landing", "seo_desc_fascinante_novela", "una fascinante novela"),
+    seoDescDeGenero: useUiText("book_landing", "seo_desc_de_genero", "de"),
+    seoDescSuffix: useUiText("book_landing", "seo_desc_suffix", "que te mantendrá enganchado desde la primera página."),
+    seoImageAltPortada: useUiText("book_landing", "seo_image_alt_portada", "Portada de"),
+    galleryImageAltImagen: useUiText("book_landing", "gallery_image_alt_imagen", "Imagen"),
+    galleryImageAltDe: useUiText("book_landing", "gallery_image_alt_de", "de"),
+  };
 
   const { data: book, isLoading, error} = useQuery<Book>({
     queryKey: [`/api/books/${bookId}`],
@@ -67,6 +126,11 @@ export default function BookLanding() {
     queryKey: ["/api/editorial-settings"],
   });
 
+  const { data: author } = useQuery<Author>({
+    queryKey: [`/api/authors/${book?.authorId}`],
+    enabled: !!book?.authorId,
+  });
+
   const handleAddToCart = async () => {
     if (!bookId) return;
     
@@ -74,13 +138,13 @@ export default function BookLanding() {
     try {
       await addToCart("book", bookId, 1);
       toast({
-        title: "¡Añadido al carrito!",
-        description: `"${book?.title}" ha sido añadido a tu carrito.`,
+        title: t.anadidoCarrito,
+        description: `"${book?.title}" ${t.anadidoCarritoDesc}`,
       });
     } catch (error) {
       toast({
-        title: "Error",
-        description: "No se pudo añadir el libro al carrito. Intenta de nuevo.",
+        title: t.error,
+        description: t.errorCarrito,
         variant: "destructive",
       });
     } finally {
@@ -105,14 +169,14 @@ export default function BookLanding() {
         <Navigation />
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
-            <h1 className="text-4xl font-bold mb-4">Libro no encontrado</h1>
+            <h1 className="text-4xl font-bold mb-4">{t.libroNoEnc}</h1>
             <p className="text-muted-foreground mb-8">
-              El libro que buscas no existe o ha sido eliminado.
+              {t.libroNoExiste}
             </p>
             <Link href="/">
               <Button>
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Volver al inicio
+                {t.volverInicio}
               </Button>
             </Link>
           </div>
@@ -129,12 +193,12 @@ export default function BookLanding() {
   return (
     <div className="bg-background text-foreground font-sans" style={buildBackgroundStyle({ imageUrl: book?.backgroundImageUrl, color: book?.backgroundColor })}>
       <SEOHead
-        title={book.seoTitle || `${book.title}${book.genre ? ` - Novela ${book.genre}` : ''}`}
-        description={book.seoDescription || synopsis || `Descubre "${book.title}", una fascinante novela${book.genre ? ` de ${book.genre.toLowerCase()}` : ''} que te mantendrá enganchado desde la primera página.`}
-        keywords={book.seoKeywords ? book.seoKeywords.split(',').map(k => k.trim()) : [book.title, book.genre || '', "novela", "libro"].filter(Boolean)}
+        title={book.seoTitle || `${book.title}${book.genre ? ` - ${t.seoTitleNovela} ${book.genre}` : ''}`}
+        description={book.seoDescription || synopsis || `${t.seoDescPrefix} "${book.title}", ${t.seoDescFascinante}${book.genre ? ` ${t.seoDescDeGenero} ${book.genre.toLowerCase()}` : ''} ${t.seoDescSuffix}`}
+        keywords={book.seoKeywords ? book.seoKeywords.split(',').map(k => k.trim()) : [book.title, book.genre || '', t.seoTitleNovela.toLowerCase(), t.libro.toLowerCase()].filter(Boolean)}
         ogType="book"
         ogImage={heroImage || undefined}
-        ogImageAlt={`Portada de ${book.title}`}
+        ogImageAlt={`${t.seoImageAltPortada} ${book.title}`}
         structuredData={generateStructuredData.book(book)}
       />
       
@@ -159,14 +223,14 @@ export default function BookLanding() {
                   <div className="absolute inset-0 bg-primary/20 blur-3xl group-hover:blur-4xl transition-all duration-300 rounded-lg" />
                   <img
                     src={book.coverImage || heroImage || ""}
-                    alt={`Portada de ${book.title}`}
+                    alt={`${t.seoImageAltPortada} ${book.title}`}
                     className="relative w-80 h-auto rounded-lg shadow-2xl transform group-hover:scale-105 transition-transform duration-300"
                     data-testid="book-cover"
                   />
                   {book.landingAwards && book.landingAwards.length > 0 && (
                     <div className="absolute -top-4 -right-4 bg-amber-500 text-white px-4 py-2 rounded-full flex items-center gap-2 shadow-lg animate-bounce">
                       <Award className="h-5 w-5" />
-                      <span className="font-semibold">Premio</span>
+                      <span className="font-semibold">{t.premio}</span>
                     </div>
                   )}
                 </div>
@@ -181,12 +245,12 @@ export default function BookLanding() {
                     </Badge>
                     {isPartOfSeries && (
                       <Badge variant="outline" className="text-base px-4 py-1" data-testid="book-series">
-                        {series.title} - Libro {book.orderInSeries}
+                        {series.title} - {t.libro} {book.orderInSeries}
                       </Badge>
                     )}
                     {book.isDigitalProduct && (
                       <Badge variant="default" className="text-base px-4 py-1" data-testid="badge-digital-product">
-                        Producto Digital
+                        {t.productoDigital}
                       </Badge>
                     )}
                   </div>
@@ -196,13 +260,13 @@ export default function BookLanding() {
                       {book.saleFormatPhysical && (
                         <Badge variant="outline" data-testid="badge-format-physical">
                           <Package className="h-3 w-3 mr-1" />
-                          Físico
+                          {t.fisico}
                         </Badge>
                       )}
                       {book.saleFormatDigital && (
                         <Badge variant="outline" data-testid="badge-format-digital">
                           <FileText className="h-3 w-3 mr-1" />
-                          Digital
+                          {t.digital}
                         </Badge>
                       )}
                     </div>
@@ -234,9 +298,9 @@ export default function BookLanding() {
                           try {
                             const formats = JSON.parse(book.digitalFiles);
                             const availableFormats = Object.keys(formats).map(f => f.toUpperCase()).join(', ');
-                            return `Formatos Digitales: ${availableFormats}`;
+                            return `${t.formatosDigitales} ${availableFormats}`;
                           } catch {
-                            return 'Formato Digital';
+                            return t.formatoDigital;
                           }
                         })()}
                       </div>
@@ -254,7 +318,7 @@ export default function BookLanding() {
                       data-testid={`button-add-to-cart-${bookId}`}
                     >
                       <ShoppingCart className="mr-2 h-5 w-5" />
-                      {isAddingToCart ? "Añadiendo..." : "Comprar ahora"}
+                      {isAddingToCart ? t.anadiendo : t.comprarAhora}
                     </Button>
                   ) : book.directSaleEnabled && book.directSaleStock !== null && book.directSaleStock === 0 ? (
                     <Button 
@@ -264,7 +328,7 @@ export default function BookLanding() {
                       className="text-lg px-8 py-6" 
                       data-testid={`button-out-of-stock-${bookId}`}
                     >
-                      Agotado
+                      {t.agotado}
                     </Button>
                   ) : null}
                   
@@ -272,7 +336,7 @@ export default function BookLanding() {
                     <Button asChild size="lg" variant={book.directSaleEnabled ? "outline" : "default"} className="text-lg px-8 py-6" data-testid="button-amazon">
                       <a href={book.amazonUrl} target="_blank" rel="noopener noreferrer">
                         <ExternalLink className="mr-2 h-5 w-5" />
-                        {book.landingCTA || "Comprar en Amazon"}
+                        {book.landingCTA || t.comprarAmazon}
                       </a>
                     </Button>
                   )}
@@ -303,7 +367,7 @@ export default function BookLanding() {
                   
                   <Button variant="outline" asChild size="lg" className="text-lg px-8 py-6" data-testid="button-preview">
                     <a href="#synopsis">
-                      Ver más detalles
+                      {t.verMasDetalles}
                     </a>
                   </Button>
                 </div>
@@ -317,13 +381,13 @@ export default function BookLanding() {
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto">
               <h2 className="text-4xl font-serif font-bold mb-8 text-center text-primary">
-                Sinopsis
+                {t.sinopsis}
               </h2>
               <div className="prose prose-lg max-w-none leading-relaxed text-center">
                 {synopsis ? (
                   <p className="text-xl whitespace-pre-line">{synopsis}</p>
                 ) : (
-                  <p className="text-xl text-muted-foreground">Sinopsis no disponible</p>
+                  <p className="text-xl text-muted-foreground">{t.sinopsisNoDisponible}</p>
                 )}
               </div>
             </div>
@@ -335,7 +399,7 @@ export default function BookLanding() {
           <section className="py-20">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
               <h2 className="text-4xl font-serif font-bold mb-12 text-center text-primary">
-                Lo que encontrarás en este libro
+                {t.loQueEncontraras}
               </h2>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {book.landingFeatures.map((feature, index) => (
@@ -360,7 +424,7 @@ export default function BookLanding() {
           <section className="py-20 bg-muted/30">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
               <h2 className="text-4xl font-serif font-bold mb-12 text-center text-primary">
-                Momentos memorables
+                {t.momentosMemo}
               </h2>
               <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
                 {book.landingQuotes.map((quote, index) => (
@@ -381,14 +445,14 @@ export default function BookLanding() {
           <section className="py-20">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
               <h2 className="text-4xl font-serif font-bold mb-12 text-center text-primary">
-                Galería
+                {t.galeria}
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {book.landingGallery.map((image, index) => (
                   <div key={index} className="relative group overflow-hidden rounded-lg aspect-square">
                     <img
                       src={image}
-                      alt={`Imagen ${index + 1} de ${book.title}`}
+                      alt={`${t.galleryImageAltImagen} ${index + 1} ${t.galleryImageAltDe} ${book.title}`}
                       className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-300"
                     />
                   </div>
@@ -403,7 +467,7 @@ export default function BookLanding() {
           <section className="py-20 bg-muted/30">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
               <h2 className="text-4xl font-serif font-bold mb-12 text-center text-primary">
-                Premios y Reconocimientos
+                {t.premiosRecon}
               </h2>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
                 {book.landingAwards.map((award, index) => (
@@ -430,7 +494,7 @@ export default function BookLanding() {
           (book.promoAdditionalMedia && book.promoAdditionalMedia.length > 0 && book.promoShowAdditionalMedia)) && (
           <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20">
             <h2 className="text-4xl font-serif font-bold mb-12 text-center text-primary">
-              Contenido Adicional
+              {t.contenidoAd}
             </h2>
             
             <div className="space-y-8 max-w-6xl mx-auto">
@@ -439,13 +503,13 @@ export default function BookLanding() {
                 <div className="w-full" data-testid="promo-youtube">
                   <h3 className="font-semibold text-2xl mb-4 flex items-center gap-2">
                     <Video className="h-6 w-6 text-primary" />
-                    Booktrailer
+                    {t.booktrailer}
                   </h3>
                   <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
                     <iframe
                       className="absolute top-0 left-0 w-full h-full rounded-lg shadow-lg"
                       src={getYouTubeEmbedUrl(book.promoYoutubeBooktrailer)}
-                      title="Booktrailer"
+                      title={t.embedBooktrailer}
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
                     />
@@ -458,7 +522,7 @@ export default function BookLanding() {
                 <div className="w-full" data-testid="promo-spotify">
                   <h3 className="font-semibold text-2xl mb-4 flex items-center gap-2">
                     <Music className="h-6 w-6 text-primary" />
-                    Playlist de Lectura
+                    {t.playlistLec}
                   </h3>
                   <iframe
                     className="w-full rounded-lg shadow-lg"
@@ -481,9 +545,9 @@ export default function BookLanding() {
                           <MapPin className="h-6 w-6 text-primary" />
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-semibold text-lg mb-2">Mapa Conceptual</h3>
+                          <h3 className="font-semibold text-lg mb-2">{t.mapaConcep}</h3>
                           <p className="text-sm text-muted-foreground mb-3">
-                            Explora el mundo y los conceptos de la historia
+                            {t.mapaConceptDesc}
                           </p>
                           <a 
                             href={book.promoConceptMap} 
@@ -491,7 +555,7 @@ export default function BookLanding() {
                             rel="noopener noreferrer"
                             className="text-primary hover:underline text-sm font-medium flex items-center gap-1"
                           >
-                            Ver mapa <ExternalLink className="h-3 w-3" />
+                            {t.verMapa} <ExternalLink className="h-3 w-3" />
                           </a>
                         </div>
                       </div>
@@ -508,9 +572,9 @@ export default function BookLanding() {
                           <Users className="h-6 w-6 text-primary" />
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-semibold text-lg mb-2">Árbol Genealógico</h3>
+                          <h3 className="font-semibold text-lg mb-2">{t.arbolGen}</h3>
                           <p className="text-sm text-muted-foreground mb-3">
-                            Descubre las relaciones entre los personajes
+                            {t.arbolGenDesc}
                           </p>
                           <a 
                             href={book.promoFamilyTree} 
@@ -518,7 +582,7 @@ export default function BookLanding() {
                             rel="noopener noreferrer"
                             className="text-primary hover:underline text-sm font-medium flex items-center gap-1"
                           >
-                            Ver árbol <ExternalLink className="h-3 w-3" />
+                            {t.verArbol} <ExternalLink className="h-3 w-3" />
                           </a>
                         </div>
                       </div>
@@ -535,9 +599,9 @@ export default function BookLanding() {
                           <Newspaper className="h-6 w-6 text-primary" />
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-semibold text-lg mb-2">Notas de Prensa</h3>
+                          <h3 className="font-semibold text-lg mb-2">{t.notasPrensa}</h3>
                           <p className="text-sm text-muted-foreground mb-3">
-                            Lee reseñas y artículos sobre este libro
+                            {t.notasPrenseDesc}
                           </p>
                           <div className="space-y-2">
                             {book.promoPressNotes.slice(0, 3).map((note, index) => (
@@ -548,7 +612,7 @@ export default function BookLanding() {
                                 rel="noopener noreferrer"
                                 className="text-primary hover:underline text-sm font-medium flex items-center gap-1"
                               >
-                                Artículo {index + 1} <ExternalLink className="h-3 w-3" />
+                                {t.articulo} {index + 1} <ExternalLink className="h-3 w-3" />
                               </a>
                             ))}
                           </div>
@@ -567,9 +631,9 @@ export default function BookLanding() {
                           <ImageIcon className="h-6 w-6 text-primary" />
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-semibold text-lg mb-2">Material Gráfico</h3>
+                          <h3 className="font-semibold text-lg mb-2">{t.materialGraf}</h3>
                           <p className="text-sm text-muted-foreground mb-3">
-                            Ilustraciones, mapas y material visual
+                            {t.materialGrafDesc}
                           </p>
                           <div className="space-y-2">
                             {book.promoAdditionalMedia.slice(0, 3).map((media, index) => (
@@ -580,7 +644,7 @@ export default function BookLanding() {
                                 rel="noopener noreferrer"
                                 className="text-primary hover:underline text-sm font-medium flex items-center gap-1"
                               >
-                                Recurso {index + 1} <ExternalLink className="h-3 w-3" />
+                                {t.recurso} {index + 1} <ExternalLink className="h-3 w-3" />
                               </a>
                             ))}
                           </div>
@@ -601,14 +665,14 @@ export default function BookLanding() {
           <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 bg-gradient-to-br from-primary/5 to-transparent rounded-3xl">
             <div className="max-w-4xl mx-auto text-center">
               <h2 className="text-4xl font-serif font-bold mb-6 text-primary">
-                Parte de la serie: {series.title}
+                {t.parteSerie} {series.title}
               </h2>
               <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
                 {series.description}
               </p>
               <Link href="/#series">
                 <Button size="lg" variant="outline" className="text-lg">
-                  Explorar toda la serie
+                  {t.explorarSerie}
                 </Button>
               </Link>
             </div>
@@ -619,17 +683,17 @@ export default function BookLanding() {
         <section className="py-20 bg-gradient-to-r from-primary to-secondary text-primary-foreground">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-4xl font-serif font-bold mb-6">
-              ¿Listo para sumergirte en esta historia?
+              {t.listoSum}
             </h2>
             <p className="text-xl mb-8 max-w-2xl mx-auto">
-              Comienza tu aventura ahora y descubre por qué miles de lectores han quedado cautivados con esta historia.
+              {t.comienzaAv}
             </p>
             <div className="flex flex-wrap gap-4 justify-center">
               {book.amazonUrl && (
                 <Button asChild size="lg" variant="secondary" className="text-lg px-10 py-6">
                   <a href={book.amazonUrl} target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="mr-2 h-5 w-5" />
-                    Comprar ahora
+                    {t.comprarAhora}
                   </a>
                 </Button>
               )}
@@ -669,29 +733,36 @@ export default function BookLanding() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h3 className="text-2xl font-serif font-bold text-primary mb-4">
-              María González
+              {author?.name || book.authorId}
             </h3>
             <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Autora bestseller especializada en romance, thriller y fantasía. 
-              Creando historias que tocan el corazón desde 2012.
+              {author?.bioParagraph1 || ""}
             </p>
             <div className="flex justify-center space-x-4">
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                <i className="fab fa-instagram text-xl"></i>
-              </a>
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                <i className="fab fa-twitter text-xl"></i>
-              </a>
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                <i className="fab fa-facebook text-xl"></i>
-              </a>
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                <i className="fab fa-amazon text-xl"></i>
-              </a>
+              {author?.instagramUrl && (
+                <a href={author.instagramUrl} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+                  <SiInstagram className="text-xl" />
+                </a>
+              )}
+              {author?.twitterUrl && (
+                <a href={author.twitterUrl} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+                  <SiX className="text-xl" />
+                </a>
+              )}
+              {author?.facebookUrl && (
+                <a href={author.facebookUrl} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+                  <SiFacebook className="text-xl" />
+                </a>
+              )}
+              {author?.amazonUrl && (
+                <a href={author.amazonUrl} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+                  <SiAmazon className="text-xl" />
+                </a>
+              )}
             </div>
           </div>
           <div className="border-t border-border mt-8 pt-8 text-center text-muted-foreground">
-            <p>&copy; 2024 María González. Todos los derechos reservados.</p>
+            <p>&copy; {new Date().getFullYear()} {author?.name || book.authorId}. Todos los derechos reservados.</p>
           </div>
         </div>
       </footer>
