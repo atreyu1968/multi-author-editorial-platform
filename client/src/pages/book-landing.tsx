@@ -276,6 +276,31 @@ export default function BookLanding() {
                       </a>
                     </Button>
                   )}
+                  
+                  {/* Additional Store Links */}
+                  {book.storeLinks && (() => {
+                    try {
+                      const storeLinks = JSON.parse(book.storeLinks) as { name: string; url: string }[];
+                      return storeLinks.map((link, index) => (
+                        <Button 
+                          key={index} 
+                          asChild 
+                          size="lg" 
+                          variant={book.directSaleEnabled || book.amazonUrl ? "outline" : "default"} 
+                          className="text-lg px-8 py-6" 
+                          data-testid={`button-store-${index}`}
+                        >
+                          <a href={link.url} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="mr-2 h-5 w-5" />
+                            {link.name}
+                          </a>
+                        </Button>
+                      ));
+                    } catch (error) {
+                      return null;
+                    }
+                  })()}
+                  
                   <Button variant="outline" asChild size="lg" className="text-lg px-8 py-6" data-testid="button-preview">
                     <a href="#synopsis">
                       Ver más detalles
@@ -599,14 +624,40 @@ export default function BookLanding() {
             <p className="text-xl mb-8 max-w-2xl mx-auto">
               Comienza tu aventura ahora y descubre por qué miles de lectores han quedado cautivados con esta historia.
             </p>
-            {book.amazonUrl && (
-              <Button asChild size="lg" variant="secondary" className="text-lg px-10 py-6">
-                <a href={book.amazonUrl} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="mr-2 h-5 w-5" />
-                  Comprar ahora
-                </a>
-              </Button>
-            )}
+            <div className="flex flex-wrap gap-4 justify-center">
+              {book.amazonUrl && (
+                <Button asChild size="lg" variant="secondary" className="text-lg px-10 py-6">
+                  <a href={book.amazonUrl} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="mr-2 h-5 w-5" />
+                    Comprar ahora
+                  </a>
+                </Button>
+              )}
+              
+              {/* Additional Store Links */}
+              {book.storeLinks && (() => {
+                try {
+                  const storeLinks = JSON.parse(book.storeLinks) as { name: string; url: string }[];
+                  return storeLinks.map((link, index) => (
+                    <Button 
+                      key={index} 
+                      asChild 
+                      size="lg" 
+                      variant="secondary" 
+                      className="text-lg px-10 py-6" 
+                      data-testid={`button-cta-store-${index}`}
+                    >
+                      <a href={link.url} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="mr-2 h-5 w-5" />
+                        {link.name}
+                      </a>
+                    </Button>
+                  ));
+                } catch (error) {
+                  return null;
+                }
+              })()}
+            </div>
           </div>
         </section>
       </main>
