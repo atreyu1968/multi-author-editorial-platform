@@ -405,6 +405,12 @@ export const insertBookSchema = createInsertSchema(books).omit({
   id: true,
 }).extend({
   authorId: z.string().optional(), // Made optional as it's added programmatically in the mutation
+  landingFeatures: z.array(z.string()).nullable().optional(),
+  landingQuotes: z.array(z.string()).nullable().optional(),
+  landingGallery: z.array(z.string()).nullable().optional(),
+  landingAwards: z.array(z.string()).nullable().optional(),
+  promoPressNotes: z.array(z.string()).nullable().optional(),
+  promoAdditionalMedia: z.array(z.string()).nullable().optional(),
   seoTitle: z.string().nullable().optional(),
   seoDescription: z.string().nullable().optional(),
   seoKeywords: z.string().nullable().optional(),
