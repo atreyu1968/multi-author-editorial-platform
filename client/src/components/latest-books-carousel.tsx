@@ -11,13 +11,12 @@ interface LatestBooksCarouselProps {
 
 export function LatestBooksCarousel({ books }: LatestBooksCarouselProps) {
   const [emblaRef, emblaApi] = useEmblaCarousel({
-    loop: true,
+    loop: books.length > 3,
     align: "start",
     slidesToScroll: 1,
-    breakpoints: {
-      '(min-width: 768px)': { slidesToScroll: 2 },
-      '(min-width: 1024px)': { slidesToScroll: 3 }
-    }
+    containScroll: "trimSnaps",
+    skipSnaps: false,
+    dragFree: false,
   });
 
   const scrollPrev = useCallback(() => {
