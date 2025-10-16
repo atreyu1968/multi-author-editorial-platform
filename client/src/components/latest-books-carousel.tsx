@@ -11,12 +11,9 @@ interface LatestBooksCarouselProps {
 
 export function LatestBooksCarousel({ books }: LatestBooksCarouselProps) {
   const [emblaRef, emblaApi] = useEmblaCarousel({
-    loop: books.length > 3,
+    loop: false,
     align: "start",
     slidesToScroll: 1,
-    containScroll: "trimSnaps",
-    skipSnaps: false,
-    dragFree: false,
   });
 
   const scrollPrev = useCallback(() => {
@@ -32,7 +29,11 @@ export function LatestBooksCarousel({ books }: LatestBooksCarouselProps) {
 
     // Auto-scroll every 5 seconds
     const autoScroll = setInterval(() => {
-      emblaApi.scrollNext();
+      if (emblaApi.canScrollNext()) {
+        emblaApi.scrollNext();
+      } else {
+        emblaApi.scrollTo(0);
+      }
     }, 5000);
 
     return () => clearInterval(autoScroll);
@@ -44,12 +45,12 @@ export function LatestBooksCarousel({ books }: LatestBooksCarouselProps) {
 
   return (
     <div className="relative">
-      <div className="overflow-hidden px-6" ref={emblaRef}>
-        <div className="flex gap-6">
+      <div className="overflow-hidden" ref={emblaRef}>
+        <div className="flex">
           {books.map((book) => (
             <div
               key={book.id}
-              className="flex-[0_0_100%] min-w-0 sm:flex-[0_0_50%] md:flex-[0_0_33.333%] lg:flex-[0_0_25%]"
+              className="flex-[0_0_100%] min-w-0 sm:flex-[0_0_50%] md:flex-[0_0_33.333%] lg:flex-[0_0_25%] pl-6"
               data-testid={`carousel-book-${book.id}`}
             >
               <Card className="bg-card rounded-xl shadow-lg border border-border overflow-hidden hover:shadow-2xl transition-all transform hover:scale-105 h-full">
