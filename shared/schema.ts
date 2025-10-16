@@ -71,6 +71,8 @@ export const books = pgTable("books", {
   genre: text("genre").notNull(),
   price: real("price"),
   amazonUrl: text("amazon_url"),
+  // Store links - JSON array: [{name: "Google Play", url: "https://..."}, {name: "Kobo", url: "https://..."}]
+  storeLinks: text("store_links"),
   seriesId: varchar("series_id"),
   orderInSeries: integer("order_in_series"),
   isStandalone: boolean("is_standalone").default(false),
@@ -416,6 +418,7 @@ export const insertBookSchema = createInsertSchema(books).omit({
   seoKeywords: z.string().nullable().optional(),
   backgroundImageUrl: z.string().nullable().optional(),
   backgroundColor: z.string().nullable().optional(),
+  storeLinks: z.string().nullable().optional(),
   digitalFiles: z.string().nullable().optional(),
   isDigitalProduct: z.boolean().optional(),
   directSaleEnabled: z.boolean().optional(),
