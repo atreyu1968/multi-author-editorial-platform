@@ -369,7 +369,6 @@ export const analyticsDailyMetrics = pgTable("analytics_daily_metrics", {
 export const insertAuthorSchema = createInsertSchema(authors).omit({
   id: true,
 }).extend({
-  slug: z.string().optional(), // Make slug optional for editing existing authors
   heroTitle: z.string(),
   heroSubtitle: z.string(),
   bioParagraph1: z.string(),

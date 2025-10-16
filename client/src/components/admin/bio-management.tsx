@@ -28,6 +28,7 @@ export default function BioManagement() {
     resolver: zodResolver(insertAuthorSchema),
     defaultValues: {
       name: "",
+      slug: "",
       heroTitle: "",
       heroSubtitle: "",
       bioParagraph1: "",
@@ -47,6 +48,7 @@ export default function BioManagement() {
     if (author) {
       form.reset({
         name: author.name,
+        slug: author.slug,
         heroTitle: author.heroTitle,
         heroSubtitle: author.heroSubtitle,
         bioParagraph1: author.bioParagraph1,
@@ -147,6 +149,19 @@ export default function BioManagement() {
           ) : (
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6" data-testid="bio-form">
+                {/* Hidden slug field */}
+                <FormField
+                  control={form.control}
+                  name="slug"
+                  render={({ field }) => (
+                    <FormItem className="hidden">
+                      <FormControl>
+                        <Input type="hidden" {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                
                 {/* Photo Upload */}
                 <div>
                   <label className="block text-sm font-semibold mb-2">Foto del Autor</label>
