@@ -40,6 +40,8 @@ export default function BookManagement() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>("");
+  const [newStoreName, setNewStoreName] = useState("");
+  const [newStoreUrl, setNewStoreUrl] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -81,6 +83,7 @@ export default function BookManagement() {
       seoKeywords: "",
       backgroundImageUrl: "",
       backgroundColor: "",
+      storeLinks: "",
       digitalFileEpub: null,
       digitalFilePdf: null,
       digitalFileMobi: null,
@@ -377,6 +380,7 @@ export default function BookManagement() {
       seoKeywords: "",
       backgroundImageUrl: "",
       backgroundColor: "",
+      storeLinks: "",
       digitalFileEpub: null,
       digitalFilePdf: null,
       digitalFileMobi: null,
@@ -448,6 +452,7 @@ export default function BookManagement() {
       seoKeywords: book.seoKeywords || "",
       backgroundImageUrl: book.backgroundImageUrl || "",
       backgroundColor: book.backgroundColor || "",
+      storeLinks: book.storeLinks || "",
       digitalFileEpub,
       digitalFilePdf,
       digitalFileMobi,
@@ -509,6 +514,61 @@ export default function BookManagement() {
       updateBookMutation.mutate({ id: editingBook.id, data: processedData });
     } else {
       createBookMutation.mutate(processedData);
+    }
+  };
+
+  const handleAddStoreLink = () => {
+    if (!newStoreName.trim() || !newStoreUrl.trim()) {
+      toast({
+        title: "Error",
+        description: "El nombre y la URL de la tienda son requeridos",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const currentStoreLinks = form.getValues("storeLinks");
+    let storeLinksArray: { name: string; url: string }[] = [];
+    
+    if (currentStoreLinks) {
+      try {
+        storeLinksArray = JSON.parse(currentStoreLinks);
+      } catch (error) {
+        console.error("Error parsing storeLinks:", error);
+      }
+    }
+
+    storeLinksArray.push({ name: newStoreName, url: newStoreUrl });
+    form.setValue("storeLinks", JSON.stringify(storeLinksArray));
+    setNewStoreName("");
+    setNewStoreUrl("");
+  };
+
+  const handleRemoveStoreLink = (index: number) => {
+    const currentStoreLinks = form.getValues("storeLinks");
+    let storeLinksArray: { name: string; url: string }[] = [];
+    
+    if (currentStoreLinks) {
+      try {
+        storeLinksArray = JSON.parse(currentStoreLinks);
+      } catch (error) {
+        console.error("Error parsing storeLinks:", error);
+        return;
+      }
+    }
+
+    storeLinksArray.splice(index, 1);
+    form.setValue("storeLinks", storeLinksArray.length > 0 ? JSON.stringify(storeLinksArray) : "");
+  };
+
+  const getStoreLinksArray = (): { name: string; url: string }[] => {
+    const storeLinksValue = form.watch("storeLinks");
+    if (!storeLinksValue) return [];
+    
+    try {
+      return JSON.parse(storeLinksValue);
+    } catch (error) {
+      return [];
     }
   };
 
@@ -778,6 +838,61 @@ export default function BookManagement() {
                       </FormItem>
                     )}
                   />
+
+                  {/* Multiple Store Links Section */}
+                  <div className="space-y-4">
+                    <FormLabel>Enlaces a Tiendas Adicionales</FormLabel>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Input
+                        placeholder="Nombre de la tienda (ej: Google Play)"
+                        value={newStoreName}
+                        onChange={(e) => setNewStoreName(e.target.value)}
+                        data-testid="input-store-name"
+                      />
+                      <Input
+                        placeholder="URL de la tienda"
+                        value={newStoreUrl}
+                        onChange={(e) => setNewStoreUrl(e.target.value)}
+                        data-testid="input-store-url"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleAddStoreLink}
+                      data-testid="button-add-store-link"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Añadir Tienda
+                    </Button>
+
+                    {getStoreLinksArray().length > 0 && (
+                      <div className="mt-4 space-y-2">
+                        <p className="text-sm text-muted-foreground">Enlaces añadidos:</p>
+                        {getStoreLinksArray().map((link, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between p-3 bg-muted rounded-lg"
+                            data-testid={`store-link-${index}`}
+                          >
+                            <div className="flex-1">
+                              <p className="font-medium">{link.name}</p>
+                              <p className="text-sm text-muted-foreground truncate">{link.url}</p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveStoreLink(index)}
+                              data-testid={`button-remove-store-link-${index}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
                   <FormField
                     control={form.control}
