@@ -7,6 +7,7 @@ import EditorialNavigation from "@/components/editorial-navigation";
 import { SEOHead, generateStructuredData } from "@/components/seo/seo-head";
 import { buildBackgroundStyle } from "@/lib/utils";
 import { LatestBooksCarousel } from "@/components/latest-books-carousel";
+import { useUiText } from "@/contexts/ui-text-context";
 import type { Author, EditorialSettings, Book } from "@shared/schema";
 
 // Icon mapping for dynamic feature icons
@@ -24,6 +25,49 @@ const iconMap: Record<string, any> = {
 
 export default function Home() {
   const [, setLocation] = useLocation();
+  
+  // Load all UI texts
+  const t = {
+    seoTitleEditorial: useUiText("homepage", "seo_title_editorial", "Editorial"),
+    seoTitleSuffix: useUiText("homepage", "seo_title_suffix", "Descubre Nuevas Voces en Literatura"),
+    seoDescPrefix: useUiText("homepage", "seo_desc_prefix", "Bienvenido a"),
+    seoDescSuffix: useUiText("homepage", "seo_desc_suffix", "Descubre talentosos autores y sus cautivadoras historias."),
+    seoKeywordEditorial: useUiText("homepage", "seo_keyword_editorial", "editorial"),
+    seoKeywordLibros: useUiText("homepage", "seo_keyword_libros", "libros"),
+    seoKeywordAutores: useUiText("homepage", "seo_keyword_autores", "autores"),
+    seoKeywordLiteratura: useUiText("homepage", "seo_keyword_literatura", "literatura"),
+    heroTitleDefault: useUiText("homepage", "hero_title_default", "Descubre Historias que Transforman Vidas"),
+    heroSubtitleDefault: useUiText("homepage", "hero_subtitle_default", "Una editorial comprometida con nuevas voces literarias."),
+    heroPrimaryButtonDefault: useUiText("homepage", "hero_primary_button_default", "Conocer Autores"),
+    heroSecondaryButtonDefault: useUiText("homepage", "hero_secondary_button_default", "Ver Destacados"),
+    offerTitleDefault: useUiText("homepage", "offer_title_default", "¿Qué Ofrecemos?"),
+    offerDescDefault: useUiText("homepage", "offer_desc_default", "Somos más que una editorial, somos un puente entre grandes historias y lectores ávidos"),
+    feature1TitleDefault: useUiText("homepage", "feature1_title_default", "Calidad Literaria"),
+    feature1DescDefault: useUiText("homepage", "feature1_desc_default", "Seleccionamos cuidadosamente cada obra."),
+    feature2TitleDefault: useUiText("homepage", "feature2_title_default", "Autores Diversos"),
+    feature2DescDefault: useUiText("homepage", "feature2_desc_default", "Promovemos voces únicas con perspectivas frescas."),
+    feature3TitleDefault: useUiText("homepage", "feature3_title_default", "Experiencia Única"),
+    feature3DescDefault: useUiText("homepage", "feature3_desc_default", "Creamos conexiones significativas entre autores y lectores."),
+    featuredTitleDefault: useUiText("homepage", "featured_title_default", "Autores Destacados"),
+    featuredDescDefault: useUiText("homepage", "featured_desc_default", "Conoce a algunos de los talentosos escritores que forman parte de nuestra editorial"),
+    footerDescDefault: useUiText("homepage", "footer_desc_default", "Descubriendo nuevas voces en la literatura."),
+    footerCopyrightDefault: useUiText("homepage", "footer_copyright_default", "© 2024 Editorial. Todos los derechos reservados."),
+    latestPublicationsTitle: useUiText("homepage", "latest_publications_title", "Últimas Publicaciones"),
+    latestPublicationsDesc: useUiText("homepage", "latest_publications_desc", "Descubre nuestros libros más recientes y sumérgete en nuevas historias"),
+    loadingPublications: useUiText("homepage", "loading_publications", "Cargando publicaciones..."),
+    loadingAuthors: useUiText("homepage", "loading_authors", "Cargando autores..."),
+    emptyAuthorsSoon: useUiText("homepage", "empty_authors_soon", "Próximamente agregaremos nuevos autores"),
+    altAuthorPhoto: useUiText("homepage", "alt_author_photo", "Foto de"),
+    altEditorialLogo: useUiText("homepage", "alt_editorial_logo", "Logo Editorial"),
+    footerQuickLinks: useUiText("homepage", "footer_quick_links", "Enlaces Rápidos"),
+    footerContact: useUiText("homepage", "footer_contact", "Contacto"),
+    footerLinkHome: useUiText("homepage", "footer_link_home", "Inicio"),
+    footerLinkAuthors: useUiText("homepage", "footer_link_authors", "Nuestros Autores"),
+    footerLinkAdmin: useUiText("homepage", "footer_link_admin", "Admin"),
+    buttonViewProfile: useUiText("homepage", "button_view_profile", "Ver perfil"),
+    buttonViewAllAuthors: useUiText("homepage", "button_view_all_authors", "Ver Todos los Autores"),
+  };
+  
   const { data: authors = [], isLoading: authorsLoading } = useQuery<Author[]>({
     queryKey: ["/api/authors"],
   });
@@ -51,9 +95,9 @@ export default function Home() {
   return (
     <div className="bg-background text-foreground font-sans" style={buildBackgroundStyle({ imageUrl: settings?.backgroundImageUrl, color: settings?.backgroundColor })}>
       <SEOHead
-        title={settings?.seoTitle || `${settings?.name || "Editorial"} - Descubre Nuevas Voces en Literatura`}
-        description={settings?.seoDescription || `Bienvenido a ${settings?.name || "nuestra editorial"}. Descubre talentosos autores y sus cautivadoras historias.`}
-        keywords={settings?.seoKeywords?.split(',').map(k => k.trim()) || ["editorial", "libros", "autores", "literatura"]}
+        title={settings?.seoTitle || `${settings?.name || t.seoTitleEditorial} - ${t.seoTitleSuffix}`}
+        description={settings?.seoDescription || `${t.seoDescPrefix} ${settings?.name || t.seoTitleEditorial}. ${t.seoDescSuffix}`}
+        keywords={settings?.seoKeywords?.split(',').map(k => k.trim()) || [t.seoKeywordEditorial, t.seoKeywordLibros, t.seoKeywordAutores, t.seoKeywordLiteratura]}
         ogType="website"
         structuredData={generateStructuredData.website()}
         faviconUrl={settings?.faviconUrl || undefined}
@@ -66,10 +110,10 @@ export default function Home() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32 relative z-10">
           <div className="max-w-4xl mx-auto text-center text-white">
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif font-bold mb-6 leading-tight">
-              {settings?.heroTitle || "Descubre Historias que Transforman Vidas"}
+              {settings?.heroTitle || t.heroTitleDefault}
             </h1>
             <p className="text-xl md:text-2xl mb-8 opacity-90 max-w-3xl mx-auto leading-relaxed">
-              {settings?.heroSubtitle || "Una editorial comprometida con nuevas voces literarias."}
+              {settings?.heroSubtitle || t.heroSubtitleDefault}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button 
@@ -78,7 +122,7 @@ export default function Home() {
                 onClick={() => setLocation('/autores')}
               >
                 <Users className="h-5 w-5 mr-2" />
-                {settings?.heroPrimaryButtonText || "Conocer Autores"}
+                {settings?.heroPrimaryButtonText || t.heroPrimaryButtonDefault}
               </Button>
               <Button 
                 variant="outline" 
@@ -87,7 +131,7 @@ export default function Home() {
                 onClick={() => document.getElementById('autores-destacados')?.scrollIntoView({ behavior: 'smooth' })}
               >
                 <Sparkles className="h-5 w-5 mr-2" />
-                {settings?.heroSecondaryButtonText || "Ver Destacados"}
+                {settings?.heroSecondaryButtonText || t.heroSecondaryButtonDefault}
               </Button>
             </div>
           </div>
@@ -100,10 +144,10 @@ export default function Home() {
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary mb-6">
-                {settings?.offerSectionTitle || "¿Qué Ofrecemos?"}
+                {settings?.offerSectionTitle || t.offerTitleDefault}
               </h2>
               <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-                {settings?.offerSectionDescription || "Somos más que una editorial, somos un puente entre grandes historias y lectores ávidos"}
+                {settings?.offerSectionDescription || t.offerDescDefault}
               </p>
             </div>
             
@@ -113,10 +157,10 @@ export default function Home() {
                   {renderIcon(settings?.feature1Icon, "h-8 w-8 text-primary")}
                 </div>
                 <h3 className="text-2xl font-serif font-bold text-primary mb-4">
-                  {settings?.feature1Title || "Calidad Literaria"}
+                  {settings?.feature1Title || t.feature1TitleDefault}
                 </h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  {settings?.feature1Description || "Seleccionamos cuidadosamente cada obra."}
+                  {settings?.feature1Description || t.feature1DescDefault}
                 </p>
               </Card>
               
@@ -125,10 +169,10 @@ export default function Home() {
                   {renderIcon(settings?.feature2Icon, "h-8 w-8 text-primary")}
                 </div>
                 <h3 className="text-2xl font-serif font-bold text-primary mb-4">
-                  {settings?.feature2Title || "Autores Diversos"}
+                  {settings?.feature2Title || t.feature2TitleDefault}
                 </h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  {settings?.feature2Description || "Promovemos voces únicas con perspectivas frescas."}
+                  {settings?.feature2Description || t.feature2DescDefault}
                 </p>
               </Card>
               
@@ -137,10 +181,10 @@ export default function Home() {
                   {renderIcon(settings?.feature3Icon, "h-8 w-8 text-primary")}
                 </div>
                 <h3 className="text-2xl font-serif font-bold text-primary mb-4">
-                  {settings?.feature3Title || "Experiencia Única"}
+                  {settings?.feature3Title || t.feature3TitleDefault}
                 </h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  {settings?.feature3Description || "Creamos conexiones significativas entre autores y lectores."}
+                  {settings?.feature3Description || t.feature3DescDefault}
                 </p>
               </Card>
             </div>
@@ -154,17 +198,17 @@ export default function Home() {
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary mb-6">
-                Últimas Publicaciones
+                {t.latestPublicationsTitle}
               </h2>
               <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-                Descubre nuestros libros más recientes y sumérgete en nuevas historias
+                {t.latestPublicationsDesc}
               </p>
             </div>
             
             <div className="max-w-7xl mx-auto">
               {booksLoading ? (
                 <div className="text-center py-12">
-                  <div className="text-xl text-muted-foreground">Cargando publicaciones...</div>
+                  <div className="text-xl text-muted-foreground">{t.loadingPublications}</div>
                 </div>
               ) : (
                 <LatestBooksCarousel books={latestBooks} />
@@ -179,22 +223,22 @@ export default function Home() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary mb-6">
-              {settings?.featuredSectionTitle || "Autores Destacados"}
+              {settings?.featuredSectionTitle || t.featuredTitleDefault}
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              {settings?.featuredSectionDescription || "Conoce a algunos de los talentosos escritores que forman parte de nuestra editorial"}
+              {settings?.featuredSectionDescription || t.featuredDescDefault}
             </p>
           </div>
 
           {isLoading ? (
             <div className="text-center py-12">
-              <div className="text-xl text-muted-foreground">Cargando autores...</div>
+              <div className="text-xl text-muted-foreground">{t.loadingAuthors}</div>
             </div>
           ) : featuredAuthors.length === 0 ? (
             <div className="text-center py-12">
               <User className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
               <p className="text-xl text-muted-foreground">
-                Próximamente agregaremos nuevos autores
+                {t.emptyAuthorsSoon}
               </p>
             </div>
           ) : (
@@ -210,7 +254,7 @@ export default function Home() {
                       {author.photo ? (
                         <img 
                           src={author.photo} 
-                          alt={`Foto de ${author.name}`}
+                          alt={`${t.altAuthorPhoto} ${author.name}`}
                           className="w-full h-full object-cover"
                           data-testid={`featured-author-photo-${author.id}`}
                         />
@@ -235,7 +279,7 @@ export default function Home() {
                         data-testid={`button-view-featured-${author.id}`}
                         onClick={() => setLocation(`/autor/${author.slug}`)}
                       >
-                        Ver perfil
+                        {t.buttonViewProfile}
                         <ArrowRight className="h-4 w-4 ml-2" />
                       </Button>
                     </div>
@@ -250,7 +294,7 @@ export default function Home() {
                     data-testid="button-view-all-authors"
                     onClick={() => setLocation('/autores')}
                   >
-                    Ver Todos los Autores
+                    {t.buttonViewAllAuthors}
                     <ArrowRight className="h-5 w-5 ml-2" />
                   </Button>
                 </div>
@@ -267,13 +311,13 @@ export default function Home() {
             <div>
               <div className="text-2xl font-serif font-bold text-primary mb-4">
                 {settings?.logoUrl ? (
-                  <img src={settings.logoUrl} alt="Logo Editorial" className="h-10 object-contain" />
+                  <img src={settings.logoUrl} alt={t.altEditorialLogo} className="h-10 object-contain" />
                 ) : (
-                  settings?.name || "Editorial"
+                  settings?.name || t.seoTitleEditorial
                 )}
               </div>
               <p className="text-muted-foreground mb-4">
-                {settings?.footerDescription || "Descubriendo nuevas voces en la literatura."}
+                {settings?.footerDescription || t.footerDescDefault}
               </p>
               <div className="flex space-x-4">
                 {settings?.footerInstagramUrl && (
@@ -294,7 +338,7 @@ export default function Home() {
               </div>
             </div>
             <div>
-              <h3 className="font-semibold text-primary mb-4">Enlaces Rápidos</h3>
+              <h3 className="font-semibold text-primary mb-4">{t.footerQuickLinks}</h3>
               <ul className="space-y-2">
                 {settings?.footerQuickLinks && settings.footerQuickLinks.length > 0 ? (
                   settings.footerQuickLinks.map((linkStr, index) => {
@@ -311,17 +355,17 @@ export default function Home() {
                   <>
                     <li>
                       <Link href="/" className="text-muted-foreground hover:text-primary transition-colors">
-                        Inicio
+                        {t.footerLinkHome}
                       </Link>
                     </li>
                     <li>
                       <Link href="/autores" className="text-muted-foreground hover:text-primary transition-colors">
-                        Nuestros Autores
+                        {t.footerLinkAuthors}
                       </Link>
                     </li>
                     <li>
                       <Link href="/admin" className="text-muted-foreground hover:text-primary transition-colors">
-                        Admin
+                        {t.footerLinkAdmin}
                       </Link>
                     </li>
                   </>
@@ -329,7 +373,7 @@ export default function Home() {
               </ul>
             </div>
             <div>
-              <h3 className="font-semibold text-primary mb-4">Contacto</h3>
+              <h3 className="font-semibold text-primary mb-4">{t.footerContact}</h3>
               <ul className="space-y-2 text-muted-foreground">
                 {settings?.footerEmail && (
                   <li><i className="fas fa-envelope mr-2"></i>{settings.footerEmail}</li>
@@ -341,7 +385,7 @@ export default function Home() {
             </div>
           </div>
           <div className="border-t border-border mt-8 pt-8 text-center text-muted-foreground">
-            <p>{settings?.footerCopyright || "© 2024 Editorial. Todos los derechos reservados."}</p>
+            <p>{settings?.footerCopyright || t.footerCopyrightDefault}</p>
           </div>
         </div>
       </footer>
