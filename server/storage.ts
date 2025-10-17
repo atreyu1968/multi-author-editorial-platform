@@ -119,6 +119,12 @@ export interface IStorage {
   getUiTextById(id: string): Promise<UiText | undefined>;
   updateUiText(id: string, text: Partial<InsertUiText>): Promise<UiText | undefined>;
   upsertUiText(text: InsertUiText): Promise<UiText>;
+  
+  // Translation management methods
+  listNamespaces(): Promise<string[]>;
+  getLocaleMatrix(namespaces?: string[], search?: string): Promise<{ namespace: string; key: string; locales: Record<string, string | null> }[]>;
+  bulkUpsertUiTexts(entries: InsertUiText[]): Promise<UiText[]>;
+  deleteUiTextsByLocaleKey(locale: string, keys: string[]): Promise<number>;
 
   // Editorial Settings methods
   getEditorialSettings(): Promise<EditorialSettings | undefined>;
@@ -971,6 +977,74 @@ export class MemStorage implements IStorage {
     const newText: UiText = { ...text, id, locale };
     this.uiTexts.set(id, newText);
     return newText;
+  }
+
+  async listNamespaces(): Promise<string[]> {
+    const namespaces = new Set<string>();
+    Array.from(this.uiTexts.values()).forEach(text => namespaces.add(text.namespace));
+    return Array.from(namespaces).sort();
+  }
+
+  async getLocaleMatrix(namespaces?: string[], search?: string): Promise<{ namespace: string; key: string; locales: Record<string, string | null> }[]> {
+    let allTexts = Array.from(this.uiTexts.values());
+    
+    if (namespaces && namespaces.length > 0) {
+      allTexts = allTexts.filter(t => namespaces.includes(t.namespace));
+    }
+    
+    if (search) {
+      const searchLower = search.toLowerCase();
+      allTexts = allTexts.filter(t => 
+        t.key.toLowerCase().includes(searchLower) || 
+        t.value.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    const matrix = new Map<string, { namespace: string; key: string; locales: Record<string, string | null> }>();
+    
+    for (const text of allTexts) {
+      const compositeKey = `${text.namespace}|||${text.key}`;
+      if (!matrix.has(compositeKey)) {
+        matrix.set(compositeKey, {
+          namespace: text.namespace,
+          key: text.key,
+          locales: {}
+        });
+      }
+      matrix.get(compositeKey)!.locales[text.locale] = text.value;
+    }
+    
+    return Array.from(matrix.values()).sort((a, b) => {
+      if (a.namespace !== b.namespace) return a.namespace.localeCompare(b.namespace);
+      return a.key.localeCompare(b.key);
+    });
+  }
+
+  async bulkUpsertUiTexts(entries: InsertUiText[]): Promise<UiText[]> {
+    const results: UiText[] = [];
+    for (const entry of entries) {
+      const result = await this.upsertUiText(entry);
+      results.push(result);
+    }
+    return results;
+  }
+
+  async deleteUiTextsByLocaleKey(locale: string, keys: string[]): Promise<number> {
+    let deleted = 0;
+    const toDelete: string[] = [];
+    
+    for (const [id, text] of Array.from(this.uiTexts.entries())) {
+      if (text.locale === locale && keys.includes(text.key)) {
+        toDelete.push(id);
+      }
+    }
+    
+    for (const id of toDelete) {
+      this.uiTexts.delete(id);
+      deleted++;
+    }
+    
+    return deleted;
   }
 
   async getEditorialSettings(): Promise<EditorialSettings | undefined> {

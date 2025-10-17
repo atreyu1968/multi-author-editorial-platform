@@ -745,6 +745,217 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Translation Management routes
+  app.get("/api/translations/summary", requireAuth, async (req, res) => {
+    try {
+      const matrix = await storage.getLocaleMatrix();
+      const locales = ['es-ES', 'en-US', 'ca-ES'];
+      
+      const summary = locales.map(locale => {
+        const total = matrix.length;
+        const translated = matrix.filter(item => item.locales[locale]).length;
+        const coverage = total > 0 ? (translated / total) * 100 : 0;
+        
+        return {
+          locale,
+          total,
+          translated,
+          missing: total - translated,
+          coverage: Math.round(coverage * 10) / 10
+        };
+      });
+      
+      res.json(summary);
+    } catch (error) {
+      console.error("Translation summary error:", error);
+      res.status(500).json({ message: "Failed to get translation summary" });
+    }
+  });
+
+  app.get("/api/translations/diff", requireAuth, async (req, res) => {
+    try {
+      const source = req.query.source as string;
+      const target = req.query.target as string;
+      
+      if (!source || !target) {
+        res.status(400).json({ message: "Source and target locales are required" });
+        return;
+      }
+      
+      const matrix = await storage.getLocaleMatrix();
+      
+      const missing = matrix.filter(item => item.locales[source] && !item.locales[target]);
+      const obsolete = matrix.filter(item => !item.locales[source] && item.locales[target]);
+      
+      res.json({
+        source,
+        target,
+        missing: missing.map(item => ({
+          namespace: item.namespace,
+          key: item.key,
+          sourceValue: item.locales[source]
+        })),
+        obsolete: obsolete.map(item => ({
+          namespace: item.namespace,
+          key: item.key,
+          targetValue: item.locales[target]
+        }))
+      });
+    } catch (error) {
+      console.error("Translation diff error:", error);
+      res.status(500).json({ message: "Failed to get translation diff" });
+    }
+  });
+
+  app.get("/api/translations/export", requireAuth, async (req, res) => {
+    try {
+      const format = (req.query.format as string) || 'json';
+      const locale = req.query.locale as string;
+      
+      const texts = locale && locale !== 'all' 
+        ? await storage.getUiTexts(locale)
+        : await storage.getUiTexts();
+      
+      if (format === 'csv') {
+        const csvRows = ['namespace,key,locale,value'];
+        texts.forEach(text => {
+          const value = text.value.replace(/"/g, '""');
+          csvRows.push(`${text.namespace},${text.key},${text.locale},"${value}"`);
+        });
+        
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename=translations-${locale || 'all'}.csv`);
+        res.send(csvRows.join('\n'));
+      } else {
+        const nested: Record<string, Record<string, string>> = {};
+        
+        texts.forEach(text => {
+          if (!nested[text.namespace]) {
+            nested[text.namespace] = {};
+          }
+          const key = locale && locale !== 'all' ? text.key : `${text.key}|||${text.locale}`;
+          nested[text.namespace][key] = text.value;
+        });
+        
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename=translations-${locale || 'all'}.json`);
+        res.json(nested);
+      }
+    } catch (error) {
+      console.error("Translation export error:", error);
+      res.status(500).json({ message: "Failed to export translations" });
+    }
+  });
+
+  app.post("/api/translations/import", requireAuth, async (req, res) => {
+    try {
+      const { format, data, locale } = req.body;
+      
+      if (!format || !data) {
+        res.status(400).json({ message: "Format and data are required" });
+        return;
+      }
+      
+      const entries: any[] = [];
+      
+      if (format === 'json') {
+        if (typeof data !== 'object') {
+          res.status(400).json({ message: "Invalid JSON format" });
+          return;
+        }
+        
+        for (const [namespace, keys] of Object.entries(data)) {
+          if (typeof keys !== 'object') continue;
+          
+          for (const [key, value] of Object.entries(keys as Record<string, any>)) {
+            if (typeof value !== 'string') continue;
+            
+            const [actualKey, keyLocale] = key.includes('|||') ? key.split('|||') : [key, locale];
+            
+            if (!keyLocale) {
+              res.status(400).json({ message: "Locale is required for each entry" });
+              return;
+            }
+            
+            entries.push({
+              namespace,
+              key: actualKey,
+              locale: keyLocale,
+              value
+            });
+          }
+        }
+      } else if (format === 'csv') {
+        const lines = data.split('\n').slice(1);
+        
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          
+          const match = line.match(/^([^,]+),([^,]+),([^,]+),"(.*)"/);
+          if (!match) continue;
+          
+          const [, namespace, key, csvLocale, value] = match;
+          entries.push({
+            namespace,
+            key,
+            locale: csvLocale,
+            value: value.replace(/""/g, '"')
+          });
+        }
+      }
+      
+      const validatedEntries = entries.map(entry => insertUiTextSchema.parse(entry));
+      const results = await storage.bulkUpsertUiTexts(validatedEntries);
+      
+      res.json({
+        success: true,
+        imported: results.length,
+        entries: results
+      });
+    } catch (error) {
+      console.error("Translation import error:", error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Invalid import data" });
+    }
+  });
+
+  app.post("/api/translations/copy", requireAuth, async (req, res) => {
+    try {
+      const schema = z.object({
+        sourceLocale: z.string(),
+        targetLocale: z.string(),
+        namespaces: z.array(z.string()).optional()
+      });
+      
+      const { sourceLocale, targetLocale, namespaces } = schema.parse(req.body);
+      
+      if (sourceLocale === targetLocale) {
+        res.status(400).json({ message: "Source and target locales must be different" });
+        return;
+      }
+      
+      const matrix = await storage.getLocaleMatrix(namespaces);
+      const toCopy = matrix.filter(item => item.locales[sourceLocale] && !item.locales[targetLocale]);
+      
+      const entries = toCopy.map(item => ({
+        namespace: item.namespace,
+        key: item.key,
+        locale: targetLocale,
+        value: item.locales[sourceLocale]!
+      }));
+      
+      const results = await storage.bulkUpsertUiTexts(entries);
+      
+      res.json({
+        success: true,
+        copied: results.length,
+        entries: results
+      });
+    } catch (error) {
+      console.error("Translation copy error:", error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to copy translations" });
+    }
+  });
+
   // Editorial Settings routes
   // Public endpoint - excludes sensitive PayPal credentials
   app.get("/api/editorial-settings", async (req, res) => {

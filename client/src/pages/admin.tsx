@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { ArrowLeft, Home, BookOpen, Users, User, Star, Settings, FileText, HelpCircle, Type, UserCircle, Building2, BarChart3, ShoppingCart } from "lucide-react";
+import { ArrowLeft, Home, BookOpen, Users, User, Star, Settings, FileText, HelpCircle, Type, UserCircle, Building2, BarChart3, ShoppingCart, Languages } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DynamicTheme } from "@/components/dynamic-theme";
 import AdminDashboard from "@/components/admin/admin-dashboard";
@@ -12,6 +12,7 @@ import SettingsManagement from "@/components/admin/settings-management";
 import BlogManagement from "@/components/admin/blog-management";
 import HelpInstructions from "@/components/admin/help-instructions";
 import UiTextsManagement from "@/components/admin/ui-texts-management";
+import TranslationManagement from "@/components/admin/translation-management";
 import AuthorManagement from "@/components/admin/author-management";
 import EditorialSettingsManagement from "@/components/admin/editorial-settings-management";
 import AnalyticsManagement from "@/components/admin/analytics-management";
@@ -19,7 +20,7 @@ import OrdersManagement from "@/components/admin/orders-management";
 import { AdminAuthorProvider, useAdminAuthor } from "@/contexts/admin-author-context";
 import { useUiText } from "@/contexts/ui-text-context";
 
-type AdminSection = 'dashboard' | 'books' | 'series' | 'authors' | 'bio' | 'testimonials' | 'blog' | 'settings' | 'ui-texts' | 'editorial-settings' | 'analytics' | 'orders' | 'help';
+type AdminSection = 'dashboard' | 'books' | 'series' | 'authors' | 'bio' | 'testimonials' | 'blog' | 'settings' | 'ui-texts' | 'translations' | 'editorial-settings' | 'analytics' | 'orders' | 'help';
 
 function AdminContent() {
   const [currentSection, setCurrentSection] = useState<AdminSection>('dashboard');
@@ -37,6 +38,7 @@ function AdminContent() {
     navTestimonials: useUiText("admin.shell", "nav_testimonials", "Testimonios"),
     navBlog: useUiText("admin.shell", "nav_blog", "Blog"),
     navUiTexts: useUiText("admin.shell", "nav_ui_texts", "Textos del Sitio"),
+    navTranslations: useUiText("admin.shell", "nav_translations", "Traducciones"),
     navSettings: useUiText("admin.shell", "nav_settings", "Configuración"),
     sectionEditorialGlobal: useUiText("admin.shell", "section_editorial_global", "Editorial (Global)"),
     navSeries: useUiText("admin.shell", "nav_series", "Series"),
@@ -67,6 +69,8 @@ function AdminContent() {
         return <SettingsManagement />;
       case 'ui-texts':
         return <UiTextsManagement />;
+      case 'translations':
+        return <TranslationManagement />;
       case 'editorial-settings':
         return <EditorialSettingsManagement />;
       case 'analytics':
@@ -206,6 +210,18 @@ function AdminContent() {
                 >
                   <Type className="h-5 w-5" />
                   {t.navUiTexts}
+                </button>
+                <button 
+                  onClick={() => setCurrentSection('translations')}
+                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
+                    currentSection === 'translations' 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'hover:bg-primary hover:text-primary-foreground'
+                  }`}
+                  data-testid="nav-translations"
+                >
+                  <Languages className="h-5 w-5" />
+                  {t.navTranslations}
                 </button>
                 <button 
                   onClick={() => setCurrentSection('settings')}

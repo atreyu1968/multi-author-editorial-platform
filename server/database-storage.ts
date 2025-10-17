@@ -533,6 +533,87 @@ export class DatabaseStorage implements IStorage {
     return upsertedText;
   }
 
+  async listNamespaces(): Promise<string[]> {
+    const result = await db
+      .selectDistinct({ namespace: uiTexts.namespace })
+      .from(uiTexts)
+      .orderBy(uiTexts.namespace);
+    return result.map(r => r.namespace);
+  }
+
+  async getLocaleMatrix(namespaces?: string[], search?: string): Promise<{ namespace: string; key: string; locales: Record<string, string | null> }[]> {
+    const conditions = [];
+    
+    if (namespaces && namespaces.length > 0) {
+      conditions.push(sql`${uiTexts.namespace} IN (${sql.join(namespaces.map(ns => sql`${ns}`), sql`, `)})`);
+    }
+    
+    if (search) {
+      const searchPattern = `%${search}%`;
+      conditions.push(
+        sql`(${uiTexts.key} ILIKE ${searchPattern} OR ${uiTexts.value} ILIKE ${searchPattern})`
+      );
+    }
+    
+    const allTexts = conditions.length > 0
+      ? await db.select().from(uiTexts).where(and(...conditions))
+      : await db.select().from(uiTexts);
+    
+    const matrix = new Map<string, { namespace: string; key: string; locales: Record<string, string | null> }>();
+    
+    for (const text of allTexts) {
+      const compositeKey = `${text.namespace}|||${text.key}`;
+      if (!matrix.has(compositeKey)) {
+        matrix.set(compositeKey, {
+          namespace: text.namespace,
+          key: text.key,
+          locales: {}
+        });
+      }
+      matrix.get(compositeKey)!.locales[text.locale] = text.value;
+    }
+    
+    return Array.from(matrix.values()).sort((a, b) => {
+      if (a.namespace !== b.namespace) return a.namespace.localeCompare(b.namespace);
+      return a.key.localeCompare(b.key);
+    });
+  }
+
+  async bulkUpsertUiTexts(entries: InsertUiText[]): Promise<UiText[]> {
+    if (entries.length === 0) return [];
+    
+    const results: UiText[] = [];
+    for (const entry of entries) {
+      const [upserted] = await db
+        .insert(uiTexts)
+        .values(entry)
+        .onConflictDoUpdate({
+          target: [uiTexts.namespace, uiTexts.key, uiTexts.locale],
+          set: { value: entry.value },
+        })
+        .returning();
+      results.push(upserted);
+    }
+    
+    return results;
+  }
+
+  async deleteUiTextsByLocaleKey(locale: string, keys: string[]): Promise<number> {
+    if (keys.length === 0) return 0;
+    
+    const result = await db
+      .delete(uiTexts)
+      .where(
+        and(
+          eq(uiTexts.locale, locale),
+          sql`${uiTexts.key} IN (${sql.join(keys.map(k => sql`${k}`), sql`, `)})`
+        )
+      )
+      .returning();
+    
+    return result.length;
+  }
+
   async getEditorialSettings(): Promise<EditorialSettings | undefined> {
     const [settings] = await db.select().from(editorialSettings).limit(1);
     return settings || undefined;
