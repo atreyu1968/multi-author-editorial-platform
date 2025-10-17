@@ -19,19 +19,7 @@ import { Link, useLocation } from "wouter";
 import PayPalButton from "@/components/PayPalButton";
 import { SEOHead } from "@/components/seo/seo-head";
 import { formatCurrency } from "@/lib/format-currency";
-
-// Extend customer schema with proper validation
-const checkoutFormSchema = insertCustomerSchema.extend({
-  email: z.string().email("Email inválido"),
-  fullName: z.string().min(2, "El nombre completo es requerido"),
-  phone: z.string().optional(),
-  billingAddress: z.string().min(10, "La dirección de facturación es requerida"),
-  shippingAddress: z.string().optional(),
-  isSubscribedToNewsletter: z.boolean().default(false),
-  sameAsShipping: z.boolean().default(true),
-});
-
-type CheckoutFormData = z.infer<typeof checkoutFormSchema>;
+import { useUiText } from "@/contexts/ui-text-context";
 
 export default function Checkout() {
   const { items, isLoading: cartLoading, updateQuantity, removeFromCart, totalPrice, clearCart } = useCart();
@@ -45,6 +33,77 @@ export default function Checkout() {
   const { data: settings } = useQuery<EditorialSettings>({
     queryKey: ["/api/editorial-settings"],
   });
+
+  const t = {
+    validationEmailInvalid: useUiText("checkout", "validation_email_invalid", "Email inválido"),
+    validationFullnameRequired: useUiText("checkout", "validation_fullname_required", "El nombre completo es requerido"),
+    validationBillingRequired: useUiText("checkout", "validation_billing_required", "La dirección de facturación es requerida"),
+    errorVerifyCustomer: useUiText("checkout", "error_verify_customer", "Error al verificar cliente"),
+    toastOrderCompletedTitle: useUiText("checkout", "toast_order_completed_title", "¡Pedido completado!"),
+    toastOrderCompletedDesc: useUiText("checkout", "toast_order_completed_desc", "Tu pedido ha sido procesado exitosamente."),
+    toastErrorTitle: useUiText("checkout", "toast_error_title", "Error"),
+    toastOrderCreateError: useUiText("checkout", "toast_order_create_error", "No se pudo crear el pedido. Por favor, contacta con soporte."),
+    toastExistingCustomerTitle: useUiText("checkout", "toast_existing_customer_title", "Cliente existente"),
+    toastExistingCustomerDesc: useUiText("checkout", "toast_existing_customer_desc", "Tus datos han sido cargados automáticamente."),
+    toastDataSavedTitle: useUiText("checkout", "toast_data_saved_title", "Datos guardados"),
+    toastDataSavedDesc: useUiText("checkout", "toast_data_saved_desc", "Tu información ha sido registrada correctamente."),
+    toastProcessError: useUiText("checkout", "toast_process_error", "No se pudo procesar la información. Por favor, intenta de nuevo."),
+    toastQuantityUpdatedTitle: useUiText("checkout", "toast_quantity_updated_title", "Cantidad actualizada"),
+    toastQuantityUpdatedDesc: useUiText("checkout", "toast_quantity_updated_desc", "El carrito ha sido actualizado."),
+    toastQuantityUpdateError: useUiText("checkout", "toast_quantity_update_error", "No se pudo actualizar la cantidad."),
+    toastProductRemovedTitle: useUiText("checkout", "toast_product_removed_title", "Producto eliminado"),
+    toastProductRemovedDesc: useUiText("checkout", "toast_product_removed_desc", "El producto ha sido eliminado del carrito."),
+    toastProductRemoveError: useUiText("checkout", "toast_product_remove_error", "No se pudo eliminar el producto."),
+    emptyCartTitle: useUiText("checkout", "empty_cart_title", "Carrito Vacío"),
+    emptyCartDesc: useUiText("checkout", "empty_cart_desc", "No tienes productos en tu carrito"),
+    buttonBackToStore: useUiText("checkout", "button_back_to_store", "Volver a la tienda"),
+    seoTitle: useUiText("checkout", "seo_title", "Checkout - Finalizar Compra"),
+    seoDescription: useUiText("checkout", "seo_description", "Completa tu compra de forma segura. Revisa tu carrito, ingresa tu información de facturación y envío, y procede al pago."),
+    seoKeywordCheckout: useUiText("checkout", "seo_keyword_checkout", "checkout"),
+    seoKeywordBuy: useUiText("checkout", "seo_keyword_buy", "comprar"),
+    seoKeywordPayment: useUiText("checkout", "seo_keyword_payment", "pago"),
+    seoKeywordCart: useUiText("checkout", "seo_keyword_cart", "carrito"),
+    seoKeywordComplete: useUiText("checkout", "seo_keyword_complete", "finalizar compra"),
+    pageTitle: useUiText("checkout", "page_title", "Finalizar Compra"),
+    cartSummaryTitle: useUiText("checkout", "cart_summary_title", "Resumen del Carrito"),
+    cartSummaryDesc: useUiText("checkout", "cart_summary_desc", "Revisa tus productos antes de finalizar"),
+    labelItemSubtotal: useUiText("checkout", "label_item_subtotal", "Subtotal:"),
+    labelSubtotal: useUiText("checkout", "label_subtotal", "Subtotal:"),
+    labelTax: useUiText("checkout", "label_tax", "Impuestos:"),
+    labelTotal: useUiText("checkout", "label_total", "Total:"),
+    billingFormTitle: useUiText("checkout", "billing_form_title", "Información de Facturación"),
+    billingFormDesc: useUiText("checkout", "billing_form_desc", "Completa tus datos para continuar"),
+    labelFullname: useUiText("checkout", "label_fullname", "Nombre Completo *"),
+    placeholderFullname: useUiText("checkout", "placeholder_fullname", "Juan Pérez"),
+    labelEmail: useUiText("checkout", "label_email", "Email *"),
+    placeholderEmail: useUiText("checkout", "placeholder_email", "juan@ejemplo.com"),
+    labelPhone: useUiText("checkout", "label_phone", "Teléfono"),
+    placeholderPhone: useUiText("checkout", "placeholder_phone", "+1234567890"),
+    labelBillingAddress: useUiText("checkout", "label_billing_address", "Dirección de Facturación *"),
+    placeholderBillingAddress: useUiText("checkout", "placeholder_billing_address", "Calle, número, ciudad, código postal, país"),
+    labelSameAsBilling: useUiText("checkout", "label_same_as_billing", "Dirección de envío igual a facturación"),
+    labelShippingAddress: useUiText("checkout", "label_shipping_address", "Dirección de Envío"),
+    placeholderShippingAddress: useUiText("checkout", "placeholder_shipping_address", "Calle, número, ciudad, código postal, país"),
+    labelNewsletter: useUiText("checkout", "label_newsletter", "Suscribirme al boletín de noticias"),
+    labelNewsletterDesc: useUiText("checkout", "label_newsletter_desc", "Recibe novedades y ofertas exclusivas"),
+    buttonValidating: useUiText("checkout", "button_validating", "Validando..."),
+    buttonContinuePayment: useUiText("checkout", "button_continue_payment", "Continuar al Pago"),
+    paypalSecureMessage: useUiText("checkout", "paypal_secure_message", "Completa tu pago de forma segura con PayPal"),
+    buttonConfirmOrder: useUiText("checkout", "button_confirm_order", "Confirmar Pedido"),
+    fallbackProductName: useUiText("checkout", "fallback_product_name", "Producto"),
+  };
+
+  const checkoutFormSchema = insertCustomerSchema.extend({
+    email: z.string().email(t.validationEmailInvalid),
+    fullName: z.string().min(2, t.validationFullnameRequired),
+    phone: z.string().optional(),
+    billingAddress: z.string().min(10, t.validationBillingRequired),
+    shippingAddress: z.string().optional(),
+    isSubscribedToNewsletter: z.boolean().default(false),
+    sameAsShipping: z.boolean().default(true),
+  });
+
+  type CheckoutFormData = z.infer<typeof checkoutFormSchema>;
 
   const form = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutFormSchema),
@@ -61,16 +120,14 @@ export default function Checkout() {
 
   const sameAsShipping = form.watch("sameAsShipping");
 
-  // Check customer mutation
   const checkCustomerMutation = useMutation<Customer | null, Error, string>({
     mutationFn: async (email: string) => {
       const response = await fetch(`/api/customers/email/${encodeURIComponent(email)}`);
-      if (!response.ok) throw new Error("Error al verificar cliente");
+      if (!response.ok) throw new Error(t.errorVerifyCustomer);
       return await response.json() as Customer | null;
     },
   });
 
-  // Create customer mutation
   const createCustomerMutation = useMutation<Customer, Error, CheckoutFormData>({
     mutationFn: async (data: CheckoutFormData) => {
       const customerData = {
@@ -86,17 +143,14 @@ export default function Checkout() {
     },
   });
 
-  // Create order mutation
   const createOrderMutation = useMutation({
     mutationFn: async (orderData: InsertOrder) => {
       return await apiRequest("POST", "/api/orders", orderData);
     },
     onSuccess: async (order: any) => {
       setOrderCreated(true);
-      // Clear cart after successful order
       clearCart();
       
-      // Track purchase conversion
       await trackConversion("purchase", order.id, {
         orderId: order.id,
         revenue: totalPrice,
@@ -106,45 +160,41 @@ export default function Checkout() {
       });
       
       toast({
-        title: "¡Pedido completado!",
-        description: "Tu pedido ha sido procesado exitosamente.",
+        title: t.toastOrderCompletedTitle,
+        description: t.toastOrderCompletedDesc,
       });
 
-      // Redirect to order confirmation page
       setTimeout(() => {
         navigate(`/pedido/${order.id}`);
       }, 1000);
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "No se pudo crear el pedido. Por favor, contacta con soporte.",
+        title: t.toastErrorTitle,
+        description: t.toastOrderCreateError,
         variant: "destructive",
       });
     },
   });
 
-  // Handle form submission
   const onSubmit = async (data: CheckoutFormData) => {
     try {
       setPreparingPayment(true);
 
-      // Check if customer exists
       const existingCustomer = await checkCustomerMutation.mutateAsync(data.email);
 
       let customer: Customer;
       if (existingCustomer) {
         customer = existingCustomer;
         toast({
-          title: "Cliente existente",
-          description: "Tus datos han sido cargados automáticamente.",
+          title: t.toastExistingCustomerTitle,
+          description: t.toastExistingCustomerDesc,
         });
       } else {
-        // Create new customer
         customer = await createCustomerMutation.mutateAsync(data);
         toast({
-          title: "Datos guardados",
-          description: "Tu información ha sido registrada correctamente.",
+          title: t.toastDataSavedTitle,
+          description: t.toastDataSavedDesc,
         });
       }
 
@@ -154,31 +204,21 @@ export default function Checkout() {
     } catch (error) {
       setPreparingPayment(false);
       toast({
-        title: "Error",
-        description: "No se pudo procesar la información. Por favor, intenta de nuevo.",
+        title: t.toastErrorTitle,
+        description: t.toastProcessError,
         variant: "destructive",
       });
     }
   };
 
-  // Handle PayPal payment completion
   useEffect(() => {
-    // This is a workaround since PayPalButton doesn't expose success callback
-    // In production, the backend capture endpoint should create the order
-    // For now, we'll create the order when customer data is ready and user has initiated payment
-    
     if (customerData && !orderCreated) {
-      // Listen for PayPal completion (simplified - in production this should be handled via backend)
       const checkPaymentInterval = setInterval(() => {
-        // Check if PayPal payment was completed
-        // This is a placeholder - actual implementation should verify payment status
         const paypalCompleted = localStorage.getItem('paypal_payment_completed');
         
         if (paypalCompleted === 'true') {
           clearInterval(checkPaymentInterval);
           localStorage.removeItem('paypal_payment_completed');
-          
-          // Create order after PayPal success
           createOrder();
         }
       }, 1000);
@@ -190,22 +230,20 @@ export default function Checkout() {
   const createOrder = () => {
     if (!customerData) return;
 
-    // Generate order number
     const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`.toUpperCase();
 
-    // Prepare order items
     const orderItems = items.map(item => ({
       id: item.id,
       productType: item.productType,
       productId: item.productId,
       quantity: item.quantity,
       price: item.book?.price || item.merchandise?.price || 0,
-      name: item.book?.title || item.merchandise?.title || "Producto",
+      name: item.book?.title || item.merchandise?.title || t.fallbackProductName,
     }));
 
     const orderData: InsertOrder = {
       orderNumber,
-      paypalOrderId: null, // Will be set by backend on PayPal capture
+      paypalOrderId: null,
       paypalPayerId: null,
       totalAmount: totalPrice,
       status: "pending",
@@ -219,7 +257,6 @@ export default function Checkout() {
     createOrderMutation.mutate(orderData);
   };
 
-  // Handle quantity update
   const handleUpdateQuantity = async (itemId: string, currentQuantity: number, change: number) => {
     const newQuantity = currentQuantity + change;
     if (newQuantity < 1) return;
@@ -227,30 +264,29 @@ export default function Checkout() {
     try {
       await updateQuantity(itemId, newQuantity);
       toast({
-        title: "Cantidad actualizada",
-        description: "El carrito ha sido actualizado.",
+        title: t.toastQuantityUpdatedTitle,
+        description: t.toastQuantityUpdatedDesc,
       });
     } catch (error) {
       toast({
-        title: "Error",
-        description: "No se pudo actualizar la cantidad.",
+        title: t.toastErrorTitle,
+        description: t.toastQuantityUpdateError,
         variant: "destructive",
       });
     }
   };
 
-  // Handle remove item
   const handleRemoveItem = async (itemId: string) => {
     try {
       await removeFromCart(itemId);
       toast({
-        title: "Producto eliminado",
-        description: "El producto ha sido eliminado del carrito.",
+        title: t.toastProductRemovedTitle,
+        description: t.toastProductRemovedDesc,
       });
     } catch (error) {
       toast({
-        title: "Error",
-        description: "No se pudo eliminar el producto.",
+        title: t.toastErrorTitle,
+        description: t.toastProductRemoveError,
         variant: "destructive",
       });
     }
@@ -271,17 +307,17 @@ export default function Checkout() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ShoppingCart className="h-6 w-6" />
-              Carrito Vacío
+              {t.emptyCartTitle}
             </CardTitle>
             <CardDescription>
-              No tienes productos en tu carrito
+              {t.emptyCartDesc}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Link href="/">
               <Button className="w-full" data-testid="button-back-home">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Volver a la tienda
+                {t.buttonBackToStore}
               </Button>
             </Link>
           </CardContent>
@@ -291,26 +327,25 @@ export default function Checkout() {
   }
 
   const subtotal = totalPrice;
-  const tax = 0; // Optional tax calculation
+  const tax = 0;
   const total = subtotal + tax;
 
   return (
     <div className="container mx-auto px-4 py-8">
       <SEOHead
-        title="Checkout - Finalizar Compra"
-        description="Completa tu compra de forma segura. Revisa tu carrito, ingresa tu información de facturación y envío, y procede al pago."
-        keywords={["checkout", "comprar", "pago", "carrito", "finalizar compra"]}
+        title={t.seoTitle}
+        description={t.seoDescription}
+        keywords={[t.seoKeywordCheckout, t.seoKeywordBuy, t.seoKeywordPayment, t.seoKeywordCart, t.seoKeywordComplete]}
         ogType="website"
       />
-      <h1 className="text-3xl font-bold mb-8" data-testid="text-checkout-title">Finalizar Compra</h1>
+      <h1 className="text-3xl font-bold mb-8" data-testid="text-checkout-title">{t.pageTitle}</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Cart Summary Section */}
         <div className="space-y-4">
           <Card data-testid="card-cart-summary">
             <CardHeader>
-              <CardTitle>Resumen del Carrito</CardTitle>
-              <CardDescription>Revisa tus productos antes de finalizar</CardDescription>
+              <CardTitle>{t.cartSummaryTitle}</CardTitle>
+              <CardDescription>{t.cartSummaryDesc}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {items.map((item) => {
@@ -362,7 +397,7 @@ export default function Checkout() {
                         </Button>
                       </div>
                       <p className="text-sm font-semibold mt-2" data-testid={`text-subtotal-${item.id}`}>
-                        Subtotal: {formatCurrency(subtotal, settings?.currency || "USD", settings?.currencySymbol || "$")}
+                        {t.labelItemSubtotal} {formatCurrency(subtotal, settings?.currency || "USD", settings?.currencySymbol || "$")}
                       </p>
                     </div>
                     <Button
@@ -379,17 +414,17 @@ export default function Checkout() {
 
               <div className="border-t pt-4 space-y-2">
                 <div className="flex justify-between">
-                  <span data-testid="text-subtotal-label">Subtotal:</span>
+                  <span data-testid="text-subtotal-label">{t.labelSubtotal}</span>
                   <span data-testid="text-subtotal-value">{formatCurrency(subtotal, settings?.currency || "USD", settings?.currencySymbol || "$")}</span>
                 </div>
                 {tax > 0 && (
                   <div className="flex justify-between">
-                    <span data-testid="text-tax-label">Impuestos:</span>
+                    <span data-testid="text-tax-label">{t.labelTax}</span>
                     <span data-testid="text-tax-value">{formatCurrency(tax, settings?.currency || "USD", settings?.currencySymbol || "$")}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-lg font-bold">
-                  <span data-testid="text-total-label">Total:</span>
+                  <span data-testid="text-total-label">{t.labelTotal}</span>
                   <span data-testid="text-total-value">{formatCurrency(total, settings?.currency || "USD", settings?.currencySymbol || "$")}</span>
                 </div>
               </div>
@@ -397,12 +432,11 @@ export default function Checkout() {
           </Card>
         </div>
 
-        {/* Billing Form Section */}
         <div className="space-y-4">
           <Card data-testid="card-billing-form">
             <CardHeader>
-              <CardTitle>Información de Facturación</CardTitle>
-              <CardDescription>Completa tus datos para continuar</CardDescription>
+              <CardTitle>{t.billingFormTitle}</CardTitle>
+              <CardDescription>{t.billingFormDesc}</CardDescription>
             </CardHeader>
             <CardContent>
               <Form {...form}>
@@ -412,10 +446,10 @@ export default function Checkout() {
                     name="fullName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Nombre Completo *</FormLabel>
+                        <FormLabel>{t.labelFullname}</FormLabel>
                         <FormControl>
                           <Input 
-                            placeholder="Juan Pérez" 
+                            placeholder={t.placeholderFullname}
                             {...field} 
                             data-testid="input-fullname"
                           />
@@ -430,11 +464,11 @@ export default function Checkout() {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email *</FormLabel>
+                        <FormLabel>{t.labelEmail}</FormLabel>
                         <FormControl>
                           <Input 
                             type="email" 
-                            placeholder="juan@ejemplo.com" 
+                            placeholder={t.placeholderEmail}
                             {...field} 
                             data-testid="input-email"
                           />
@@ -449,11 +483,11 @@ export default function Checkout() {
                     name="phone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Teléfono</FormLabel>
+                        <FormLabel>{t.labelPhone}</FormLabel>
                         <FormControl>
                           <Input 
                             type="tel" 
-                            placeholder="+1234567890" 
+                            placeholder={t.placeholderPhone}
                             {...field} 
                             data-testid="input-phone"
                           />
@@ -468,10 +502,10 @@ export default function Checkout() {
                     name="billingAddress"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Dirección de Facturación *</FormLabel>
+                        <FormLabel>{t.labelBillingAddress}</FormLabel>
                         <FormControl>
                           <Textarea 
-                            placeholder="Calle, número, ciudad, código postal, país" 
+                            placeholder={t.placeholderBillingAddress}
                             {...field} 
                             data-testid="textarea-billing-address"
                           />
@@ -495,7 +529,7 @@ export default function Checkout() {
                         </FormControl>
                         <div className="space-y-1 leading-none">
                           <FormLabel>
-                            Dirección de envío igual a facturación
+                            {t.labelSameAsBilling}
                           </FormLabel>
                         </div>
                       </FormItem>
@@ -508,10 +542,10 @@ export default function Checkout() {
                       name="shippingAddress"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Dirección de Envío</FormLabel>
+                          <FormLabel>{t.labelShippingAddress}</FormLabel>
                           <FormControl>
                             <Textarea 
-                              placeholder="Calle, número, ciudad, código postal, país" 
+                              placeholder={t.placeholderShippingAddress}
                               {...field} 
                               data-testid="textarea-shipping-address"
                             />
@@ -536,10 +570,10 @@ export default function Checkout() {
                         </FormControl>
                         <div className="space-y-1 leading-none">
                           <FormLabel>
-                            Suscribirme al boletín de noticias
+                            {t.labelNewsletter}
                           </FormLabel>
                           <FormDescription>
-                            Recibe novedades y ofertas exclusivas
+                            {t.labelNewsletterDesc}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -556,22 +590,21 @@ export default function Checkout() {
                       {preparingPayment ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Validando...
+                          {t.buttonValidating}
                         </>
                       ) : (
-                        "Continuar al Pago"
+                        t.buttonContinuePayment
                       )}
                     </Button>
                   )}
                 </form>
               </Form>
 
-              {/* PayPal Button - shown after form validation */}
               {customerData && form.formState.isValid && !orderCreated && (
                 <div className="mt-6 space-y-4" data-testid="paypal-section">
                   <div className="border-t pt-4">
                     <p className="text-sm text-muted-foreground mb-4">
-                      Completa tu pago de forma segura con PayPal
+                      {t.paypalSecureMessage}
                     </p>
                     <PayPalButton 
                       amount={total.toFixed(2)} 
@@ -584,20 +617,15 @@ export default function Checkout() {
                       variant="outline"
                       data-testid="button-complete-order"
                     >
-                      Confirmar Pedido
+                      {t.buttonConfirmOrder}
                     </Button>
                   </div>
                 </div>
               )}
 
               {orderCreated && (
-                <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg" data-testid="order-success">
-                  <p className="text-green-800 font-semibold">
-                    ¡Pedido completado exitosamente!
-                  </p>
-                  <p className="text-sm text-green-600 mt-1">
-                    Redirigiendo...
-                  </p>
+                <div className="mt-6">
+                  <p className="text-center text-green-600 font-semibold">{t.toastOrderCompletedTitle}</p>
                 </div>
               )}
             </CardContent>
