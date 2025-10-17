@@ -1,6 +1,7 @@
 import { createContext, useContext, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { UiText } from "@shared/schema";
+import { useLocale } from "./locale-context";
 
 interface UiTextContextValue {
   texts: Map<string, string>;
@@ -12,10 +13,10 @@ const UiTextContext = createContext<UiTextContextValue | undefined>(undefined);
 
 interface UiTextProviderProps {
   children: ReactNode;
-  locale?: string;
 }
 
-export function UiTextProvider({ children, locale = "es-ES" }: UiTextProviderProps) {
+export function UiTextProvider({ children }: UiTextProviderProps) {
+  const { locale } = useLocale();
   const { data: uiTexts = [], isLoading } = useQuery<UiText[]>({
     queryKey: ["/api/ui-texts", { locale }],
     staleTime: 1000 * 60 * 5,

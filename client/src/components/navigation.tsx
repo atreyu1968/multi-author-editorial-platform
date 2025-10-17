@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { Author, SiteSettings } from "@shared/schema";
 import { useUiText } from "@/contexts/ui-text-context";
 import { useCart } from "@/contexts/CartContext";
+import { LanguageSelector } from "@/components/language-selector";
 
 interface NavigationProps {
   authorId?: string;
@@ -81,6 +82,7 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
             <a href="#testimonios" className="text-muted-foreground hover:text-primary transition-colors" data-testid="nav-testimonios">
               {navTestimonials}
             </a>
+            <LanguageSelector />
             <Link href="/checkout" data-testid="link-cart">
               <Button variant="ghost" size="icon" className="relative">
                 <ShoppingCart className="h-5 w-5" />
@@ -133,6 +135,9 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
             <a href="#testimonios" className="block py-2 text-muted-foreground hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
               {navTestimonials}
             </a>
+            <div className="py-2">
+              <LanguageSelector />
+            </div>
             <Link href="/checkout" className="block w-full text-left py-2 text-primary" onClick={() => setMobileMenuOpen(false)} data-testid="link-cart-mobile">
               <div className="flex items-center">
                 <ShoppingCart className="h-4 w-4 mr-2 inline" />

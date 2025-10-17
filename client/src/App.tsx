@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
+import { LocaleProvider } from "@/contexts/locale-context";
 import { UiTextProvider } from "@/contexts/ui-text-context";
 import { DynamicTheme } from "@/components/dynamic-theme";
 import { AnalyticsProvider } from "@/components/analytics-provider";
@@ -45,20 +46,22 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AnalyticsProvider>
-        <DynamicTheme>
-          <UiTextProvider locale="es-ES">
-            <AuthProvider>
-              <CartProvider>
-                <TooltipProvider>
-                  <Toaster />
-                  <Router />
-                </TooltipProvider>
-              </CartProvider>
-            </AuthProvider>
-          </UiTextProvider>
-        </DynamicTheme>
-      </AnalyticsProvider>
+      <LocaleProvider>
+        <AnalyticsProvider>
+          <DynamicTheme>
+            <UiTextProvider>
+              <AuthProvider>
+                <CartProvider>
+                  <TooltipProvider>
+                    <Toaster />
+                    <Router />
+                  </TooltipProvider>
+                </CartProvider>
+              </AuthProvider>
+            </UiTextProvider>
+          </DynamicTheme>
+        </AnalyticsProvider>
+      </LocaleProvider>
     </QueryClientProvider>
   );
 }
