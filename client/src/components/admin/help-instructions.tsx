@@ -1,14 +1,213 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { BookOpen, Users, User, Star, Settings, FileText, Mail, QrCode, Image, Upload, Sparkles } from "lucide-react";
+import { BookOpen, Users, User, Star, Settings, FileText, Mail, Image, Upload, Sparkles } from "lucide-react";
+import { useUiText } from "@/contexts/ui-text-context";
 
 export default function HelpInstructions() {
+  const t = {
+    pageTitle: useUiText("admin.help", "page_title"),
+    pageDescription: useUiText("admin.help", "page_description"),
+    sectionBooksTitle: useUiText("admin.help", "section_books_title"),
+    booksHowToAddTitle: useUiText("admin.help", "books_how_to_add_title"),
+    booksStep1: useUiText("admin.help", "books_step1"),
+    booksStep2: useUiText("admin.help", "books_step2"),
+    booksStep2Item1: useUiText("admin.help", "books_step2_item1"),
+    booksStep2Item2: useUiText("admin.help", "books_step2_item2"),
+    booksStep2Item3: useUiText("admin.help", "books_step2_item3"),
+    booksStep2Item4: useUiText("admin.help", "books_step2_item4"),
+    booksStep2Item5: useUiText("admin.help", "books_step2_item5"),
+    booksStep3: useUiText("admin.help", "books_step3"),
+    booksStep4: useUiText("admin.help", "books_step4"),
+    booksStep5: useUiText("admin.help", "books_step5"),
+    booksStep5Item1: useUiText("admin.help", "books_step5_item1"),
+    booksStep5Item2: useUiText("admin.help", "books_step5_item2"),
+    booksStep5Item3: useUiText("admin.help", "books_step5_item3"),
+    booksStep5Item4: useUiText("admin.help", "books_step5_item4"),
+    booksStep5Item5: useUiText("admin.help", "books_step5_item5"),
+    booksStep5Item6: useUiText("admin.help", "books_step5_item6"),
+    booksStep5Item7: useUiText("admin.help", "books_step5_item7"),
+    booksStep5Item8: useUiText("admin.help", "books_step5_item8"),
+    booksStep6: useUiText("admin.help", "books_step6"),
+    booksQrTitle: useUiText("admin.help", "books_qr_title"),
+    booksQrStep1: useUiText("admin.help", "books_qr_step1"),
+    booksQrStep2: useUiText("admin.help", "books_qr_step2"),
+    booksQrStep3: useUiText("admin.help", "books_qr_step3"),
+    booksQrStep4: useUiText("admin.help", "books_qr_step4"),
+    booksQrStep5: useUiText("admin.help", "books_qr_step5"),
+    booksQrStep6Strong: useUiText("admin.help", "books_qr_step6_strong"),
+    booksQrStep6Item1: useUiText("admin.help", "books_qr_step6_item1"),
+    booksQrStep6Item2: useUiText("admin.help", "books_qr_step6_item2"),
+    booksQrStep6Item3: useUiText("admin.help", "books_qr_step6_item3"),
+    booksQrStep6Item4: useUiText("admin.help", "books_qr_step6_item4"),
+    booksImageSpecsTitle: useUiText("admin.help", "books_image_specs_title"),
+    booksImageSpec1: useUiText("admin.help", "books_image_spec1"),
+    booksImageSpec2: useUiText("admin.help", "books_image_spec2"),
+    booksImageSpec3: useUiText("admin.help", "books_image_spec3"),
+    sectionSeriesTitle: useUiText("admin.help", "section_series_title"),
+    seriesHowToCreateTitle: useUiText("admin.help", "series_how_to_create_title"),
+    seriesStep1: useUiText("admin.help", "series_step1"),
+    seriesStep2: useUiText("admin.help", "series_step2"),
+    seriesStep3: useUiText("admin.help", "series_step3"),
+    seriesStep4: useUiText("admin.help", "series_step4"),
+    seriesStep5: useUiText("admin.help", "series_step5"),
+    seriesStep6: useUiText("admin.help", "series_step6"),
+    seriesStep7: useUiText("admin.help", "series_step7"),
+    seriesBackgroundTitle: useUiText("admin.help", "series_background_title"),
+    seriesBackgroundDesc: useUiText("admin.help", "series_background_desc"),
+    sectionBioTitle: useUiText("admin.help", "section_bio_title"),
+    bioHowToEditTitle: useUiText("admin.help", "bio_how_to_edit_title"),
+    bioStep1: useUiText("admin.help", "bio_step1"),
+    bioStep2: useUiText("admin.help", "bio_step2"),
+    bioStep3: useUiText("admin.help", "bio_step3"),
+    bioStep4: useUiText("admin.help", "bio_step4"),
+    bioStep5: useUiText("admin.help", "bio_step5"),
+    bioTipsTitle: useUiText("admin.help", "bio_tips_title"),
+    bioTip1: useUiText("admin.help", "bio_tip1"),
+    bioTip2: useUiText("admin.help", "bio_tip2"),
+    bioTip3: useUiText("admin.help", "bio_tip3"),
+    bioTip4: useUiText("admin.help", "bio_tip4"),
+    sectionTestimonialsTitle: useUiText("admin.help", "section_testimonials_title"),
+    testimonialsHowToAddTitle: useUiText("admin.help", "testimonials_how_to_add_title"),
+    testimonialsStep1: useUiText("admin.help", "testimonials_step1"),
+    testimonialsStep2: useUiText("admin.help", "testimonials_step2"),
+    testimonialsStep3: useUiText("admin.help", "testimonials_step3"),
+    testimonialsStep4: useUiText("admin.help", "testimonials_step4"),
+    testimonialsStep5: useUiText("admin.help", "testimonials_step5"),
+    testimonialsStep6: useUiText("admin.help", "testimonials_step6"),
+    testimonialsStep7: useUiText("admin.help", "testimonials_step7"),
+    testimonialsStep8: useUiText("admin.help", "testimonials_step8"),
+    testimonialsBestPracticesTitle: useUiText("admin.help", "testimonials_best_practices_title"),
+    testimonialsTip1: useUiText("admin.help", "testimonials_tip1"),
+    testimonialsTip2: useUiText("admin.help", "testimonials_tip2"),
+    testimonialsTip3: useUiText("admin.help", "testimonials_tip3"),
+    testimonialsTip4: useUiText("admin.help", "testimonials_tip4"),
+    sectionBlogTitle: useUiText("admin.help", "section_blog_title"),
+    blogHowToCreateTitle: useUiText("admin.help", "blog_how_to_create_title"),
+    blogStep1: useUiText("admin.help", "blog_step1"),
+    blogStep2: useUiText("admin.help", "blog_step2"),
+    blogStep3: useUiText("admin.help", "blog_step3"),
+    blogStep4: useUiText("admin.help", "blog_step4"),
+    blogStep5: useUiText("admin.help", "blog_step5"),
+    blogStep6: useUiText("admin.help", "blog_step6"),
+    blogStep7: useUiText("admin.help", "blog_step7"),
+    blogIdeasTitle: useUiText("admin.help", "blog_ideas_title"),
+    blogIdea1: useUiText("admin.help", "blog_idea1"),
+    blogIdea2: useUiText("admin.help", "blog_idea2"),
+    blogIdea3: useUiText("admin.help", "blog_idea3"),
+    blogIdea4: useUiText("admin.help", "blog_idea4"),
+    blogIdea5: useUiText("admin.help", "blog_idea5"),
+    blogIdea6: useUiText("admin.help", "blog_idea6"),
+    sectionSettingsTitle: useUiText("admin.help", "section_settings_title"),
+    settingsGeneralTitle: useUiText("admin.help", "settings_general_title"),
+    settingsGeneralItem1Strong: useUiText("admin.help", "settings_general_item1_strong"),
+    settingsGeneralItem1Desc: useUiText("admin.help", "settings_general_item1_desc"),
+    settingsGeneralItem2Strong: useUiText("admin.help", "settings_general_item2_strong"),
+    settingsGeneralItem2Desc: useUiText("admin.help", "settings_general_item2_desc"),
+    settingsGeneralItem3Strong: useUiText("admin.help", "settings_general_item3_strong"),
+    settingsGeneralItem3Desc: useUiText("admin.help", "settings_general_item3_desc"),
+    settingsGeneralItem4Strong: useUiText("admin.help", "settings_general_item4_strong"),
+    settingsGeneralItem4Desc: useUiText("admin.help", "settings_general_item4_desc"),
+    settingsNewsletterTitle: useUiText("admin.help", "settings_newsletter_title"),
+    settingsNewsletterStep1Strong: useUiText("admin.help", "settings_newsletter_step1_strong"),
+    settingsNewsletterStep1Item1: useUiText("admin.help", "settings_newsletter_step1_item1"),
+    settingsNewsletterStep1Item2: useUiText("admin.help", "settings_newsletter_step1_item2"),
+    settingsNewsletterStep1Item3: useUiText("admin.help", "settings_newsletter_step1_item3"),
+    settingsNewsletterStep2Strong: useUiText("admin.help", "settings_newsletter_step2_strong"),
+    settingsNewsletterStep2Item1: useUiText("admin.help", "settings_newsletter_step2_item1"),
+    settingsNewsletterStep2Item2: useUiText("admin.help", "settings_newsletter_step2_item2"),
+    settingsNewsletterStep2Item3: useUiText("admin.help", "settings_newsletter_step2_item3"),
+    settingsNewsletterStep3Strong: useUiText("admin.help", "settings_newsletter_step3_strong"),
+    settingsNewsletterStep3Item1: useUiText("admin.help", "settings_newsletter_step3_item1"),
+    settingsNewsletterStep3Item2: useUiText("admin.help", "settings_newsletter_step3_item2"),
+    settingsNewsletterStep3Item3: useUiText("admin.help", "settings_newsletter_step3_item3"),
+    settingsApiKeyTitle: useUiText("admin.help", "settings_api_key_title"),
+    settingsApiKeyDesc: useUiText("admin.help", "settings_api_key_desc"),
+    sectionImagesTitle: useUiText("admin.help", "section_images_title"),
+    imagesSystemTitle: useUiText("admin.help", "images_system_title"),
+    imagesSystemDesc: useUiText("admin.help", "images_system_desc"),
+    imagesSpecsTitle: useUiText("admin.help", "images_specs_title"),
+    imagesBookCoversTitle: useUiText("admin.help", "images_book_covers_title"),
+    imagesBookCoversSize: useUiText("admin.help", "images_book_covers_size"),
+    imagesBookCoversMax: useUiText("admin.help", "images_book_covers_max"),
+    imagesHeroTitle: useUiText("admin.help", "images_hero_title"),
+    imagesHeroSize: useUiText("admin.help", "images_hero_size"),
+    imagesHeroMax: useUiText("admin.help", "images_hero_max"),
+    imagesProfileTitle: useUiText("admin.help", "images_profile_title"),
+    imagesProfileSize: useUiText("admin.help", "images_profile_size"),
+    imagesProfileMax: useUiText("admin.help", "images_profile_max"),
+    imagesBlogTitle: useUiText("admin.help", "images_blog_title"),
+    imagesBlogSize: useUiText("admin.help", "images_blog_size"),
+    imagesBlogMax: useUiText("admin.help", "images_blog_max"),
+    imagesTipsTitle: useUiText("admin.help", "images_tips_title"),
+    imagesTip1: useUiText("admin.help", "images_tip1"),
+    imagesTip2: useUiText("admin.help", "images_tip2"),
+    imagesTip3: useUiText("admin.help", "images_tip3"),
+    imagesTip4: useUiText("admin.help", "images_tip4"),
+    imagesTip5: useUiText("admin.help", "images_tip5"),
+    sectionPromotionalTitle: useUiText("admin.help", "section_promotional_title"),
+    promotionalWhatTitle: useUiText("admin.help", "promotional_what_title"),
+    promotionalWhatDesc: useUiText("admin.help", "promotional_what_desc"),
+    promotionalTypesTitle: useUiText("admin.help", "promotional_types_title"),
+    promotionalMapTitle: useUiText("admin.help", "promotional_map_title"),
+    promotionalMapDesc: useUiText("admin.help", "promotional_map_desc"),
+    promotionalTreeTitle: useUiText("admin.help", "promotional_tree_title"),
+    promotionalTreeDesc: useUiText("admin.help", "promotional_tree_desc"),
+    promotionalPressTitle: useUiText("admin.help", "promotional_press_title"),
+    promotionalPressDesc: useUiText("admin.help", "promotional_press_desc"),
+    promotionalGraphicsTitle: useUiText("admin.help", "promotional_graphics_title"),
+    promotionalGraphicsDesc: useUiText("admin.help", "promotional_graphics_desc"),
+    promotionalPlaylistTitle: useUiText("admin.help", "promotional_playlist_title"),
+    promotionalPlaylistDesc: useUiText("admin.help", "promotional_playlist_desc"),
+    promotionalTrailerTitle: useUiText("admin.help", "promotional_trailer_title"),
+    promotionalTrailerDesc: useUiText("admin.help", "promotional_trailer_desc"),
+    promotionalHowToTitle: useUiText("admin.help", "promotional_how_to_title"),
+    promotionalStep1: useUiText("admin.help", "promotional_step1"),
+    promotionalStep2: useUiText("admin.help", "promotional_step2"),
+    promotionalStep3: useUiText("admin.help", "promotional_step3"),
+    promotionalStep4: useUiText("admin.help", "promotional_step4"),
+    promotionalStep4Item1: useUiText("admin.help", "promotional_step4_item1"),
+    promotionalStep4Item2: useUiText("admin.help", "promotional_step4_item2"),
+    promotionalStep5: useUiText("admin.help", "promotional_step5"),
+    promotionalDisplayTitle: useUiText("admin.help", "promotional_display_title"),
+    promotionalDisplayDesc: useUiText("admin.help", "promotional_display_desc"),
+    promotionalDisplayItem1: useUiText("admin.help", "promotional_display_item1"),
+    promotionalDisplayItem2: useUiText("admin.help", "promotional_display_item2"),
+    promotionalDisplayItem3: useUiText("admin.help", "promotional_display_item3"),
+    promotionalDisplayItem4: useUiText("admin.help", "promotional_display_item4"),
+    promotionalBestPracticesTitle: useUiText("admin.help", "promotional_best_practices_title"),
+    promotionalTip1: useUiText("admin.help", "promotional_tip1"),
+    promotionalTip2: useUiText("admin.help", "promotional_tip2"),
+    promotionalTip3: useUiText("admin.help", "promotional_tip3"),
+    promotionalTip4: useUiText("admin.help", "promotional_tip4"),
+    promotionalTip5: useUiText("admin.help", "promotional_tip5"),
+    promotionalTip6: useUiText("admin.help", "promotional_tip6"),
+    sectionWorkflowTitle: useUiText("admin.help", "section_workflow_title"),
+    workflowInitialTitle: useUiText("admin.help", "workflow_initial_title"),
+    workflowInitialStep1: useUiText("admin.help", "workflow_initial_step1"),
+    workflowInitialStep2: useUiText("admin.help", "workflow_initial_step2"),
+    workflowInitialStep3: useUiText("admin.help", "workflow_initial_step3"),
+    workflowInitialStep4: useUiText("admin.help", "workflow_initial_step4"),
+    workflowInitialStep5: useUiText("admin.help", "workflow_initial_step5"),
+    workflowInitialStep6: useUiText("admin.help", "workflow_initial_step6"),
+    workflowInitialStep7: useUiText("admin.help", "workflow_initial_step7"),
+    workflowPromoteTitle: useUiText("admin.help", "workflow_promote_title"),
+    workflowPromoteStep1: useUiText("admin.help", "workflow_promote_step1"),
+    workflowPromoteStep2: useUiText("admin.help", "workflow_promote_step2"),
+    workflowPromoteStep3: useUiText("admin.help", "workflow_promote_step3"),
+    workflowPromoteStep4: useUiText("admin.help", "workflow_promote_step4"),
+    workflowPromoteStep5: useUiText("admin.help", "workflow_promote_step5"),
+    workflowPromoteStep6: useUiText("admin.help", "workflow_promote_step6"),
+    workflowPromoteStep7: useUiText("admin.help", "workflow_promote_step7"),
+    finalTipTitle: useUiText("admin.help", "final_tip_title"),
+    finalTipDesc: useUiText("admin.help", "final_tip_desc"),
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground p-6 rounded-lg" data-testid="header-help">
-        <h2 className="text-3xl font-bold mb-2" data-testid="title-help">Ayuda e Instrucciones</h2>
+        <h2 className="text-3xl font-bold mb-2" data-testid="title-help">{t.pageTitle}</h2>
         <p className="text-primary-foreground/90" data-testid="description-help">
-          Guía completa para usar todas las funcionalidades del panel de administración
+          {t.pageDescription}
         </p>
       </div>
 
@@ -17,66 +216,66 @@ export default function HelpInstructions() {
           <AccordionTrigger className="hover:no-underline" data-testid="accordion-books">
             <div className="flex items-center gap-3">
               <BookOpen className="h-5 w-5 text-primary" />
-              <span className="text-lg font-semibold">Gestión de Libros</span>
+              <span className="text-lg font-semibold">{t.sectionBooksTitle}</span>
             </div>
           </AccordionTrigger>
           <AccordionContent className="space-y-4 pt-4">
             <div>
-              <h4 className="font-semibold mb-2">Cómo agregar un libro:</h4>
+              <h4 className="font-semibold mb-2">{t.booksHowToAddTitle}</h4>
               <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
-                <li>Haz clic en el botón "Agregar Libro"</li>
-                <li>En la pestaña "Información Básica", completa los datos esenciales:
+                <li>{t.booksStep1}</li>
+                <li>{t.booksStep2}
                   <ul className="list-disc list-inside ml-6 mt-1">
-                    <li>Título del libro (obligatorio)</li>
-                    <li>Género (obligatorio)</li>
-                    <li>Descripción breve</li>
-                    <li>Precio (si aplica)</li>
-                    <li>URL de Amazon (para enlace de compra)</li>
+                    <li>{t.booksStep2Item1}</li>
+                    <li>{t.booksStep2Item2}</li>
+                    <li>{t.booksStep2Item3}</li>
+                    <li>{t.booksStep2Item4}</li>
+                    <li>{t.booksStep2Item5}</li>
                   </ul>
                 </li>
-                <li>Sube la imagen de portada usando el botón "Subir Imagen"</li>
-                <li>Si el libro pertenece a una serie, selecciónala y asigna el orden</li>
-                <li>En la pestaña "Landing Page", configura el contenido promocional:
+                <li>{t.booksStep3}</li>
+                <li>{t.booksStep4}</li>
+                <li>{t.booksStep5}
                   <ul className="list-disc list-inside ml-6 mt-1">
-                    <li>Imagen hero (recomendado: 1920×600px, máx 1MB)</li>
-                    <li>Tagline o frase gancho</li>
-                    <li>Sinopsis extendida</li>
-                    <li>Características destacadas (una por línea)</li>
-                    <li>Citas o extractos del libro</li>
-                    <li>Llamado a la acción (CTA)</li>
-                    <li>Galería de imágenes</li>
-                    <li>Premios y reconocimientos</li>
+                    <li>{t.booksStep5Item1}</li>
+                    <li>{t.booksStep5Item2}</li>
+                    <li>{t.booksStep5Item3}</li>
+                    <li>{t.booksStep5Item4}</li>
+                    <li>{t.booksStep5Item5}</li>
+                    <li>{t.booksStep5Item6}</li>
+                    <li>{t.booksStep5Item7}</li>
+                    <li>{t.booksStep5Item8}</li>
                   </ul>
                 </li>
-                <li>Haz clic en "Crear" para guardar</li>
+                <li>{t.booksStep6}</li>
               </ol>
             </div>
 
             <div className="border-t pt-4">
-              <h4 className="font-semibold mb-2">Códigos QR y Enlaces Promocionales:</h4>
+              <h4 className="font-semibold mb-2">{t.booksQrTitle}</h4>
               <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
-                <li>Edita un libro existente</li>
-                <li>Ve a la pestaña "QR y Enlaces"</li>
-                <li>El código QR se genera automáticamente</li>
-                <li>Descarga el QR como PNG para materiales impresos</li>
-                <li>Copia el enlace de la landing page para redes sociales</li>
-                <li><strong>Usos sugeridos:</strong>
+                <li>{t.booksQrStep1}</li>
+                <li>{t.booksQrStep2}</li>
+                <li>{t.booksQrStep3}</li>
+                <li>{t.booksQrStep4}</li>
+                <li>{t.booksQrStep5}</li>
+                <li><strong>{t.booksQrStep6Strong}</strong>
                   <ul className="list-disc list-inside ml-6 mt-1">
-                    <li>Incluye el QR en la última página de tu libro impreso</li>
-                    <li>Agrega el QR a flyers y material promocional</li>
-                    <li>Comparte el enlace en biografías de autor</li>
-                    <li>Usa en tarjetas de presentación</li>
+                    <li>{t.booksQrStep6Item1}</li>
+                    <li>{t.booksQrStep6Item2}</li>
+                    <li>{t.booksQrStep6Item3}</li>
+                    <li>{t.booksQrStep6Item4}</li>
                   </ul>
                 </li>
               </ol>
             </div>
 
             <div className="border-t pt-4">
-              <h4 className="font-semibold mb-2">Especificaciones de imágenes:</h4>
+              <h4 className="font-semibold mb-2">{t.booksImageSpecsTitle}</h4>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                <li>Portada: 400×600px (máx 500KB)</li>
-                <li>Hero de landing: 1920×600px (máx 1MB)</li>
-                <li>Formatos soportados: JPG, PNG</li>
+                <li>{t.booksImageSpec1}</li>
+                <li>{t.booksImageSpec2}</li>
+                <li>{t.booksImageSpec3}</li>
               </ul>
             </div>
           </AccordionContent>
@@ -86,28 +285,27 @@ export default function HelpInstructions() {
           <AccordionTrigger className="hover:no-underline" data-testid="accordion-series">
             <div className="flex items-center gap-3">
               <Users className="h-5 w-5 text-primary" />
-              <span className="text-lg font-semibold">Gestión de Series</span>
+              <span className="text-lg font-semibold">{t.sectionSeriesTitle}</span>
             </div>
           </AccordionTrigger>
           <AccordionContent className="space-y-4 pt-4">
             <div>
-              <h4 className="font-semibold mb-2">Cómo crear una serie:</h4>
+              <h4 className="font-semibold mb-2">{t.seriesHowToCreateTitle}</h4>
               <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
-                <li>Haz clic en "Agregar Serie"</li>
-                <li>Ingresa el título de la serie</li>
-                <li>Escribe una descripción atractiva</li>
-                <li>Sube la imagen de portada de la serie</li>
-                <li>Opcionalmente, sube una imagen de fondo para las tarjetas (1920×600px)</li>
-                <li>Marca como publicada si quieres que aparezca en el sitio</li>
-                <li>Guarda la serie</li>
+                <li>{t.seriesStep1}</li>
+                <li>{t.seriesStep2}</li>
+                <li>{t.seriesStep3}</li>
+                <li>{t.seriesStep4}</li>
+                <li>{t.seriesStep5}</li>
+                <li>{t.seriesStep6}</li>
+                <li>{t.seriesStep7}</li>
               </ol>
             </div>
 
             <div className="border-t pt-4">
-              <h4 className="font-semibold mb-2">Imagen de fondo degradada:</h4>
+              <h4 className="font-semibold mb-2">{t.seriesBackgroundTitle}</h4>
               <p className="text-muted-foreground">
-                La imagen de fondo aparece en las tarjetas de series con un degradado que va de 
-                transparente (izquierda) a opaco (derecha), mejorando la legibilidad del texto.
+                {t.seriesBackgroundDesc}
               </p>
             </div>
           </AccordionContent>
@@ -117,28 +315,28 @@ export default function HelpInstructions() {
           <AccordionTrigger className="hover:no-underline" data-testid="accordion-bio">
             <div className="flex items-center gap-3">
               <User className="h-5 w-5 text-primary" />
-              <span className="text-lg font-semibold">Biografía del Autor</span>
+              <span className="text-lg font-semibold">{t.sectionBioTitle}</span>
             </div>
           </AccordionTrigger>
           <AccordionContent className="space-y-4 pt-4">
             <div>
-              <h4 className="font-semibold mb-2">Cómo editar tu biografía:</h4>
+              <h4 className="font-semibold mb-2">{t.bioHowToEditTitle}</h4>
               <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
-                <li>En la sección de Biografía, encontrarás el formulario de edición</li>
-                <li>Ingresa tu nombre completo</li>
-                <li>Sube tu foto de perfil (recomendado: cuadrada, 500×500px)</li>
-                <li>Escribe tu biografía completa (puedes usar múltiples párrafos)</li>
-                <li>Haz clic en "Guardar Cambios"</li>
+                <li>{t.bioStep1}</li>
+                <li>{t.bioStep2}</li>
+                <li>{t.bioStep3}</li>
+                <li>{t.bioStep4}</li>
+                <li>{t.bioStep5}</li>
               </ol>
             </div>
 
             <div className="border-t pt-4">
-              <h4 className="font-semibold mb-2">Consejos para una buena biografía:</h4>
+              <h4 className="font-semibold mb-2">{t.bioTipsTitle}</h4>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                <li>Incluye tus logros literarios principales</li>
-                <li>Menciona tu trayectoria como escritor</li>
-                <li>Añade datos personales que conecten con los lectores</li>
-                <li>Mantén un tono profesional pero accesible</li>
+                <li>{t.bioTip1}</li>
+                <li>{t.bioTip2}</li>
+                <li>{t.bioTip3}</li>
+                <li>{t.bioTip4}</li>
               </ul>
             </div>
           </AccordionContent>
@@ -148,31 +346,31 @@ export default function HelpInstructions() {
           <AccordionTrigger className="hover:no-underline" data-testid="accordion-testimonials">
             <div className="flex items-center gap-3">
               <Star className="h-5 w-5 text-primary" />
-              <span className="text-lg font-semibold">Testimonios</span>
+              <span className="text-lg font-semibold">{t.sectionTestimonialsTitle}</span>
             </div>
           </AccordionTrigger>
           <AccordionContent className="space-y-4 pt-4">
             <div>
-              <h4 className="font-semibold mb-2">Cómo agregar testimonios:</h4>
+              <h4 className="font-semibold mb-2">{t.testimonialsHowToAddTitle}</h4>
               <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
-                <li>Haz clic en "Agregar Testimonio"</li>
-                <li>Ingresa el nombre del lector/crítico</li>
-                <li>Escribe el testimonio o reseña</li>
-                <li>Asigna una calificación de 1 a 5 estrellas</li>
-                <li>Opcionalmente, sube una foto del testimoniante</li>
-                <li>Si es una reseña de un libro específico, selecciónalo</li>
-                <li>Marca como destacado si quieres que aparezca en la página principal</li>
-                <li>Guarda el testimonio</li>
+                <li>{t.testimonialsStep1}</li>
+                <li>{t.testimonialsStep2}</li>
+                <li>{t.testimonialsStep3}</li>
+                <li>{t.testimonialsStep4}</li>
+                <li>{t.testimonialsStep5}</li>
+                <li>{t.testimonialsStep6}</li>
+                <li>{t.testimonialsStep7}</li>
+                <li>{t.testimonialsStep8}</li>
               </ol>
             </div>
 
             <div className="border-t pt-4">
-              <h4 className="font-semibold mb-2">Buenas prácticas:</h4>
+              <h4 className="font-semibold mb-2">{t.testimonialsBestPracticesTitle}</h4>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                <li>Usa testimonios reales y verificables</li>
-                <li>Destaca solo los mejores (4-5 estrellas)</li>
-                <li>Incluye variedad de fuentes (lectores, críticos, autores)</li>
-                <li>Mantén los testimonios concisos y relevantes</li>
+                <li>{t.testimonialsTip1}</li>
+                <li>{t.testimonialsTip2}</li>
+                <li>{t.testimonialsTip3}</li>
+                <li>{t.testimonialsTip4}</li>
               </ul>
             </div>
           </AccordionContent>
@@ -182,32 +380,32 @@ export default function HelpInstructions() {
           <AccordionTrigger className="hover:no-underline" data-testid="accordion-blog">
             <div className="flex items-center gap-3">
               <FileText className="h-5 w-5 text-primary" />
-              <span className="text-lg font-semibold">Blog</span>
+              <span className="text-lg font-semibold">{t.sectionBlogTitle}</span>
             </div>
           </AccordionTrigger>
           <AccordionContent className="space-y-4 pt-4">
             <div>
-              <h4 className="font-semibold mb-2">Cómo crear un artículo de blog:</h4>
+              <h4 className="font-semibold mb-2">{t.blogHowToCreateTitle}</h4>
               <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
-                <li>Haz clic en "Agregar Artículo"</li>
-                <li>Escribe un título atractivo y descriptivo</li>
-                <li>Redacta el contenido del artículo</li>
-                <li>Sube una imagen destacada (recomendado: 1200×630px)</li>
-                <li>Escribe un resumen o extracto del artículo</li>
-                <li>Marca como publicado cuando esté listo</li>
-                <li>Guarda el artículo</li>
+                <li>{t.blogStep1}</li>
+                <li>{t.blogStep2}</li>
+                <li>{t.blogStep3}</li>
+                <li>{t.blogStep4}</li>
+                <li>{t.blogStep5}</li>
+                <li>{t.blogStep6}</li>
+                <li>{t.blogStep7}</li>
               </ol>
             </div>
 
             <div className="border-t pt-4">
-              <h4 className="font-semibold mb-2">Ideas para contenido del blog:</h4>
+              <h4 className="font-semibold mb-2">{t.blogIdeasTitle}</h4>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                <li>Proceso de escritura y consejos para autores</li>
-                <li>Detrás de escena de tus libros</li>
-                <li>Inspiración para tus historias</li>
-                <li>Actualizaciones sobre nuevos proyectos</li>
-                <li>Recomendaciones de lecturas</li>
-                <li>Eventos y presentaciones</li>
+                <li>{t.blogIdea1}</li>
+                <li>{t.blogIdea2}</li>
+                <li>{t.blogIdea3}</li>
+                <li>{t.blogIdea4}</li>
+                <li>{t.blogIdea5}</li>
+                <li>{t.blogIdea6}</li>
               </ul>
             </div>
           </AccordionContent>
@@ -217,55 +415,55 @@ export default function HelpInstructions() {
           <AccordionTrigger className="hover:no-underline" data-testid="accordion-settings">
             <div className="flex items-center gap-3">
               <Settings className="h-5 w-5 text-primary" />
-              <span className="text-lg font-semibold">Configuración del Sitio</span>
+              <span className="text-lg font-semibold">{t.sectionSettingsTitle}</span>
             </div>
           </AccordionTrigger>
           <AccordionContent className="space-y-4 pt-4">
             <div>
-              <h4 className="font-semibold mb-2">Configuraciones generales:</h4>
+              <h4 className="font-semibold mb-2">{t.settingsGeneralTitle}</h4>
               <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
-                <li><strong>Nombre del Autor:</strong> Aparece en el encabezado y pie de página del sitio</li>
-                <li><strong>Título del Sitio:</strong> Aparece en la pestaña del navegador</li>
-                <li><strong>Descripción del Sitio:</strong> Usado para SEO y redes sociales</li>
-                <li><strong>Enlaces de Redes Sociales:</strong> Agrega tus perfiles (Facebook, Instagram, Twitter, Amazon)</li>
+                <li><strong>{t.settingsGeneralItem1Strong}</strong> {t.settingsGeneralItem1Desc}</li>
+                <li><strong>{t.settingsGeneralItem2Strong}</strong> {t.settingsGeneralItem2Desc}</li>
+                <li><strong>{t.settingsGeneralItem3Strong}</strong> {t.settingsGeneralItem3Desc}</li>
+                <li><strong>{t.settingsGeneralItem4Strong}</strong> {t.settingsGeneralItem4Desc}</li>
               </ol>
             </div>
 
             <div className="border-t pt-4">
               <h4 className="font-semibold mb-2 flex items-center gap-2">
                 <Mail className="h-5 w-5" />
-                Sistema de Newsletter y Libro de Regalo:
+                {t.settingsNewsletterTitle}
               </h4>
               <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
-                <li><strong>Configurar Email:</strong>
+                <li><strong>{t.settingsNewsletterStep1Strong}</strong>
                   <ul className="list-disc list-inside ml-6 mt-1">
-                    <li>Elige tu proveedor de email (Resend o SendGrid)</li>
-                    <li>Configura tu email de remitente</li>
-                    <li>Proporciona la clave API (debe estar configurada como secret EMAIL_API_KEY)</li>
+                    <li>{t.settingsNewsletterStep1Item1}</li>
+                    <li>{t.settingsNewsletterStep1Item2}</li>
+                    <li>{t.settingsNewsletterStep1Item3}</li>
                   </ul>
                 </li>
-                <li><strong>Configurar Libro de Regalo:</strong>
+                <li><strong>{t.settingsNewsletterStep2Strong}</strong>
                   <ul className="list-disc list-inside ml-6 mt-1">
-                    <li>Sube el archivo del libro (PDF o EPUB, máx 10MB)</li>
-                    <li>Selecciona el formato del archivo</li>
-                    <li>Escribe una descripción atractiva del regalo</li>
+                    <li>{t.settingsNewsletterStep2Item1}</li>
+                    <li>{t.settingsNewsletterStep2Item2}</li>
+                    <li>{t.settingsNewsletterStep2Item3}</li>
                   </ul>
                 </li>
-                <li><strong>Funcionamiento:</strong>
+                <li><strong>{t.settingsNewsletterStep3Strong}</strong>
                   <ul className="list-disc list-inside ml-6 mt-1">
-                    <li>Cuando alguien se suscribe al newsletter, recibe automáticamente un email de bienvenida</li>
-                    <li>El email incluye el enlace de descarga del libro de regalo</li>
-                    <li>El archivo se almacena de forma segura en Replit Object Storage</li>
+                    <li>{t.settingsNewsletterStep3Item1}</li>
+                    <li>{t.settingsNewsletterStep3Item2}</li>
+                    <li>{t.settingsNewsletterStep3Item3}</li>
                   </ul>
                 </li>
               </ol>
             </div>
 
             <div className="border-t pt-4">
-              <h4 className="font-semibold mb-2">⚠️ Importante - Configuración de EMAIL_API_KEY:</h4>
+              <h4 className="font-semibold mb-2">{t.settingsApiKeyTitle}</h4>
               <div className="bg-yellow-50 dark:bg-yellow-950 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
                 <p className="text-sm text-yellow-900 dark:text-yellow-100">
-                  Para que el sistema de email funcione, debes configurar el secret <code className="bg-yellow-100 dark:bg-yellow-900 px-1 rounded">EMAIL_API_KEY</code> con la clave API de tu proveedor de email (Resend o SendGrid). Sin esta configuración, los emails no se enviarán.
+                  {t.settingsApiKeyDesc}
                 </p>
               </div>
             </div>
@@ -276,55 +474,54 @@ export default function HelpInstructions() {
           <AccordionTrigger className="hover:no-underline" data-testid="accordion-images">
             <div className="flex items-center gap-3">
               <Image className="h-5 w-5 text-primary" />
-              <span className="text-lg font-semibold">Gestión de Imágenes</span>
+              <span className="text-lg font-semibold">{t.sectionImagesTitle}</span>
             </div>
           </AccordionTrigger>
           <AccordionContent className="space-y-4 pt-4">
             <div>
               <h4 className="font-semibold mb-2 flex items-center gap-2">
                 <Upload className="h-5 w-5" />
-                Sistema de carga de imágenes:
+                {t.imagesSystemTitle}
               </h4>
               <p className="text-muted-foreground mb-3">
-                Todas las imágenes se suben directamente al servidor usando Replit Object Storage, 
-                lo que garantiza que tus imágenes estén siempre disponibles.
+                {t.imagesSystemDesc}
               </p>
               
-              <h4 className="font-semibold mb-2">Especificaciones recomendadas:</h4>
+              <h4 className="font-semibold mb-2">{t.imagesSpecsTitle}</h4>
               <div className="space-y-2 text-muted-foreground">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="border rounded p-3">
-                    <p className="font-medium text-foreground">Portadas de libros:</p>
-                    <p className="text-sm">400×600px</p>
-                    <p className="text-sm">Máx. 500KB</p>
+                    <p className="font-medium text-foreground">{t.imagesBookCoversTitle}</p>
+                    <p className="text-sm">{t.imagesBookCoversSize}</p>
+                    <p className="text-sm">{t.imagesBookCoversMax}</p>
                   </div>
                   <div className="border rounded p-3">
-                    <p className="font-medium text-foreground">Imágenes hero/banner:</p>
-                    <p className="text-sm">1920×600px</p>
-                    <p className="text-sm">Máx. 1MB</p>
+                    <p className="font-medium text-foreground">{t.imagesHeroTitle}</p>
+                    <p className="text-sm">{t.imagesHeroSize}</p>
+                    <p className="text-sm">{t.imagesHeroMax}</p>
                   </div>
                   <div className="border rounded p-3">
-                    <p className="font-medium text-foreground">Foto de perfil:</p>
-                    <p className="text-sm">500×500px (cuadrada)</p>
-                    <p className="text-sm">Máx. 500KB</p>
+                    <p className="font-medium text-foreground">{t.imagesProfileTitle}</p>
+                    <p className="text-sm">{t.imagesProfileSize}</p>
+                    <p className="text-sm">{t.imagesProfileMax}</p>
                   </div>
                   <div className="border rounded p-3">
-                    <p className="font-medium text-foreground">Imágenes de blog:</p>
-                    <p className="text-sm">1200×630px</p>
-                    <p className="text-sm">Máx. 1MB</p>
+                    <p className="font-medium text-foreground">{t.imagesBlogTitle}</p>
+                    <p className="text-sm">{t.imagesBlogSize}</p>
+                    <p className="text-sm">{t.imagesBlogMax}</p>
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="border-t pt-4">
-              <h4 className="font-semibold mb-2">Consejos para mejores resultados:</h4>
+              <h4 className="font-semibold mb-2">{t.imagesTipsTitle}</h4>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                <li>Usa imágenes de alta calidad y buena resolución</li>
-                <li>Optimiza el tamaño de archivo antes de subir</li>
-                <li>Usa formatos JPG para fotografías y PNG para gráficos con transparencia</li>
-                <li>Mantén la consistencia en el estilo visual de tus imágenes</li>
-                <li>Asegúrate de tener los derechos de uso de las imágenes</li>
+                <li>{t.imagesTip1}</li>
+                <li>{t.imagesTip2}</li>
+                <li>{t.imagesTip3}</li>
+                <li>{t.imagesTip4}</li>
+                <li>{t.imagesTip5}</li>
               </ul>
             </div>
           </AccordionContent>
@@ -334,106 +531,97 @@ export default function HelpInstructions() {
           <AccordionTrigger className="hover:no-underline" data-testid="accordion-promotional">
             <div className="flex items-center gap-3">
               <Sparkles className="h-5 w-5 text-primary" />
-              <span className="text-lg font-semibold">Contenido Promocional Adicional</span>
+              <span className="text-lg font-semibold">{t.sectionPromotionalTitle}</span>
             </div>
           </AccordionTrigger>
           <AccordionContent className="space-y-4 pt-4">
             <div>
-              <h4 className="font-semibold mb-2">¿Qué es el contenido promocional?</h4>
+              <h4 className="font-semibold mb-2">{t.promotionalWhatTitle}</h4>
               <p className="text-muted-foreground mb-3">
-                El contenido promocional adicional te permite enriquecer la experiencia de tus lectores 
-                con material complementario que profundiza en el mundo de tus libros y series. 
-                Todo este contenido es opcional y aparece en una sección especial de las landing pages.
+                {t.promotionalWhatDesc}
               </p>
             </div>
 
             <div className="border-t pt-4">
-              <h4 className="font-semibold mb-2">Tipos de contenido que puedes agregar:</h4>
+              <h4 className="font-semibold mb-2">{t.promotionalTypesTitle}</h4>
               <div className="space-y-3 text-muted-foreground">
                 <div>
-                  <p className="font-medium text-foreground">🗺️ Mapa Conceptual:</p>
+                  <p className="font-medium text-foreground">{t.promotionalMapTitle}</p>
                   <p className="text-sm ml-6">
-                    Enlace a un diagrama visual del mundo de tu historia, estructura de la trama o conceptos clave. 
-                    Ideal para fantasía, ciencia ficción o tramas complejas.
+                    {t.promotionalMapDesc}
                   </p>
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">👥 Árbol Genealógico:</p>
+                  <p className="font-medium text-foreground">{t.promotionalTreeTitle}</p>
                   <p className="text-sm ml-6">
-                    Enlace a un diagrama de las relaciones entre personajes. Perfecto para sagas familiares 
-                    o historias con múltiples generaciones.
+                    {t.promotionalTreeDesc}
                   </p>
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">📰 Notas de Prensa:</p>
+                  <p className="font-medium text-foreground">{t.promotionalPressTitle}</p>
                   <p className="text-sm ml-6">
-                    Enlaces a reseñas, artículos o entrevistas sobre tu obra. Puedes agregar múltiples enlaces, 
-                    uno por línea.
+                    {t.promotionalPressDesc}
                   </p>
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">🎨 Material Gráfico:</p>
+                  <p className="font-medium text-foreground">{t.promotionalGraphicsTitle}</p>
                   <p className="text-sm ml-6">
-                    Enlaces a ilustraciones, infografías, mapas u otro contenido visual relacionado con tu obra. 
-                    Acepta múltiples enlaces, uno por línea.
+                    {t.promotionalGraphicsDesc}
                   </p>
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">🎵 Playlist de Spotify:</p>
+                  <p className="font-medium text-foreground">{t.promotionalPlaylistTitle}</p>
                   <p className="text-sm ml-6">
-                    Enlace a una lista de reproducción musical que acompaña la lectura de tu libro o serie. 
-                    Crea ambiente y conexión emocional con los lectores.
+                    {t.promotionalPlaylistDesc}
                   </p>
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">🎬 Booktrailer de YouTube:</p>
+                  <p className="font-medium text-foreground">{t.promotionalTrailerTitle}</p>
                   <p className="text-sm ml-6">
-                    Enlace a un video promocional de tu libro o serie. Perfecto para captar la atención 
-                    de nuevos lectores.
+                    {t.promotionalTrailerDesc}
                   </p>
                 </div>
               </div>
             </div>
 
             <div className="border-t pt-4">
-              <h4 className="font-semibold mb-2">Cómo agregar contenido promocional:</h4>
+              <h4 className="font-semibold mb-2">{t.promotionalHowToTitle}</h4>
               <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
-                <li>Edita un libro o serie existente</li>
-                <li>Ve a la pestaña "Contenido Promocional"</li>
-                <li>Completa solo los campos que tengas disponibles (todos son opcionales)</li>
-                <li>Para campos de múltiples enlaces (notas de prensa, material gráfico):
+                <li>{t.promotionalStep1}</li>
+                <li>{t.promotionalStep2}</li>
+                <li>{t.promotionalStep3}</li>
+                <li>{t.promotionalStep4}
                   <ul className="list-disc list-inside ml-6 mt-1">
-                    <li>Escribe cada URL en una línea separada</li>
-                    <li>No es necesario numerar los enlaces</li>
+                    <li>{t.promotionalStep4Item1}</li>
+                    <li>{t.promotionalStep4Item2}</li>
                   </ul>
                 </li>
-                <li>Guarda los cambios</li>
+                <li>{t.promotionalStep5}</li>
               </ol>
             </div>
 
             <div className="border-t pt-4">
-              <h4 className="font-semibold mb-2">Visualización en las landing pages:</h4>
+              <h4 className="font-semibold mb-2">{t.promotionalDisplayTitle}</h4>
               <p className="text-muted-foreground mb-2">
-                El contenido promocional aparece en una sección especial llamada "Contenido Adicional" 
-                en las páginas de libros y series.
+                {t.promotionalDisplayDesc}
               </p>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                <li>Solo se muestra si has agregado al menos un tipo de contenido</li>
-                <li>Cada tipo aparece en una tarjeta visual con su propio ícono</li>
-                <li>Los enlaces se abren en una nueva pestaña para no interrumpir la navegación</li>
-                <li>El diseño es responsive y se adapta a todos los dispositivos</li>
+                <li>{t.promotionalDisplayItem1}</li>
+                <li>{t.promotionalDisplayItem2}</li>
+                <li>{t.promotionalDisplayItem3}</li>
+                <li>{t.promotionalDisplayItem4}</li>
               </ul>
             </div>
 
             <div className="border-t pt-4">
-              <h4 className="font-semibold mb-2">Consejos y mejores prácticas:</h4>
+              <h4 className="font-semibold mb-2">{t.promotionalBestPracticesTitle}</h4>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                <li>No es necesario completar todos los campos, solo los que aporten valor</li>
-                <li>Asegúrate de que los enlaces sean permanentes y no se borren con el tiempo</li>
-                <li>Para playlists, considera crear listas públicas en Spotify</li>
-                <li>Los booktrailers deben ser concisos (30-90 segundos idealmente)</li>
-                <li>Actualiza el contenido cuando tengas nuevas reseñas o material</li>
-                <li>Usa herramientas gratuitas como Canva o Lucidchart para crear mapas y árboles</li>
+                <li>{t.promotionalTip1}</li>
+                <li>{t.promotionalTip2}</li>
+                <li>{t.promotionalTip3}</li>
+                <li>{t.promotionalTip4}</li>
+                <li>{t.promotionalTip5}</li>
+                <li>{t.promotionalTip6}</li>
               </ul>
             </div>
           </AccordionContent>
@@ -443,33 +631,33 @@ export default function HelpInstructions() {
           <AccordionTrigger className="hover:no-underline" data-testid="accordion-workflow">
             <div className="flex items-center gap-3">
               <BookOpen className="h-5 w-5 text-primary" />
-              <span className="text-lg font-semibold">Flujo de Trabajo Recomendado</span>
+              <span className="text-lg font-semibold">{t.sectionWorkflowTitle}</span>
             </div>
           </AccordionTrigger>
           <AccordionContent className="space-y-4 pt-4">
             <div>
-              <h4 className="font-semibold mb-2">Para configuración inicial:</h4>
+              <h4 className="font-semibold mb-2">{t.workflowInitialTitle}</h4>
               <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
-                <li>Completa la configuración del sitio (nombre, título, descripción)</li>
-                <li>Configura el sistema de email y libro de regalo</li>
-                <li>Agrega tu biografía y foto de perfil</li>
-                <li>Crea tus series (si aplica)</li>
-                <li>Agrega tus libros con toda la información</li>
-                <li>Añade testimonios y reseñas</li>
-                <li>Comienza a escribir artículos para el blog</li>
+                <li>{t.workflowInitialStep1}</li>
+                <li>{t.workflowInitialStep2}</li>
+                <li>{t.workflowInitialStep3}</li>
+                <li>{t.workflowInitialStep4}</li>
+                <li>{t.workflowInitialStep5}</li>
+                <li>{t.workflowInitialStep6}</li>
+                <li>{t.workflowInitialStep7}</li>
               </ol>
             </div>
 
             <div className="border-t pt-4">
-              <h4 className="font-semibold mb-2">Para promocionar un nuevo libro:</h4>
+              <h4 className="font-semibold mb-2">{t.workflowPromoteTitle}</h4>
               <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
-                <li>Crea el libro en Gestión de Libros con toda la información</li>
-                <li>Configura la landing page completa (hero, sinopsis, galería, etc.)</li>
-                <li>Ve a la pestaña "QR y Enlaces" y descarga el código QR</li>
-                <li>Incluye el QR en la última página del libro impreso</li>
-                <li>Copia el enlace de la landing page para redes sociales</li>
-                <li>Escribe un artículo de blog sobre el nuevo libro</li>
-                <li>Agrega testimonios a medida que lleguen reseñas</li>
+                <li>{t.workflowPromoteStep1}</li>
+                <li>{t.workflowPromoteStep2}</li>
+                <li>{t.workflowPromoteStep3}</li>
+                <li>{t.workflowPromoteStep4}</li>
+                <li>{t.workflowPromoteStep5}</li>
+                <li>{t.workflowPromoteStep6}</li>
+                <li>{t.workflowPromoteStep7}</li>
               </ol>
             </div>
           </AccordionContent>
@@ -478,14 +666,11 @@ export default function HelpInstructions() {
 
       <Card className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800" data-testid="card-final-tip">
         <CardHeader>
-          <CardTitle className="text-blue-900 dark:text-blue-100">💡 Consejo Final</CardTitle>
+          <CardTitle className="text-blue-900 dark:text-blue-100">{t.finalTipTitle}</CardTitle>
         </CardHeader>
         <CardContent className="text-blue-800 dark:text-blue-200" data-testid="content-final-tip">
           <p>
-            Mantén tu contenido actualizado regularmente. Un sitio web activo con nuevos artículos 
-            de blog, testimonios recientes y actualizaciones sobre tus libros genera más interés 
-            y confianza en tus lectores. Revisa y actualiza tu biografía periódicamente para 
-            reflejar tus últimos logros.
+            {t.finalTipDesc}
           </p>
         </CardContent>
       </Card>

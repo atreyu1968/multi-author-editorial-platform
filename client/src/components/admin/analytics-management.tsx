@@ -11,6 +11,7 @@ import { format, subDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import type { AnalyticsDailyMetrics, Book, Author } from "@shared/schema";
+import { useUiText } from "@/contexts/ui-text-context";
 
 interface TopBook extends Book {
   totalPageviews: number;
@@ -23,6 +24,29 @@ interface TopAuthor extends Author {
 export default function AnalyticsManagement() {
   const [startDate, setStartDate] = useState<Date | undefined>(subDays(new Date(), 30));
   const [endDate, setEndDate] = useState<Date | undefined>(new Date());
+
+  const t = {
+    pageTitle: useUiText("admin.analytics", "page_title"),
+    labelStartDate: useUiText("admin.analytics", "label_start_date"),
+    labelEndDate: useUiText("admin.analytics", "label_end_date"),
+    cardPageviews: useUiText("admin.analytics", "card_pageviews"),
+    cardVisitors: useUiText("admin.analytics", "card_visitors"),
+    cardSessions: useUiText("admin.analytics", "card_sessions"),
+    cardDuration: useUiText("admin.analytics", "card_duration"),
+    cardNewsletter: useUiText("admin.analytics", "card_newsletter"),
+    cardDownloads: useUiText("admin.analytics", "card_downloads"),
+    chartTitle: useUiText("admin.analytics", "chart_title"),
+    emptyState: useUiText("admin.analytics", "empty_state"),
+    tooltipPageviews: useUiText("admin.analytics", "tooltip_pageviews"),
+    cardTopBooks: useUiText("admin.analytics", "card_top_books"),
+    tableHeaderCover: useUiText("admin.analytics", "table_header_cover"),
+    tableHeaderTitle: useUiText("admin.analytics", "table_header_title"),
+    tableHeaderViews: useUiText("admin.analytics", "table_header_views"),
+    tableHeaderAuthor: useUiText("admin.analytics", "table_header_author"),
+    cardTopAuthors: useUiText("admin.analytics", "card_top_authors"),
+    tableHeaderLogo: useUiText("admin.analytics", "table_header_logo"),
+    tableHeaderName: useUiText("admin.analytics", "table_header_name"),
+  };
 
   const dateRangeParams = useMemo(() => {
     const params: Record<string, string> = {};
@@ -97,7 +121,7 @@ export default function AnalyticsManagement() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-3xl font-bold text-primary" data-testid="title-analytics">Analíticas</h3>
+        <h3 className="text-3xl font-bold text-primary" data-testid="title-analytics">{t.pageTitle}</h3>
         
         {/* Date Range Filters */}
         <div className="flex gap-4">
@@ -109,7 +133,7 @@ export default function AnalyticsManagement() {
                 data-testid="button-start-date"
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {startDate ? format(startDate, "PPP", { locale: es }) : "Fecha de inicio"}
+                {startDate ? format(startDate, "PPP", { locale: es }) : t.labelStartDate}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
@@ -131,7 +155,7 @@ export default function AnalyticsManagement() {
                 data-testid="button-end-date"
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {endDate ? format(endDate, "PPP", { locale: es }) : "Fecha de fin"}
+                {endDate ? format(endDate, "PPP", { locale: es }) : t.labelEndDate}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
@@ -151,7 +175,7 @@ export default function AnalyticsManagement() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card data-testid="card-pageviews">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Pageviews</CardTitle>
+            <CardTitle className="text-sm font-medium">{t.cardPageviews}</CardTitle>
             <Eye className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -167,7 +191,7 @@ export default function AnalyticsManagement() {
 
         <Card data-testid="card-visitors">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Visitantes Únicos</CardTitle>
+            <CardTitle className="text-sm font-medium">{t.cardVisitors}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -183,7 +207,7 @@ export default function AnalyticsManagement() {
 
         <Card data-testid="card-sessions">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Sesiones</CardTitle>
+            <CardTitle className="text-sm font-medium">{t.cardSessions}</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -199,7 +223,7 @@ export default function AnalyticsManagement() {
 
         <Card data-testid="card-duration">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg. Session Duration</CardTitle>
+            <CardTitle className="text-sm font-medium">{t.cardDuration}</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -215,7 +239,7 @@ export default function AnalyticsManagement() {
 
         <Card data-testid="card-newsletter">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Newsletter Signups</CardTitle>
+            <CardTitle className="text-sm font-medium">{t.cardNewsletter}</CardTitle>
             <Mail className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -231,7 +255,7 @@ export default function AnalyticsManagement() {
 
         <Card data-testid="card-downloads">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Book Downloads</CardTitle>
+            <CardTitle className="text-sm font-medium">{t.cardDownloads}</CardTitle>
             <Download className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -249,14 +273,14 @@ export default function AnalyticsManagement() {
       {/* Pageviews Trend Chart */}
       <Card data-testid="card-chart">
         <CardHeader>
-          <CardTitle>Pageviews por Día</CardTitle>
+          <CardTitle>{t.chartTitle}</CardTitle>
         </CardHeader>
         <CardContent>
           {metricsLoading ? (
             <Skeleton className="h-[300px] w-full" />
           ) : chartData.length === 0 ? (
             <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-              Sin datos
+              {t.emptyState}
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={300}>
@@ -270,7 +294,7 @@ export default function AnalyticsManagement() {
                 <YAxis className="text-xs" />
                 <Tooltip
                   labelFormatter={(date) => format(new Date(date as string), "PPP", { locale: es })}
-                  formatter={(value: number) => [formatNumber(value), "Pageviews"]}
+                  formatter={(value: number) => [formatNumber(value), t.tooltipPageviews]}
                 />
                 <Line
                   type="monotone"
@@ -288,7 +312,7 @@ export default function AnalyticsManagement() {
       {/* Top Books Table */}
       <Card data-testid="card-top-books">
         <CardHeader>
-          <CardTitle>Libros Más Vistos</CardTitle>
+          <CardTitle>{t.cardTopBooks}</CardTitle>
         </CardHeader>
         <CardContent>
           {booksLoading ? (
@@ -298,16 +322,16 @@ export default function AnalyticsManagement() {
               ))}
             </div>
           ) : topBooks.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">Sin datos</div>
+            <div className="text-center py-8 text-muted-foreground">{t.emptyState}</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left py-3 px-4">Portada</th>
-                    <th className="text-left py-3 px-4">Título</th>
-                    <th className="text-left py-3 px-4">Vistas</th>
-                    <th className="text-left py-3 px-4">Autor</th>
+                    <th className="text-left py-3 px-4">{t.tableHeaderCover}</th>
+                    <th className="text-left py-3 px-4">{t.tableHeaderTitle}</th>
+                    <th className="text-left py-3 px-4">{t.tableHeaderViews}</th>
+                    <th className="text-left py-3 px-4">{t.tableHeaderAuthor}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -346,7 +370,7 @@ export default function AnalyticsManagement() {
       {/* Top Authors Table */}
       <Card data-testid="card-top-authors">
         <CardHeader>
-          <CardTitle>Autores Más Vistos</CardTitle>
+          <CardTitle>{t.cardTopAuthors}</CardTitle>
         </CardHeader>
         <CardContent>
           {authorsLoading ? (
@@ -356,15 +380,15 @@ export default function AnalyticsManagement() {
               ))}
             </div>
           ) : topAuthors.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">Sin datos</div>
+            <div className="text-center py-8 text-muted-foreground">{t.emptyState}</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left py-3 px-4">Logo</th>
-                    <th className="text-left py-3 px-4">Nombre</th>
-                    <th className="text-left py-3 px-4">Vistas</th>
+                    <th className="text-left py-3 px-4">{t.tableHeaderLogo}</th>
+                    <th className="text-left py-3 px-4">{t.tableHeaderName}</th>
+                    <th className="text-left py-3 px-4">{t.tableHeaderViews}</th>
                   </tr>
                 </thead>
                 <tbody>

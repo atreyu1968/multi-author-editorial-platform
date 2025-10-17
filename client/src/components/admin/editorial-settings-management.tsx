@@ -15,9 +15,135 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertEditorialSettingsSchema } from "@shared/schema";
 import { getCurrencySymbol } from "@/lib/format-currency";
 import { useEffect } from "react";
+import { useUiText } from "@/contexts/ui-text-context";
 
 export default function EditorialSettingsManagement() {
   const { toast } = useToast();
+
+  const t = {
+    loading: useUiText("admin.editorial_settings", "loading"),
+    pageTitle: useUiText("admin.editorial_settings", "page_title"),
+    pageDescription: useUiText("admin.editorial_settings", "page_description"),
+    tabBranding: useUiText("admin.editorial_settings", "tab_branding"),
+    tabHero: useUiText("admin.editorial_settings", "tab_hero"),
+    tabFeatures: useUiText("admin.editorial_settings", "tab_features"),
+    tabAuthors: useUiText("admin.editorial_settings", "tab_authors"),
+    tabFooter: useUiText("admin.editorial_settings", "tab_footer"),
+    tabSeo: useUiText("admin.editorial_settings", "tab_seo"),
+    tabPaypal: useUiText("admin.editorial_settings", "tab_paypal"),
+    cardIdentityTitle: useUiText("admin.editorial_settings", "card_identity_title"),
+    labelName: useUiText("admin.editorial_settings", "label_name"),
+    placeholderName: useUiText("admin.editorial_settings", "placeholder_name"),
+    descName: useUiText("admin.editorial_settings", "desc_name"),
+    labelLogoUrl: useUiText("admin.editorial_settings", "label_logo_url"),
+    placeholderLogoUrl: useUiText("admin.editorial_settings", "placeholder_logo_url"),
+    descLogoUrl: useUiText("admin.editorial_settings", "desc_logo_url"),
+    labelFaviconUrl: useUiText("admin.editorial_settings", "label_favicon_url"),
+    placeholderFaviconUrl: useUiText("admin.editorial_settings", "placeholder_favicon_url"),
+    descFaviconUrl: useUiText("admin.editorial_settings", "desc_favicon_url"),
+    cardFooterLinksTitle: useUiText("admin.editorial_settings", "card_footer_links_title"),
+    labelFooterLinks: useUiText("admin.editorial_settings", "label_footer_links"),
+    placeholderFooterLinks: useUiText("admin.editorial_settings", "placeholder_footer_links"),
+    descFooterLinks: useUiText("admin.editorial_settings", "desc_footer_links"),
+    cardBackgroundTitle: useUiText("admin.editorial_settings", "card_background_title"),
+    labelBgImage: useUiText("admin.editorial_settings", "label_bg_image"),
+    placeholderBgImage: useUiText("admin.editorial_settings", "placeholder_bg_image"),
+    descBgImage: useUiText("admin.editorial_settings", "desc_bg_image"),
+    labelBgColor: useUiText("admin.editorial_settings", "label_bg_color"),
+    placeholderBgColor: useUiText("admin.editorial_settings", "placeholder_bg_color"),
+    descBgColor: useUiText("admin.editorial_settings", "desc_bg_color"),
+    cardHeroTitle: useUiText("admin.editorial_settings", "card_hero_title"),
+    labelHeroTitle: useUiText("admin.editorial_settings", "label_hero_title"),
+    placeholderHeroTitle: useUiText("admin.editorial_settings", "placeholder_hero_title"),
+    labelHeroSubtitle: useUiText("admin.editorial_settings", "label_hero_subtitle"),
+    placeholderHeroSubtitle: useUiText("admin.editorial_settings", "placeholder_hero_subtitle"),
+    labelHeroPrimaryBtn: useUiText("admin.editorial_settings", "label_hero_primary_btn"),
+    placeholderHeroPrimaryBtn: useUiText("admin.editorial_settings", "placeholder_hero_primary_btn"),
+    labelHeroSecondaryBtn: useUiText("admin.editorial_settings", "label_hero_secondary_btn"),
+    placeholderHeroSecondaryBtn: useUiText("admin.editorial_settings", "placeholder_hero_secondary_btn"),
+    cardOfferTitle: useUiText("admin.editorial_settings", "card_offer_title"),
+    labelOfferSectionTitle: useUiText("admin.editorial_settings", "label_offer_section_title"),
+    placeholderOfferTitle: useUiText("admin.editorial_settings", "placeholder_offer_title"),
+    labelOfferDescription: useUiText("admin.editorial_settings", "label_offer_description"),
+    placeholderOfferDescription: useUiText("admin.editorial_settings", "placeholder_offer_description"),
+    cardFeature1Title: useUiText("admin.editorial_settings", "card_feature1_title"),
+    labelFeatureTitle: useUiText("admin.editorial_settings", "label_feature_title"),
+    placeholderFeature1Title: useUiText("admin.editorial_settings", "placeholder_feature1_title"),
+    labelFeatureDescription: useUiText("admin.editorial_settings", "label_feature_description"),
+    labelFeatureIcon: useUiText("admin.editorial_settings", "label_feature_icon"),
+    placeholderFeature1Icon: useUiText("admin.editorial_settings", "placeholder_feature1_icon"),
+    descFeature1Icon: useUiText("admin.editorial_settings", "desc_feature1_icon"),
+    cardFeature2Title: useUiText("admin.editorial_settings", "card_feature2_title"),
+    placeholderFeature2Title: useUiText("admin.editorial_settings", "placeholder_feature2_title"),
+    placeholderFeature2Icon: useUiText("admin.editorial_settings", "placeholder_feature2_icon"),
+    descFeature2Icon: useUiText("admin.editorial_settings", "desc_feature2_icon"),
+    cardFeature3Title: useUiText("admin.editorial_settings", "card_feature3_title"),
+    placeholderFeature3Title: useUiText("admin.editorial_settings", "placeholder_feature3_title"),
+    placeholderFeature3Icon: useUiText("admin.editorial_settings", "placeholder_feature3_icon"),
+    descFeature3Icon: useUiText("admin.editorial_settings", "desc_feature3_icon"),
+    cardFeaturedAuthorsTitle: useUiText("admin.editorial_settings", "card_featured_authors_title"),
+    labelFeaturedTitle: useUiText("admin.editorial_settings", "label_featured_title"),
+    placeholderFeaturedTitle: useUiText("admin.editorial_settings", "placeholder_featured_title"),
+    labelFeaturedDescription: useUiText("admin.editorial_settings", "label_featured_description"),
+    placeholderFeaturedDescription: useUiText("admin.editorial_settings", "placeholder_featured_description"),
+    cardFooterTitle: useUiText("admin.editorial_settings", "card_footer_title"),
+    labelFooterDescription: useUiText("admin.editorial_settings", "label_footer_description"),
+    placeholderFooterDescription: useUiText("admin.editorial_settings", "placeholder_footer_description"),
+    labelFooterEmail: useUiText("admin.editorial_settings", "label_footer_email"),
+    placeholderFooterEmail: useUiText("admin.editorial_settings", "placeholder_footer_email"),
+    labelFooterLocation: useUiText("admin.editorial_settings", "label_footer_location"),
+    placeholderFooterLocation: useUiText("admin.editorial_settings", "placeholder_footer_location"),
+    labelFooterInstagram: useUiText("admin.editorial_settings", "label_footer_instagram"),
+    placeholderFooterInstagram: useUiText("admin.editorial_settings", "placeholder_footer_instagram"),
+    labelFooterTwitter: useUiText("admin.editorial_settings", "label_footer_twitter"),
+    placeholderFooterTwitter: useUiText("admin.editorial_settings", "placeholder_footer_twitter"),
+    labelFooterFacebook: useUiText("admin.editorial_settings", "label_footer_facebook"),
+    placeholderFooterFacebook: useUiText("admin.editorial_settings", "placeholder_footer_facebook"),
+    labelFooterCopyright: useUiText("admin.editorial_settings", "label_footer_copyright"),
+    placeholderFooterCopyright: useUiText("admin.editorial_settings", "placeholder_footer_copyright"),
+    cardSeoTitle: useUiText("admin.editorial_settings", "card_seo_title"),
+    labelSeoTitle: useUiText("admin.editorial_settings", "label_seo_title"),
+    placeholderSeoTitle: useUiText("admin.editorial_settings", "placeholder_seo_title"),
+    descSeoTitle: useUiText("admin.editorial_settings", "desc_seo_title"),
+    labelSeoDescription: useUiText("admin.editorial_settings", "label_seo_description"),
+    placeholderSeoDescription: useUiText("admin.editorial_settings", "placeholder_seo_description"),
+    descSeoDescription: useUiText("admin.editorial_settings", "desc_seo_description"),
+    labelSeoKeywords: useUiText("admin.editorial_settings", "label_seo_keywords"),
+    placeholderSeoKeywords: useUiText("admin.editorial_settings", "placeholder_seo_keywords"),
+    descSeoKeywords: useUiText("admin.editorial_settings", "desc_seo_keywords"),
+    cardCurrencyTitle: useUiText("admin.editorial_settings", "card_currency_title"),
+    labelCurrency: useUiText("admin.editorial_settings", "label_currency"),
+    placeholderCurrency: useUiText("admin.editorial_settings", "placeholder_currency"),
+    currencyUsd: useUiText("admin.editorial_settings", "currency_usd"),
+    currencyEur: useUiText("admin.editorial_settings", "currency_eur"),
+    currencyMxn: useUiText("admin.editorial_settings", "currency_mxn"),
+    currencyArs: useUiText("admin.editorial_settings", "currency_ars"),
+    currencyCop: useUiText("admin.editorial_settings", "currency_cop"),
+    currencyClp: useUiText("admin.editorial_settings", "currency_clp"),
+    currencyPen: useUiText("admin.editorial_settings", "currency_pen"),
+    currencyBrl: useUiText("admin.editorial_settings", "currency_brl"),
+    descCurrency: useUiText("admin.editorial_settings", "desc_currency"),
+    labelCurrencySymbol: useUiText("admin.editorial_settings", "label_currency_symbol"),
+    placeholderCurrencySymbol: useUiText("admin.editorial_settings", "placeholder_currency_symbol"),
+    descCurrencySymbol: useUiText("admin.editorial_settings", "desc_currency_symbol"),
+    cardPaypalTitle: useUiText("admin.editorial_settings", "card_paypal_title"),
+    labelPaypalClientId: useUiText("admin.editorial_settings", "label_paypal_client_id"),
+    placeholderPaypalClientId: useUiText("admin.editorial_settings", "placeholder_paypal_client_id"),
+    descPaypalClientId: useUiText("admin.editorial_settings", "desc_paypal_client_id"),
+    labelPaypalClientSecret: useUiText("admin.editorial_settings", "label_paypal_client_secret"),
+    placeholderPaypalClientSecret: useUiText("admin.editorial_settings", "placeholder_paypal_client_secret"),
+    descPaypalClientSecret: useUiText("admin.editorial_settings", "desc_paypal_client_secret"),
+    labelPaypalEnvironment: useUiText("admin.editorial_settings", "label_paypal_environment"),
+    paypalEnvSandbox: useUiText("admin.editorial_settings", "paypal_env_sandbox"),
+    paypalEnvProduction: useUiText("admin.editorial_settings", "paypal_env_production"),
+    descPaypalEnvironment: useUiText("admin.editorial_settings", "desc_paypal_environment"),
+    buttonSavePending: useUiText("admin.editorial_settings", "button_save_pending"),
+    buttonSave: useUiText("admin.editorial_settings", "button_save"),
+    toastSuccessTitle: useUiText("admin.editorial_settings", "toast_success_title"),
+    toastSuccessDescription: useUiText("admin.editorial_settings", "toast_success_description"),
+    toastErrorTitle: useUiText("admin.editorial_settings", "toast_error_title"),
+    toastErrorDescription: useUiText("admin.editorial_settings", "toast_error_description"),
+  };
 
   const { data: settings, isLoading } = useQuery<EditorialSettings>({
     queryKey: ["/api/editorial-settings/admin"],
@@ -120,14 +246,14 @@ export default function EditorialSettingsManagement() {
       queryClient.invalidateQueries({ queryKey: ["/api/editorial-settings/admin"] });
       queryClient.invalidateQueries({ queryKey: ["/api/editorial-settings"] });
       toast({
-        title: "Configuración actualizada",
-        description: "Los cambios se guardaron correctamente",
+        title: t.toastSuccessTitle,
+        description: t.toastSuccessDescription,
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "No se pudo actualizar la configuración",
+        title: t.toastErrorTitle,
+        description: t.toastErrorDescription,
         variant: "destructive",
       });
     },
@@ -138,17 +264,17 @@ export default function EditorialSettingsManagement() {
   };
 
   if (isLoading) {
-    return <div className="text-center py-12">Cargando configuración...</div>;
+    return <div className="text-center py-12">{t.loading}</div>;
   }
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-3xl font-serif font-bold text-primary mb-2">
-          Configuración de la Página Editorial
+          {t.pageTitle}
         </h2>
         <p className="text-muted-foreground">
-          Personaliza el contenido de la página principal de tu editorial
+          {t.pageDescription}
         </p>
       </div>
 
@@ -156,19 +282,19 @@ export default function EditorialSettingsManagement() {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <Tabs defaultValue="branding" className="w-full">
             <TabsList className="grid w-full grid-cols-7 mb-6">
-              <TabsTrigger value="branding" data-testid="tab-branding">Branding</TabsTrigger>
-              <TabsTrigger value="hero" data-testid="tab-hero">Hero</TabsTrigger>
-              <TabsTrigger value="features" data-testid="tab-features">Características</TabsTrigger>
-              <TabsTrigger value="authors" data-testid="tab-authors">Autores</TabsTrigger>
-              <TabsTrigger value="footer" data-testid="tab-footer">Footer</TabsTrigger>
-              <TabsTrigger value="seo" data-testid="tab-seo">SEO</TabsTrigger>
-              <TabsTrigger value="paypal" data-testid="tab-paypal">PayPal</TabsTrigger>
+              <TabsTrigger value="branding" data-testid="tab-branding">{t.tabBranding}</TabsTrigger>
+              <TabsTrigger value="hero" data-testid="tab-hero">{t.tabHero}</TabsTrigger>
+              <TabsTrigger value="features" data-testid="tab-features">{t.tabFeatures}</TabsTrigger>
+              <TabsTrigger value="authors" data-testid="tab-authors">{t.tabAuthors}</TabsTrigger>
+              <TabsTrigger value="footer" data-testid="tab-footer">{t.tabFooter}</TabsTrigger>
+              <TabsTrigger value="seo" data-testid="tab-seo">{t.tabSeo}</TabsTrigger>
+              <TabsTrigger value="paypal" data-testid="tab-paypal">{t.tabPaypal}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="branding" className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Identidad de la Editorial</CardTitle>
+                  <CardTitle>{t.cardIdentityTitle}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField
@@ -176,12 +302,12 @@ export default function EditorialSettingsManagement() {
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Nombre de la Editorial</FormLabel>
+                        <FormLabel>{t.labelName}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Mi Editorial" data-testid="input-editorial-name" />
+                          <Input {...field} placeholder={t.placeholderName} data-testid="input-editorial-name" />
                         </FormControl>
                         <FormDescription>
-                          Nombre que aparecerá en el header, footer y en todo el sitio
+                          {t.descName}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -193,12 +319,12 @@ export default function EditorialSettingsManagement() {
                     name="logoUrl"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>URL del Logo de la Editorial</FormLabel>
+                        <FormLabel>{t.labelLogoUrl}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="https://... o /objects/..." data-testid="input-logo-url" />
+                          <Input {...field} placeholder={t.placeholderLogoUrl} data-testid="input-logo-url" />
                         </FormControl>
                         <FormDescription>
-                          Logo que aparecerá en el header de la página principal
+                          {t.descLogoUrl}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -210,12 +336,12 @@ export default function EditorialSettingsManagement() {
                     name="faviconUrl"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>URL del Favicon</FormLabel>
+                        <FormLabel>{t.labelFaviconUrl}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="https://... o /objects/..." data-testid="input-favicon-url" />
+                          <Input {...field} placeholder={t.placeholderFaviconUrl} data-testid="input-favicon-url" />
                         </FormControl>
                         <FormDescription>
-                          Icono que aparecerá en la pestaña del navegador (formato .ico, .png o .svg recomendado)
+                          {t.descFaviconUrl}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -226,7 +352,7 @@ export default function EditorialSettingsManagement() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Enlaces del Footer</CardTitle>
+                  <CardTitle>{t.cardFooterLinksTitle}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField
@@ -234,7 +360,7 @@ export default function EditorialSettingsManagement() {
                     name="footerQuickLinks"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Enlaces Rápidos (uno por línea, formato: Texto|URL)</FormLabel>
+                        <FormLabel>{t.labelFooterLinks}</FormLabel>
                         <FormControl>
                           <Textarea 
                             {...field} 
@@ -243,13 +369,13 @@ export default function EditorialSettingsManagement() {
                               const lines = e.target.value.split('\n').filter(line => line.trim());
                               field.onChange(lines);
                             }}
-                            placeholder={`Inicio|/\nNuestros Autores|/autores\nAdmin|/admin`}
+                            placeholder={t.placeholderFooterLinks}
                             rows={5} 
                             data-testid="input-footer-links" 
                           />
                         </FormControl>
                         <FormDescription>
-                          Escribe cada enlace en una línea separada con el formato: Texto del enlace|URL
+                          {t.descFooterLinks}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -260,7 +386,7 @@ export default function EditorialSettingsManagement() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Personalización de Fondo</CardTitle>
+                  <CardTitle>{t.cardBackgroundTitle}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField
@@ -268,12 +394,12 @@ export default function EditorialSettingsManagement() {
                     name="backgroundImageUrl"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>URL de Imagen de Fondo</FormLabel>
+                        <FormLabel>{t.labelBgImage}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="https://... o /objects/..." data-testid="input-bg-image" />
+                          <Input {...field} placeholder={t.placeholderBgImage} data-testid="input-bg-image" />
                         </FormControl>
                         <FormDescription>
-                          Imagen de fondo para la página principal (opcional)
+                          {t.descBgImage}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -285,12 +411,12 @@ export default function EditorialSettingsManagement() {
                     name="backgroundColor"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Color de Fondo</FormLabel>
+                        <FormLabel>{t.labelBgColor}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="#ffffff o rgb(255,255,255)" data-testid="input-bg-color" />
+                          <Input {...field} placeholder={t.placeholderBgColor} data-testid="input-bg-color" />
                         </FormControl>
                         <FormDescription>
-                          Color de fondo para la página principal (opcional, se usa si no hay imagen)
+                          {t.descBgColor}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -303,7 +429,7 @@ export default function EditorialSettingsManagement() {
             <TabsContent value="hero" className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Sección Hero</CardTitle>
+                  <CardTitle>{t.cardHeroTitle}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField
@@ -311,9 +437,9 @@ export default function EditorialSettingsManagement() {
                     name="heroTitle"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Título Principal</FormLabel>
+                        <FormLabel>{t.labelHeroTitle}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Descubre Historias que Transforman Vidas" data-testid="input-hero-title" />
+                          <Input {...field} placeholder={t.placeholderHeroTitle} data-testid="input-hero-title" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -325,9 +451,9 @@ export default function EditorialSettingsManagement() {
                     name="heroSubtitle"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Subtítulo</FormLabel>
+                        <FormLabel>{t.labelHeroSubtitle}</FormLabel>
                         <FormControl>
-                          <Textarea {...field} placeholder="Una editorial comprometida..." rows={3} data-testid="input-hero-subtitle" />
+                          <Textarea {...field} placeholder={t.placeholderHeroSubtitle} rows={3} data-testid="input-hero-subtitle" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -339,9 +465,9 @@ export default function EditorialSettingsManagement() {
                     name="heroPrimaryButtonText"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Texto Botón Primario</FormLabel>
+                        <FormLabel>{t.labelHeroPrimaryBtn}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Conocer Autores" data-testid="input-hero-primary-button" />
+                          <Input {...field} placeholder={t.placeholderHeroPrimaryBtn} data-testid="input-hero-primary-button" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -353,9 +479,9 @@ export default function EditorialSettingsManagement() {
                     name="heroSecondaryButtonText"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Texto Botón Secundario</FormLabel>
+                        <FormLabel>{t.labelHeroSecondaryBtn}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Ver Destacados" data-testid="input-hero-secondary-button" />
+                          <Input {...field} placeholder={t.placeholderHeroSecondaryBtn} data-testid="input-hero-secondary-button" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -368,7 +494,7 @@ export default function EditorialSettingsManagement() {
             <TabsContent value="features" className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Sección "¿Qué Ofrecemos?"</CardTitle>
+                  <CardTitle>{t.cardOfferTitle}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField
@@ -376,7 +502,7 @@ export default function EditorialSettingsManagement() {
                     name="offerSectionTitle"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Título de Sección</FormLabel>
+                        <FormLabel>{t.labelOfferSectionTitle}</FormLabel>
                         <FormControl>
                           <Input {...field} placeholder="¿Qué Ofrecemos?" data-testid="input-offer-title" />
                         </FormControl>
@@ -390,9 +516,9 @@ export default function EditorialSettingsManagement() {
                     name="offerSectionDescription"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Descripción</FormLabel>
+                        <FormLabel>{t.labelFeatureDescription}</FormLabel>
                         <FormControl>
-                          <Textarea {...field} placeholder="Somos más que una editorial..." rows={2} data-testid="input-offer-description" />
+                          <Textarea {...field} placeholder={t.placeholderOfferDescription} rows={2} data-testid="input-offer-description" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -411,9 +537,9 @@ export default function EditorialSettingsManagement() {
                     name="feature1Title"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Título</FormLabel>
+                        <FormLabel>{t.labelFeatureTitle}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Calidad Literaria" data-testid="input-feature1-title" />
+                          <Input {...field} placeholder={t.placeholderFeature1Title} data-testid="input-feature1-title" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -425,7 +551,7 @@ export default function EditorialSettingsManagement() {
                     name="feature1Description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Descripción</FormLabel>
+                        <FormLabel>{t.labelFeatureDescription}</FormLabel>
                         <FormControl>
                           <Textarea {...field} rows={3} data-testid="input-feature1-description" />
                         </FormControl>
@@ -439,9 +565,9 @@ export default function EditorialSettingsManagement() {
                     name="feature1Icon"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Icono (Lucide)</FormLabel>
+                        <FormLabel>{t.labelFeatureIcon}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="BookOpen" data-testid="input-feature1-icon" />
+                          <Input {...field} placeholder={t.placeholderFeature1Icon} data-testid="input-feature1-icon" />
                         </FormControl>
                         <FormDescription>Nombre del icono de Lucide React (ej: BookOpen, Users, Sparkles)</FormDescription>
                         <FormMessage />
@@ -461,9 +587,9 @@ export default function EditorialSettingsManagement() {
                     name="feature2Title"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Título</FormLabel>
+                        <FormLabel>{t.labelFeatureTitle}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Autores Diversos" data-testid="input-feature2-title" />
+                          <Input {...field} placeholder={t.placeholderFeature2Title} data-testid="input-feature2-title" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -475,7 +601,7 @@ export default function EditorialSettingsManagement() {
                     name="feature2Description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Descripción</FormLabel>
+                        <FormLabel>{t.labelFeatureDescription}</FormLabel>
                         <FormControl>
                           <Textarea {...field} rows={3} data-testid="input-feature2-description" />
                         </FormControl>
@@ -489,9 +615,9 @@ export default function EditorialSettingsManagement() {
                     name="feature2Icon"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Icono (Lucide)</FormLabel>
+                        <FormLabel>{t.labelFeatureIcon}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Users" data-testid="input-feature2-icon" />
+                          <Input {...field} placeholder={t.placeholderFeature2Icon} data-testid="input-feature2-icon" />
                         </FormControl>
                         <FormDescription>Nombre del icono de Lucide React</FormDescription>
                         <FormMessage />
@@ -511,9 +637,9 @@ export default function EditorialSettingsManagement() {
                     name="feature3Title"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Título</FormLabel>
+                        <FormLabel>{t.labelFeatureTitle}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Experiencia Única" data-testid="input-feature3-title" />
+                          <Input {...field} placeholder={t.placeholderFeature3Title} data-testid="input-feature3-title" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -525,7 +651,7 @@ export default function EditorialSettingsManagement() {
                     name="feature3Description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Descripción</FormLabel>
+                        <FormLabel>{t.labelFeatureDescription}</FormLabel>
                         <FormControl>
                           <Textarea {...field} rows={3} data-testid="input-feature3-description" />
                         </FormControl>
@@ -539,9 +665,9 @@ export default function EditorialSettingsManagement() {
                     name="feature3Icon"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Icono (Lucide)</FormLabel>
+                        <FormLabel>{t.labelFeatureIcon}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Sparkles" data-testid="input-feature3-icon" />
+                          <Input {...field} placeholder={t.placeholderFeature3Icon} data-testid="input-feature3-icon" />
                         </FormControl>
                         <FormDescription>Nombre del icono de Lucide React</FormDescription>
                         <FormMessage />
@@ -555,7 +681,7 @@ export default function EditorialSettingsManagement() {
             <TabsContent value="authors" className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Sección Autores Destacados</CardTitle>
+                  <CardTitle>{t.cardFeaturedAuthorsTitle}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField
@@ -563,9 +689,9 @@ export default function EditorialSettingsManagement() {
                     name="featuredSectionTitle"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Título</FormLabel>
+                        <FormLabel>{t.labelFeatureTitle}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Autores Destacados" data-testid="input-featured-title" />
+                          <Input {...field} placeholder={t.placeholderFeaturedTitle} data-testid="input-featured-title" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -577,9 +703,9 @@ export default function EditorialSettingsManagement() {
                     name="featuredSectionDescription"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Descripción</FormLabel>
+                        <FormLabel>{t.labelFeatureDescription}</FormLabel>
                         <FormControl>
-                          <Textarea {...field} placeholder="Conoce a algunos de los talentosos escritores..." rows={3} data-testid="input-featured-description" />
+                          <Textarea {...field} placeholder={t.placeholderFeaturedDescription} rows={3} data-testid="input-featured-description" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -592,7 +718,7 @@ export default function EditorialSettingsManagement() {
             <TabsContent value="footer" className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Footer</CardTitle>
+                  <CardTitle>{t.cardFooterTitle}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField
@@ -600,9 +726,9 @@ export default function EditorialSettingsManagement() {
                     name="footerDescription"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Descripción</FormLabel>
+                        <FormLabel>{t.labelFeatureDescription}</FormLabel>
                         <FormControl>
-                          <Textarea {...field} placeholder="Descubriendo nuevas voces en la literatura..." rows={3} data-testid="input-footer-description" />
+                          <Textarea {...field} placeholder={t.placeholderFooterDescription} rows={3} data-testid="input-footer-description" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -614,9 +740,9 @@ export default function EditorialSettingsManagement() {
                     name="footerEmail"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email de Contacto</FormLabel>
+                        <FormLabel>{t.labelFooterEmail}</FormLabel>
                         <FormControl>
-                          <Input {...field} type="email" placeholder="info@editorial.com" data-testid="input-footer-email" />
+                          <Input {...field} type="email" placeholder={t.placeholderFooterEmail} data-testid="input-footer-email" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -628,9 +754,9 @@ export default function EditorialSettingsManagement() {
                     name="footerLocation"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Ubicación</FormLabel>
+                        <FormLabel>{t.labelFooterLocation}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Barcelona, España" data-testid="input-footer-location" />
+                          <Input {...field} placeholder={t.placeholderFooterLocation} data-testid="input-footer-location" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -642,9 +768,9 @@ export default function EditorialSettingsManagement() {
                     name="footerInstagramUrl"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>URL Instagram (opcional)</FormLabel>
+                        <FormLabel>{t.labelFooterInstagram}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="https://instagram.com/editorial" data-testid="input-footer-instagram" />
+                          <Input {...field} placeholder={t.placeholderFooterInstagram} data-testid="input-footer-instagram" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -656,9 +782,9 @@ export default function EditorialSettingsManagement() {
                     name="footerTwitterUrl"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>URL Twitter/X (opcional)</FormLabel>
+                        <FormLabel>{t.labelFooterTwitter}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="https://twitter.com/editorial" data-testid="input-footer-twitter" />
+                          <Input {...field} placeholder={t.placeholderFooterTwitter} data-testid="input-footer-twitter" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -670,9 +796,9 @@ export default function EditorialSettingsManagement() {
                     name="footerFacebookUrl"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>URL Facebook (opcional)</FormLabel>
+                        <FormLabel>{t.labelFooterFacebook}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="https://facebook.com/editorial" data-testid="input-footer-facebook" />
+                          <Input {...field} placeholder={t.placeholderFooterFacebook} data-testid="input-footer-facebook" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -684,9 +810,9 @@ export default function EditorialSettingsManagement() {
                     name="footerCopyright"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Copyright</FormLabel>
+                        <FormLabel>{t.labelFooterCopyright}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="© 2024 Editorial. Todos los derechos reservados." data-testid="input-footer-copyright" />
+                          <Input {...field} placeholder={t.placeholderFooterCopyright} data-testid="input-footer-copyright" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -699,7 +825,7 @@ export default function EditorialSettingsManagement() {
             <TabsContent value="seo" className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>SEO y Metadatos</CardTitle>
+                  <CardTitle>{t.cardSeoTitle}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField
@@ -707,11 +833,11 @@ export default function EditorialSettingsManagement() {
                     name="seoTitle"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Título SEO</FormLabel>
+                        <FormLabel>{t.labelSeoTitle}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Editorial - Descubre Nuevas Voces en Literatura" data-testid="input-seo-title" />
+                          <Input {...field} placeholder={t.placeholderSeoTitle} data-testid="input-seo-title" />
                         </FormControl>
-                        <FormDescription>Aparece en resultados de búsqueda y pestañas del navegador</FormDescription>
+                        <FormDescription>{t.descSeoTitle}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -722,11 +848,11 @@ export default function EditorialSettingsManagement() {
                     name="seoDescription"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Meta Description</FormLabel>
+                        <FormLabel>{t.labelSeoDescription}</FormLabel>
                         <FormControl>
-                          <Textarea {...field} placeholder="Bienvenido a nuestra editorial..." rows={3} data-testid="input-seo-description" />
+                          <Textarea {...field} placeholder={t.placeholderSeoDescription} rows={3} data-testid="input-seo-description" />
                         </FormControl>
-                        <FormDescription>Aparece en resultados de búsqueda (máx. 160 caracteres)</FormDescription>
+                        <FormDescription>{t.descSeoDescription}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -737,11 +863,11 @@ export default function EditorialSettingsManagement() {
                     name="seoKeywords"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Keywords</FormLabel>
+                        <FormLabel>{t.labelSeoKeywords}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="editorial, libros, autores, literatura, novelas, escritores" data-testid="input-seo-keywords" />
+                          <Input {...field} placeholder={t.placeholderSeoKeywords} data-testid="input-seo-keywords" />
                         </FormControl>
-                        <FormDescription>Separadas por comas</FormDescription>
+                        <FormDescription>{t.descSeoKeywords}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -753,7 +879,7 @@ export default function EditorialSettingsManagement() {
             <TabsContent value="paypal" className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Configuración de Moneda</CardTitle>
+                  <CardTitle>{t.cardCurrencyTitle}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField
@@ -761,7 +887,7 @@ export default function EditorialSettingsManagement() {
                     name="currency"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Moneda de Venta</FormLabel>
+                        <FormLabel>{t.labelCurrency}</FormLabel>
                         <Select 
                           value={field.value} 
                           onValueChange={(value) => {
@@ -771,22 +897,22 @@ export default function EditorialSettingsManagement() {
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-currency">
-                              <SelectValue placeholder="Selecciona una moneda" />
+                              <SelectValue placeholder={t.placeholderCurrency} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="USD">USD - Dólar Estadounidense ($)</SelectItem>
-                            <SelectItem value="EUR">EUR - Euro (€)</SelectItem>
-                            <SelectItem value="MXN">MXN - Peso Mexicano ($)</SelectItem>
-                            <SelectItem value="ARS">ARS - Peso Argentino ($)</SelectItem>
-                            <SelectItem value="COP">COP - Peso Colombiano ($)</SelectItem>
-                            <SelectItem value="CLP">CLP - Peso Chileno ($)</SelectItem>
-                            <SelectItem value="PEN">PEN - Sol Peruano (S/)</SelectItem>
-                            <SelectItem value="BRL">BRL - Real Brasileño (R$)</SelectItem>
+                            <SelectItem value="USD">{t.currencyUsd}</SelectItem>
+                            <SelectItem value="EUR">{t.currencyEur}</SelectItem>
+                            <SelectItem value="MXN">{t.currencyMxn}</SelectItem>
+                            <SelectItem value="ARS">{t.currencyArs}</SelectItem>
+                            <SelectItem value="COP">{t.currencyCop}</SelectItem>
+                            <SelectItem value="CLP">{t.currencyClp}</SelectItem>
+                            <SelectItem value="PEN">{t.currencyPen}</SelectItem>
+                            <SelectItem value="BRL">{t.currencyBrl}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormDescription>
-                          Moneda utilizada para mostrar precios en la plataforma
+                          {t.descCurrency}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -798,12 +924,12 @@ export default function EditorialSettingsManagement() {
                     name="currencySymbol"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Símbolo de Moneda</FormLabel>
+                        <FormLabel>{t.labelCurrencySymbol}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="$" data-testid="input-currency-symbol" />
+                          <Input {...field} placeholder={t.placeholderCurrencySymbol} data-testid="input-currency-symbol" />
                         </FormControl>
                         <FormDescription>
-                          Se actualizará automáticamente al cambiar la moneda
+                          {t.descCurrencySymbol}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -814,7 +940,7 @@ export default function EditorialSettingsManagement() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Configuración de PayPal</CardTitle>
+                  <CardTitle>{t.cardPaypalTitle}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField
@@ -822,12 +948,12 @@ export default function EditorialSettingsManagement() {
                     name="paypalClientId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>PayPal Client ID</FormLabel>
+                        <FormLabel>{t.labelPaypalClientId}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Client ID de PayPal" data-testid="input-paypal-client-id" />
+                          <Input {...field} placeholder={t.placeholderPaypalClientId} data-testid="input-paypal-client-id" />
                         </FormControl>
                         <FormDescription>
-                          El Client ID de tu cuenta de desarrollador de PayPal
+                          {t.descPaypalClientId}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -839,12 +965,12 @@ export default function EditorialSettingsManagement() {
                     name="paypalClientSecret"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>PayPal Client Secret</FormLabel>
+                        <FormLabel>{t.labelPaypalClientSecret}</FormLabel>
                         <FormControl>
-                          <Input {...field} type="password" placeholder="Client Secret de PayPal" data-testid="input-paypal-client-secret" />
+                          <Input {...field} type="password" placeholder={t.placeholderPaypalClientSecret} data-testid="input-paypal-client-secret" />
                         </FormControl>
                         <FormDescription>
-                          El Client Secret de tu cuenta de desarrollador de PayPal (se mantendrá privado)
+                          {t.descPaypalClientSecret}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -856,19 +982,19 @@ export default function EditorialSettingsManagement() {
                     name="paypalEnvironment"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Entorno de PayPal</FormLabel>
+                        <FormLabel>{t.labelPaypalEnvironment}</FormLabel>
                         <FormControl>
                           <select 
                             {...field} 
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                             data-testid="select-paypal-environment"
                           >
-                            <option value="sandbox">Sandbox (Pruebas)</option>
-                            <option value="production">Production (Producción)</option>
+                            <option value="sandbox">{t.paypalEnvSandbox}</option>
+                            <option value="production">{t.paypalEnvProduction}</option>
                           </select>
                         </FormControl>
                         <FormDescription>
-                          Usa "Sandbox" para pruebas y "Production" cuando estés listo para aceptar pagos reales
+                          {t.descPaypalEnvironment}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -886,7 +1012,7 @@ export default function EditorialSettingsManagement() {
               data-testid="button-save-settings"
             >
               <Save className="h-4 w-4 mr-2" />
-              {updateMutation.isPending ? "Guardando..." : "Guardar Cambios"}
+              {updateMutation.isPending ? t.buttonSavePending : t.buttonSave}
             </Button>
           </div>
         </form>

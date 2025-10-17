@@ -12,10 +12,35 @@ import { Plus, Edit, Save, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { UiText, InsertUiText } from "@shared/schema";
+import { useUiText } from "@/contexts/ui-text-context";
 
 const NAMESPACES = ["navigation", "home", "footer", "book_landing", "series_landing", "admin", "common"];
 
 export default function UiTextsManagement() {
+  const t = {
+    loading: useUiText("admin.ui_texts", "loading"),
+    pageTitle: useUiText("admin.ui_texts", "page_title"),
+    pageDescription: useUiText("admin.ui_texts", "page_description"),
+    buttonAddText: useUiText("admin.ui_texts", "button_add_text"),
+    dialogTitle: useUiText("admin.ui_texts", "dialog_title"),
+    labelNamespace: useUiText("admin.ui_texts", "label_namespace"),
+    placeholderNamespace: useUiText("admin.ui_texts", "placeholder_namespace"),
+    labelKey: useUiText("admin.ui_texts", "label_key"),
+    placeholderKey: useUiText("admin.ui_texts", "placeholder_key"),
+    labelLocale: useUiText("admin.ui_texts", "label_locale"),
+    labelValue: useUiText("admin.ui_texts", "label_value"),
+    placeholderValue: useUiText("admin.ui_texts", "placeholder_value"),
+    buttonSaving: useUiText("admin.ui_texts", "button_saving"),
+    buttonSave: useUiText("admin.ui_texts", "button_save"),
+    buttonCancel: useUiText("admin.ui_texts", "button_cancel"),
+    buttonEdit: useUiText("admin.ui_texts", "button_edit"),
+    emptyState: useUiText("admin.ui_texts", "empty_state"),
+    toastUpdateSuccess: useUiText("admin.ui_texts", "toast_update_success"),
+    toastUpdateError: useUiText("admin.ui_texts", "toast_update_error"),
+    toastCreateSuccess: useUiText("admin.ui_texts", "toast_create_success"),
+    toastCreateError: useUiText("admin.ui_texts", "toast_create_error"),
+  };
+
   const { toast } = useToast();
   const [selectedNamespace, setSelectedNamespace] = useState<string>("navigation");
   const [editingText, setEditingText] = useState<UiText | null>(null);
@@ -43,11 +68,11 @@ export default function UiTextsManagement() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/ui-texts"] });
-      toast({ title: "Texto actualizado correctamente" });
+      toast({ title: t.toastUpdateSuccess });
       setEditingText(null);
     },
     onError: () => {
-      toast({ title: "Error al actualizar texto", variant: "destructive" });
+      toast({ title: t.toastUpdateError, variant: "destructive" });
     },
   });
 
@@ -57,12 +82,12 @@ export default function UiTextsManagement() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/ui-texts"] });
-      toast({ title: "Texto creado correctamente" });
+      toast({ title: t.toastCreateSuccess });
       resetForm();
       setIsDialogOpen(false);
     },
     onError: () => {
-      toast({ title: "Error al crear texto", variant: "destructive" });
+      toast({ title: t.toastCreateError, variant: "destructive" });
     },
   });
 
@@ -93,39 +118,39 @@ export default function UiTextsManagement() {
   };
 
   if (isLoading) {
-    return <div className="p-6">Cargando textos...</div>;
+    return <div className="p-6">{t.loading}</div>;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-bold text-foreground">Textos del Sitio</h2>
+          <h2 className="text-3xl font-bold text-foreground">{t.pageTitle}</h2>
           <p className="text-muted-foreground mt-2">
-            Personaliza todos los textos visibles en el sitio web
+            {t.pageDescription}
           </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button data-testid="button-add-text">
               <Plus className="h-4 w-4 mr-2" />
-              Agregar Texto
+              {t.buttonAddText}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Agregar Nuevo Texto</DialogTitle>
+              <DialogTitle>{t.dialogTitle}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleCreateText} className="space-y-4">
               <div>
-                <Label htmlFor="namespace">Namespace</Label>
+                <Label htmlFor="namespace">{t.labelNamespace}</Label>
                 <Select 
                   value={newTextForm.namespace}
                   onValueChange={(value) => setNewTextForm({ ...newTextForm, namespace: value })}
                   required
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecciona un namespace" />
+                    <SelectValue placeholder={t.placeholderNamespace} />
                   </SelectTrigger>
                   <SelectContent>
                     {NAMESPACES.map((ns) => (
@@ -137,18 +162,18 @@ export default function UiTextsManagement() {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="key">Clave (Key)</Label>
+                <Label htmlFor="key">{t.labelKey}</Label>
                 <Input
                   id="key"
                   value={newTextForm.key}
                   onChange={(e) => setNewTextForm({ ...newTextForm, key: e.target.value })}
                   required
-                  placeholder="ej: home_title"
+                  placeholder={t.placeholderKey}
                   data-testid="input-key"
                 />
               </div>
               <div>
-                <Label htmlFor="locale">Idioma</Label>
+                <Label htmlFor="locale">{t.labelLocale}</Label>
                 <Input
                   id="locale"
                   value={newTextForm.locale}
@@ -158,18 +183,18 @@ export default function UiTextsManagement() {
                 />
               </div>
               <div>
-                <Label htmlFor="value">Valor</Label>
+                <Label htmlFor="value">{t.labelValue}</Label>
                 <Textarea
                   id="value"
                   value={newTextForm.value}
                   onChange={(e) => setNewTextForm({ ...newTextForm, value: e.target.value })}
                   required
-                  placeholder="Texto a mostrar"
+                  placeholder={t.placeholderValue}
                   data-testid="input-value"
                 />
               </div>
               <Button type="submit" disabled={createMutation.isPending} data-testid="button-submit">
-                {createMutation.isPending ? "Guardando..." : "Guardar"}
+                {createMutation.isPending ? t.buttonSaving : t.buttonSave}
               </Button>
             </form>
           </DialogContent>
@@ -213,7 +238,7 @@ export default function UiTextsManagement() {
                             data-testid={`button-save-${text.key}`}
                           >
                             <Save className="h-4 w-4 mr-2" />
-                            Guardar
+                            {t.buttonSave}
                           </Button>
                           <Button
                             size="sm"
@@ -222,7 +247,7 @@ export default function UiTextsManagement() {
                             data-testid={`button-cancel-${text.key}`}
                           >
                             <X className="h-4 w-4 mr-2" />
-                            Cancelar
+                            {t.buttonCancel}
                           </Button>
                         </div>
                       </div>
@@ -236,7 +261,7 @@ export default function UiTextsManagement() {
                           data-testid={`button-edit-${text.key}`}
                         >
                           <Edit className="h-4 w-4 mr-2" />
-                          Editar
+                          {t.buttonEdit}
                         </Button>
                       </div>
                     )}
@@ -245,7 +270,7 @@ export default function UiTextsManagement() {
               ))}
               {!textsByNamespace[ns] || textsByNamespace[ns].length === 0 && (
                 <p className="text-muted-foreground text-center py-8">
-                  No hay textos en este namespace todavía
+                  {t.emptyState}
                 </p>
               )}
             </div>

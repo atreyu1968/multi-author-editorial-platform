@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Package, Users, Eye, Search, Filter } from "lucide-react";
+import { useUiText } from "@/contexts/ui-text-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -36,12 +37,6 @@ const statusColors = {
   cancelled: "bg-gray-500/20 text-gray-700 dark:text-gray-400",
 };
 
-const statusLabels = {
-  pending: "Pendiente",
-  completed: "Completado",
-  failed: "Fallido",
-  cancelled: "Cancelado",
-};
 
 export default function OrdersManagement() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -49,6 +44,64 @@ export default function OrdersManagement() {
   const [selectedOrder, setSelectedOrder] = useState<OrderWithCustomer | null>(null);
   const [customerSearchQuery, setCustomerSearchQuery] = useState("");
   const { toast } = useToast();
+
+  const t = {
+    statusPending: useUiText("admin.orders", "status_pending", "Pendiente"),
+    statusCompleted: useUiText("admin.orders", "status_completed", "Completado"),
+    statusFailed: useUiText("admin.orders", "status_failed", "Fallido"),
+    statusCancelled: useUiText("admin.orders", "status_cancelled", "Cancelado"),
+    toastUpdateTitle: useUiText("admin.orders", "toast_update_title", "Estado actualizado"),
+    toastUpdateDescription: useUiText("admin.orders", "toast_update_description", "El estado del pedido se ha actualizado correctamente."),
+    toastUpdateErrorTitle: useUiText("admin.orders", "toast_update_error_title", "Error"),
+    toastUpdateErrorDescription: useUiText("admin.orders", "toast_update_error_description", "No se pudo actualizar el estado del pedido."),
+    pageTitle: useUiText("admin.orders", "page_title", "Gestión de Pedidos"),
+    tabOrders: useUiText("admin.orders", "tab_orders", "Pedidos"),
+    tabCustomers: useUiText("admin.orders", "tab_customers", "Clientes"),
+    filtersTitle: useUiText("admin.orders", "filters_title", "Filtros"),
+    placeholderSearchOrders: useUiText("admin.orders", "placeholder_search_orders", "Buscar por pedido, cliente, email..."),
+    filterAllStatuses: useUiText("admin.orders", "filter_all_statuses", "Todos los estados"),
+    ordersCount: useUiText("admin.orders", "orders_count", "Pedidos"),
+    emptyStateOrders: useUiText("admin.orders", "empty_state_orders", "No se encontraron pedidos"),
+    tableHeaderOrderId: useUiText("admin.orders", "table_header_order_id", "ID Pedido"),
+    tableHeaderDate: useUiText("admin.orders", "table_header_date", "Fecha"),
+    tableHeaderCustomer: useUiText("admin.orders", "table_header_customer", "Cliente"),
+    tableHeaderItems: useUiText("admin.orders", "table_header_items", "Items"),
+    tableHeaderTotal: useUiText("admin.orders", "table_header_total", "Total"),
+    tableHeaderStatus: useUiText("admin.orders", "table_header_status", "Estado"),
+    tableHeaderActions: useUiText("admin.orders", "table_header_actions", "Acciones"),
+    guestLabel: useUiText("admin.orders", "guest_label", "Invitado"),
+    itemSingular: useUiText("admin.orders", "item_singular", "item"),
+    itemPlural: useUiText("admin.orders", "item_plural", "items"),
+    buttonViewDetails: useUiText("admin.orders", "button_view_details", "Ver Detalles"),
+    sheetTitle: useUiText("admin.orders", "sheet_title", "Detalles del Pedido"),
+    sectionOrderInfo: useUiText("admin.orders", "section_order_info", "Información del Pedido"),
+    labelId: useUiText("admin.orders", "label_id", "ID:"),
+    labelOrderNumber: useUiText("admin.orders", "label_order_number", "Número de Pedido:"),
+    labelDate: useUiText("admin.orders", "label_date", "Fecha:"),
+    labelStatus: useUiText("admin.orders", "label_status", "Estado:"),
+    sectionCustomerInfo: useUiText("admin.orders", "section_customer_info", "Información del Cliente"),
+    labelName: useUiText("admin.orders", "label_name", "Nombre:"),
+    labelEmail: useUiText("admin.orders", "label_email", "Email:"),
+    sectionShippingAddress: useUiText("admin.orders", "section_shipping_address", "Dirección de Envío"),
+    sectionOrderItems: useUiText("admin.orders", "section_order_items", "Items del Pedido"),
+    labelQuantity: useUiText("admin.orders", "label_quantity", "Cantidad:"),
+    labelTotal: useUiText("admin.orders", "label_total", "Total:"),
+    sectionPaypalInfo: useUiText("admin.orders", "section_paypal_info", "Información de PayPal"),
+    labelPaypalOrderId: useUiText("admin.orders", "label_paypal_order_id", "Order ID:"),
+    labelPaypalPayerId: useUiText("admin.orders", "label_paypal_payer_id", "Payer ID:"),
+    sectionUpdateStatus: useUiText("admin.orders", "section_update_status", "Actualizar Estado"),
+    customerSearchTitle: useUiText("admin.orders", "customer_search_title", "Buscar Cliente"),
+    placeholderSearchCustomers: useUiText("admin.orders", "placeholder_search_customers", "Buscar por nombre o email..."),
+    customersCount: useUiText("admin.orders", "customers_count", "Clientes"),
+    emptyStateCustomers: useUiText("admin.orders", "empty_state_customers", "No se encontraron clientes"),
+    tableHeaderName: useUiText("admin.orders", "table_header_name", "Nombre"),
+    tableHeaderEmail: useUiText("admin.orders", "table_header_email", "Email"),
+    tableHeaderOrders: useUiText("admin.orders", "table_header_orders", "Pedidos"),
+    tableHeaderNewsletter: useUiText("admin.orders", "table_header_newsletter", "Newsletter"),
+    tableHeaderRegistrationDate: useUiText("admin.orders", "table_header_registration_date", "Fecha de Registro"),
+    newsletterYes: useUiText("admin.orders", "newsletter_yes", "Sí"),
+    newsletterNo: useUiText("admin.orders", "newsletter_no", "No"),
+  };
 
   // Fetch orders
   const { data: orders = [], isLoading: ordersLoading } = useQuery<Order[]>({
@@ -68,15 +121,15 @@ export default function OrdersManagement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
       toast({
-        title: "Estado actualizado",
-        description: "El estado del pedido se ha actualizado correctamente.",
+        title: t.toastUpdateTitle,
+        description: t.toastUpdateDescription,
       });
       setSelectedOrder(null);
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "No se pudo actualizar el estado del pedido.",
+        title: t.toastUpdateErrorTitle,
+        description: t.toastUpdateErrorDescription,
         variant: "destructive",
       });
     },
@@ -163,19 +216,26 @@ export default function OrdersManagement() {
     }
   };
 
+  const statusLabels = {
+    pending: t.statusPending,
+    completed: t.statusCompleted,
+    failed: t.statusFailed,
+    cancelled: t.statusCancelled,
+  };
+
   return (
     <div className="space-y-6">
-      <h3 className="text-3xl font-bold text-primary" data-testid="title-orders">Gestión de Pedidos</h3>
+      <h3 className="text-3xl font-bold text-primary" data-testid="title-orders">{t.pageTitle}</h3>
 
       <Tabs defaultValue="orders" className="w-full">
         <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="orders" data-testid="tab-orders">
             <Package className="h-4 w-4 mr-2" />
-            Pedidos
+            {t.tabOrders}
           </TabsTrigger>
           <TabsTrigger value="customers" data-testid="tab-customers">
             <Users className="h-4 w-4 mr-2" />
-            Clientes
+            {t.tabCustomers}
           </TabsTrigger>
         </TabsList>
 
@@ -184,14 +244,14 @@ export default function OrdersManagement() {
           {/* Filters */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Filtros</CardTitle>
+              <CardTitle className="text-lg">{t.filtersTitle}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Buscar por pedido, cliente, email..."
+                    placeholder={t.placeholderSearchOrders}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-9"
@@ -206,11 +266,11 @@ export default function OrdersManagement() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todos los estados</SelectItem>
-                    <SelectItem value="pending">Pendiente</SelectItem>
-                    <SelectItem value="completed">Completado</SelectItem>
-                    <SelectItem value="failed">Fallido</SelectItem>
-                    <SelectItem value="cancelled">Cancelado</SelectItem>
+                    <SelectItem value="all">{t.filterAllStatuses}</SelectItem>
+                    <SelectItem value="pending">{t.statusPending}</SelectItem>
+                    <SelectItem value="completed">{t.statusCompleted}</SelectItem>
+                    <SelectItem value="failed">{t.statusFailed}</SelectItem>
+                    <SelectItem value="cancelled">{t.statusCancelled}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -220,7 +280,7 @@ export default function OrdersManagement() {
           {/* Orders Table */}
           <Card>
             <CardHeader>
-              <CardTitle>Pedidos ({filteredOrders.length})</CardTitle>
+              <CardTitle>{t.ordersCount} ({filteredOrders.length})</CardTitle>
             </CardHeader>
             <CardContent>
               {ordersLoading ? (
@@ -231,20 +291,20 @@ export default function OrdersManagement() {
                 </div>
               ) : filteredOrders.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  No se encontraron pedidos
+                  {t.emptyStateOrders}
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>ID Pedido</TableHead>
-                        <TableHead>Fecha</TableHead>
-                        <TableHead>Cliente</TableHead>
-                        <TableHead>Items</TableHead>
-                        <TableHead>Total</TableHead>
-                        <TableHead>Estado</TableHead>
-                        <TableHead>Acciones</TableHead>
+                        <TableHead>{t.tableHeaderOrderId}</TableHead>
+                        <TableHead>{t.tableHeaderDate}</TableHead>
+                        <TableHead>{t.tableHeaderCustomer}</TableHead>
+                        <TableHead>{t.tableHeaderItems}</TableHead>
+                        <TableHead>{t.tableHeaderTotal}</TableHead>
+                        <TableHead>{t.tableHeaderStatus}</TableHead>
+                        <TableHead>{t.tableHeaderActions}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -272,10 +332,10 @@ export default function OrdersManagement() {
                               {order.createdAt ? format(new Date(order.createdAt), "dd/MM/yyyy", { locale: es }) : "-"}
                             </TableCell>
                             <TableCell data-testid={`text-customer-${order.id}`}>
-                              {order.customerName || "Invitado"}
+                              {order.customerName || t.guestLabel}
                             </TableCell>
                             <TableCell data-testid={`text-items-${order.id}`}>
-                              {items.length} {items.length === 1 ? "item" : "items"}
+                              {items.length} {items.length === 1 ? t.itemSingular : t.itemPlural}
                             </TableCell>
                             <TableCell data-testid={`text-total-${order.id}`}>
                               {formatCurrency(order.totalAmount)}
@@ -298,36 +358,36 @@ export default function OrdersManagement() {
                                     data-testid={`button-view-details-${order.id}`}
                                   >
                                     <Eye className="h-4 w-4 mr-2" />
-                                    Ver Detalles
+                                    {t.buttonViewDetails}
                                   </Button>
                                 </SheetTrigger>
                                 <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
                                   <SheetHeader>
-                                    <SheetTitle>Detalles del Pedido</SheetTitle>
+                                    <SheetTitle>{t.sheetTitle}</SheetTitle>
                                   </SheetHeader>
                                   
                                   {selectedOrder && (
                                     <div className="mt-6 space-y-6">
                                       {/* Order Info */}
                                       <div className="space-y-2">
-                                        <h4 className="font-semibold text-sm text-muted-foreground">Información del Pedido</h4>
+                                        <h4 className="font-semibold text-sm text-muted-foreground">{t.sectionOrderInfo}</h4>
                                         <div className="space-y-1 text-sm">
                                           <div className="flex justify-between">
-                                            <span className="text-muted-foreground">ID:</span>
+                                            <span className="text-muted-foreground">{t.labelId}</span>
                                             <span className="font-mono" data-testid="detail-order-id">{selectedOrder.id}</span>
                                           </div>
                                           <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Número de Pedido:</span>
+                                            <span className="text-muted-foreground">{t.labelOrderNumber}</span>
                                             <span data-testid="detail-order-number">{selectedOrder.orderNumber}</span>
                                           </div>
                                           <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Fecha:</span>
+                                            <span className="text-muted-foreground">{t.labelDate}</span>
                                             <span data-testid="detail-order-date">
                                               {selectedOrder.createdAt ? format(new Date(selectedOrder.createdAt), "PPP", { locale: es }) : "-"}
                                             </span>
                                           </div>
                                           <div className="flex justify-between items-center">
-                                            <span className="text-muted-foreground">Estado:</span>
+                                            <span className="text-muted-foreground">{t.labelStatus}</span>
                                             <Badge
                                               className={statusColors[selectedOrder.status as keyof typeof statusColors]}
                                               data-testid="detail-order-status"
@@ -340,14 +400,14 @@ export default function OrdersManagement() {
 
                                       {/* Customer Info */}
                                       <div className="space-y-2">
-                                        <h4 className="font-semibold text-sm text-muted-foreground">Información del Cliente</h4>
+                                        <h4 className="font-semibold text-sm text-muted-foreground">{t.sectionCustomerInfo}</h4>
                                         <div className="space-y-1 text-sm">
                                           <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Nombre:</span>
+                                            <span className="text-muted-foreground">{t.labelName}</span>
                                             <span data-testid="detail-customer-name">{selectedOrder.customerName}</span>
                                           </div>
                                           <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Email:</span>
+                                            <span className="text-muted-foreground">{t.labelEmail}</span>
                                             <span data-testid="detail-customer-email">{selectedOrder.customerEmail}</span>
                                           </div>
                                         </div>
@@ -358,7 +418,7 @@ export default function OrdersManagement() {
                                         const address = parseShippingAddress(selectedOrder.shippingAddress);
                                         return address ? (
                                           <div className="space-y-2">
-                                            <h4 className="font-semibold text-sm text-muted-foreground">Dirección de Envío</h4>
+                                            <h4 className="font-semibold text-sm text-muted-foreground">{t.sectionShippingAddress}</h4>
                                             <div className="text-sm" data-testid="detail-shipping-address">
                                               <p>{address.street}</p>
                                               <p>{address.city}, {address.state} {address.zipCode}</p>
@@ -370,13 +430,13 @@ export default function OrdersManagement() {
 
                                       {/* Items */}
                                       <div className="space-y-2">
-                                        <h4 className="font-semibold text-sm text-muted-foreground">Items del Pedido</h4>
+                                        <h4 className="font-semibold text-sm text-muted-foreground">{t.sectionOrderItems}</h4>
                                         <div className="space-y-2">
                                           {parseOrderItems(selectedOrder.items).map((item, idx) => (
                                             <div key={idx} className="flex justify-between text-sm border-b pb-2" data-testid={`detail-item-${idx}`}>
                                               <div>
                                                 <p className="font-medium">{item.title}</p>
-                                                <p className="text-muted-foreground text-xs">Cantidad: {item.quantity}</p>
+                                                <p className="text-muted-foreground text-xs">{t.labelQuantity} {item.quantity}</p>
                                               </div>
                                               <p className="font-medium">{formatCurrency(item.price * item.quantity)}</p>
                                             </div>
@@ -387,7 +447,7 @@ export default function OrdersManagement() {
                                       {/* Total */}
                                       <div className="space-y-2 pt-4 border-t">
                                         <div className="flex justify-between text-lg font-bold">
-                                          <span>Total:</span>
+                                          <span>{t.labelTotal}</span>
                                           <span data-testid="detail-total">{formatCurrency(selectedOrder.totalAmount)}</span>
                                         </div>
                                       </div>
@@ -395,15 +455,15 @@ export default function OrdersManagement() {
                                       {/* PayPal Info */}
                                       {selectedOrder.paypalOrderId && (
                                         <div className="space-y-2">
-                                          <h4 className="font-semibold text-sm text-muted-foreground">Información de PayPal</h4>
+                                          <h4 className="font-semibold text-sm text-muted-foreground">{t.sectionPaypalInfo}</h4>
                                           <div className="space-y-1 text-sm">
                                             <div className="flex justify-between">
-                                              <span className="text-muted-foreground">Order ID:</span>
+                                              <span className="text-muted-foreground">{t.labelPaypalOrderId}</span>
                                               <span className="font-mono text-xs" data-testid="detail-paypal-order-id">{selectedOrder.paypalOrderId}</span>
                                             </div>
                                             {selectedOrder.paypalPayerId && (
                                               <div className="flex justify-between">
-                                                <span className="text-muted-foreground">Payer ID:</span>
+                                                <span className="text-muted-foreground">{t.labelPaypalPayerId}</span>
                                                 <span className="font-mono text-xs" data-testid="detail-paypal-payer-id">{selectedOrder.paypalPayerId}</span>
                                               </div>
                                             )}
@@ -413,7 +473,7 @@ export default function OrdersManagement() {
 
                                       {/* Status Update */}
                                       <div className="space-y-2">
-                                        <h4 className="font-semibold text-sm text-muted-foreground">Actualizar Estado</h4>
+                                        <h4 className="font-semibold text-sm text-muted-foreground">{t.sectionUpdateStatus}</h4>
                                         <Select
                                           value={selectedOrder.status}
                                           onValueChange={handleStatusUpdate}
@@ -423,10 +483,10 @@ export default function OrdersManagement() {
                                             <SelectValue />
                                           </SelectTrigger>
                                           <SelectContent>
-                                            <SelectItem value="pending">Pendiente</SelectItem>
-                                            <SelectItem value="completed">Completado</SelectItem>
-                                            <SelectItem value="failed">Fallido</SelectItem>
-                                            <SelectItem value="cancelled">Cancelado</SelectItem>
+                                            <SelectItem value="pending">{t.statusPending}</SelectItem>
+                                            <SelectItem value="completed">{t.statusCompleted}</SelectItem>
+                                            <SelectItem value="failed">{t.statusFailed}</SelectItem>
+                                            <SelectItem value="cancelled">{t.statusCancelled}</SelectItem>
                                           </SelectContent>
                                         </Select>
                                       </div>
@@ -451,13 +511,13 @@ export default function OrdersManagement() {
           {/* Search */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Buscar Cliente</CardTitle>
+              <CardTitle className="text-lg">{t.customerSearchTitle}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar por nombre o email..."
+                  placeholder={t.placeholderSearchCustomers}
                   value={customerSearchQuery}
                   onChange={(e) => setCustomerSearchQuery(e.target.value)}
                   className="pl-9"
@@ -470,7 +530,7 @@ export default function OrdersManagement() {
           {/* Customers Table */}
           <Card>
             <CardHeader>
-              <CardTitle>Clientes ({filteredCustomers.length})</CardTitle>
+              <CardTitle>{t.customersCount} ({filteredCustomers.length})</CardTitle>
             </CardHeader>
             <CardContent>
               {customersLoading ? (
@@ -481,18 +541,18 @@ export default function OrdersManagement() {
                 </div>
               ) : filteredCustomers.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  No se encontraron clientes
+                  {t.emptyStateCustomers}
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Nombre</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Pedidos</TableHead>
-                        <TableHead>Newsletter</TableHead>
-                        <TableHead>Fecha de Registro</TableHead>
+                        <TableHead>{t.tableHeaderName}</TableHead>
+                        <TableHead>{t.tableHeaderEmail}</TableHead>
+                        <TableHead>{t.tableHeaderOrders}</TableHead>
+                        <TableHead>{t.tableHeaderNewsletter}</TableHead>
+                        <TableHead>{t.tableHeaderRegistrationDate}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -512,7 +572,7 @@ export default function OrdersManagement() {
                               variant={customer.isSubscribedToNewsletter ? "default" : "secondary"}
                               data-testid={`badge-newsletter-${customer.id}`}
                             >
-                              {customer.isSubscribedToNewsletter ? "Sí" : "No"}
+                              {customer.isSubscribedToNewsletter ? t.newsletterYes : t.newsletterNo}
                             </Badge>
                           </TableCell>
                           <TableCell data-testid={`text-customer-date-${customer.id}`}>

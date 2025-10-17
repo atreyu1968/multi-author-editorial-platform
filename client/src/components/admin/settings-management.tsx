@@ -16,6 +16,7 @@ import type { SiteSettings, Newsletter } from "@shared/schema";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import type { UploadResult } from "@uppy/core";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useUiText } from "@/contexts/ui-text-context";
 
 interface SettingsFormData {
   heroTitle: string;
@@ -41,80 +42,39 @@ interface SettingsFormData {
   textColor: string;
 }
 
-function EmailProviderInstructions({ provider }: { provider: string }) {
-  const instructions: Record<string, { url: string; steps: string[] }> = {
+interface EmailProviderInstructionsProps {
+  provider: string;
+  instructionsTitle: string;
+  instructionsLink: string;
+  providerSteps: Record<string, string[]>;
+}
+
+function EmailProviderInstructions({ provider, instructionsTitle, instructionsLink, providerSteps }: EmailProviderInstructionsProps) {
+  const instructions: Record<string, { url: string }> = {
     "Resend": {
-      url: "https://resend.com/api-keys",
-      steps: [
-        "Crea una cuenta en resend.com",
-        "Ve a 'API Keys' en el dashboard",
-        "Crea una nueva API key",
-        "Copia la key que empieza con 're_'",
-        "Configura el secret EMAIL_API_KEY en Replit con tu API key",
-        "Verifica tu dominio en Resend antes de enviar emails"
-      ]
+      url: "https://resend.com/api-keys"
     },
     "SendGrid": {
-      url: "https://app.sendgrid.com/settings/api_keys",
-      steps: [
-        "Crea una cuenta en sendgrid.com",
-        "Ve a Settings → API Keys",
-        "Crea una nueva API key con permisos 'Mail Send'",
-        "Copia la key que empieza con 'SG.'",
-        "Configura el secret EMAIL_API_KEY en Replit con tu API key",
-        "Verifica tu dominio o email del remitente en SendGrid"
-      ]
+      url: "https://app.sendgrid.com/settings/api_keys"
     },
     "Mailchimp": {
-      url: "https://mandrillapp.com/settings/index",
-      steps: [
-        "Crea una cuenta en Mailchimp Transactional (Mandrill)",
-        "Accede a Settings en el dashboard",
-        "Ve a la sección 'API Keys'",
-        "Crea una nueva API key",
-        "Copia la API key generada",
-        "Configura el secret EMAIL_API_KEY en Replit con tu API key",
-        "Agrega y verifica tu dominio de envío"
-      ]
+      url: "https://mandrillapp.com/settings/index"
     },
     "Brevo": {
-      url: "https://app.brevo.com/settings/keys/api",
-      steps: [
-        "Crea una cuenta en brevo.com (antes Sendinblue)",
-        "Ve a Settings → API Keys",
-        "Crea una nueva API key v3",
-        "Copia la API key generada",
-        "Configura el secret EMAIL_API_KEY en Replit con tu API key",
-        "Verifica tu dominio o email del remitente"
-      ]
+      url: "https://app.brevo.com/settings/keys/api"
     },
     "Postmark": {
-      url: "https://account.postmarkapp.com/servers",
-      steps: [
-        "Crea una cuenta en postmarkapp.com",
-        "Crea un nuevo Server o selecciona uno existente",
-        "Ve a 'API Tokens' en el server",
-        "Copia el 'Server API token'",
-        "Configura el secret EMAIL_API_KEY en Replit con el token",
-        "Agrega y verifica tu dominio del remitente"
-      ]
+      url: "https://account.postmarkapp.com/servers"
     },
     "Mailgun": {
-      url: "https://app.mailgun.com/app/account/security/api_keys",
-      steps: [
-        "Crea una cuenta en mailgun.com",
-        "Ve a Settings → API Keys",
-        "Copia tu 'Private API key'",
-        "Anota también tu dominio de envío (ej: mg.tudominio.com)",
-        "Configura el secret EMAIL_API_KEY en Replit como 'APIKEY:DOMINIO'",
-        "Ejemplo: key-abc123:mg.tudominio.com",
-        "Verifica tu dominio en Mailgun"
-      ]
+      url: "https://app.mailgun.com/app/account/security/api_keys"
     }
   };
 
   const config = instructions[provider];
-  if (!config) return null;
+  const steps = providerSteps[provider];
+  
+  if (!config || !steps) return null;
 
   return (
     <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-900">
@@ -122,10 +82,10 @@ function EmailProviderInstructions({ provider }: { provider: string }) {
       <AlertDescription>
         <div className="space-y-3">
           <p className="font-semibold text-blue-900 dark:text-blue-100">
-            Configuración de {provider}:
+            {instructionsTitle.replace("{provider}", provider)}
           </p>
           <ol className="list-decimal list-inside space-y-1.5 text-sm text-blue-800 dark:text-blue-200">
-            {config.steps.map((step, index) => (
+            {steps.map((step, index) => (
               <li key={index}>{step}</li>
             ))}
           </ol>
@@ -135,7 +95,7 @@ function EmailProviderInstructions({ provider }: { provider: string }) {
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
           >
-            Ir a {provider} <ExternalLink className="h-3 w-3" />
+            {instructionsLink.replace("{provider}", provider)} <ExternalLink className="h-3 w-3" />
           </a>
         </div>
       </AlertDescription>
@@ -147,6 +107,158 @@ export default function SettingsManagement() {
   const { selectedAuthorId } = useAdminAuthor();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const t = {
+    pageTitleMain: useUiText("admin.settings", "page_title_main"),
+    pageTitle: useUiText("admin.settings", "page_title"),
+    tabGeneral: useUiText("admin.settings", "tab_general"),
+    tabAppearance: useUiText("admin.settings", "tab_appearance"),
+    tabSocial: useUiText("admin.settings", "tab_social"),
+    tabNewsletter: useUiText("admin.settings", "tab_newsletter"),
+    tabStats: useUiText("admin.settings", "tab_stats"),
+    cardGeneralTitle: useUiText("admin.settings", "card_general_title"),
+    labelHeroTitle: useUiText("admin.settings", "label_hero_title"),
+    labelHeroSubtitle: useUiText("admin.settings", "label_hero_subtitle"),
+    labelContactEmail: useUiText("admin.settings", "label_contact_email"),
+    buttonSaveGeneralPending: useUiText("admin.settings", "button_save_general_pending"),
+    buttonSaveGeneral: useUiText("admin.settings", "button_save_general"),
+    cardLogoFaviconTitle: useUiText("admin.settings", "card_logo_favicon_title"),
+    headingLogo: useUiText("admin.settings", "heading_logo"),
+    descLogoHeader: useUiText("admin.settings", "desc_logo_header"),
+    altLogoPreview: useUiText("admin.settings", "alt_logo_preview"),
+    buttonUploadLogo: useUiText("admin.settings", "button_upload_logo"),
+    labelLogoUrl: useUiText("admin.settings", "label_logo_url"),
+    placeholderLogoUrl: useUiText("admin.settings", "placeholder_logo_url"),
+    descLogoUrl: useUiText("admin.settings", "desc_logo_url"),
+    headingFavicon: useUiText("admin.settings", "heading_favicon"),
+    descFaviconHeader: useUiText("admin.settings", "desc_favicon_header"),
+    altFaviconPreview: useUiText("admin.settings", "alt_favicon_preview"),
+    textFaviconPreview: useUiText("admin.settings", "text_favicon_preview"),
+    buttonUploadFavicon: useUiText("admin.settings", "button_upload_favicon"),
+    labelFaviconUrl: useUiText("admin.settings", "label_favicon_url"),
+    placeholderFaviconUrl: useUiText("admin.settings", "placeholder_favicon_url"),
+    descFaviconUrl: useUiText("admin.settings", "desc_favicon_url"),
+    buttonSaveAppearancePending: useUiText("admin.settings", "button_save_appearance_pending"),
+    buttonSaveAppearance: useUiText("admin.settings", "button_save_appearance"),
+    cardColorsTitle: useUiText("admin.settings", "card_colors_title"),
+    descColorsHeader: useUiText("admin.settings", "desc_colors_header"),
+    labelPrimaryColor: useUiText("admin.settings", "label_primary_color"),
+    placeholderPrimaryColor: useUiText("admin.settings", "placeholder_primary_color"),
+    descPrimaryColor: useUiText("admin.settings", "desc_primary_color"),
+    labelSecondaryColor: useUiText("admin.settings", "label_secondary_color"),
+    placeholderSecondaryColor: useUiText("admin.settings", "placeholder_secondary_color"),
+    descSecondaryColor: useUiText("admin.settings", "desc_secondary_color"),
+    labelAccentColor: useUiText("admin.settings", "label_accent_color"),
+    placeholderAccentColor: useUiText("admin.settings", "placeholder_accent_color"),
+    descAccentColor: useUiText("admin.settings", "desc_accent_color"),
+    labelBgColor: useUiText("admin.settings", "label_bg_color"),
+    placeholderBgColor: useUiText("admin.settings", "placeholder_bg_color"),
+    descBgColor: useUiText("admin.settings", "desc_bg_color"),
+    labelTextColor: useUiText("admin.settings", "label_text_color"),
+    placeholderTextColor: useUiText("admin.settings", "placeholder_text_color"),
+    descTextColor: useUiText("admin.settings", "desc_text_color"),
+    buttonSaveColorsPending: useUiText("admin.settings", "button_save_colors_pending"),
+    buttonSaveColors: useUiText("admin.settings", "button_save_colors"),
+    cardSocialTitle: useUiText("admin.settings", "card_social_title"),
+    labelInstagram: useUiText("admin.settings", "label_instagram"),
+    placeholderInstagram: useUiText("admin.settings", "placeholder_instagram"),
+    labelTwitter: useUiText("admin.settings", "label_twitter"),
+    placeholderTwitter: useUiText("admin.settings", "placeholder_twitter"),
+    labelFacebook: useUiText("admin.settings", "label_facebook"),
+    placeholderFacebook: useUiText("admin.settings", "placeholder_facebook"),
+    labelAmazon: useUiText("admin.settings", "label_amazon"),
+    placeholderAmazon: useUiText("admin.settings", "placeholder_amazon"),
+    buttonSaveSocialPending: useUiText("admin.settings", "button_save_social_pending"),
+    buttonSaveSocial: useUiText("admin.settings", "button_save_social"),
+    cardNewsletterTitle: useUiText("admin.settings", "card_newsletter_title"),
+    headingFreeBook: useUiText("admin.settings", "heading_free_book"),
+    labelFreeBookTitle: useUiText("admin.settings", "label_free_book_title"),
+    placeholderFreeBookTitle: useUiText("admin.settings", "placeholder_free_book_title"),
+    descFreeBookTitle: useUiText("admin.settings", "desc_free_book_title"),
+    labelFreeBookFile: useUiText("admin.settings", "label_free_book_file"),
+    placeholderFreeBookFile: useUiText("admin.settings", "placeholder_free_book_file"),
+    buttonUploadFile: useUiText("admin.settings", "button_upload_file"),
+    descFreeBookFile: useUiText("admin.settings", "desc_free_book_file"),
+    labelBookFormat: useUiText("admin.settings", "label_book_format"),
+    formatPdf: useUiText("admin.settings", "format_pdf"),
+    formatEpub: useUiText("admin.settings", "format_epub"),
+    formatMobi: useUiText("admin.settings", "format_mobi"),
+    labelBookDescription: useUiText("admin.settings", "label_book_description"),
+    placeholderBookDescription: useUiText("admin.settings", "placeholder_book_description"),
+    descBookDescription: useUiText("admin.settings", "desc_book_description"),
+    headingEmailConfig: useUiText("admin.settings", "heading_email_config"),
+    labelEmailProvider: useUiText("admin.settings", "label_email_provider"),
+    providerResend: useUiText("admin.settings", "provider_resend"),
+    providerSendgrid: useUiText("admin.settings", "provider_sendgrid"),
+    providerMailchimp: useUiText("admin.settings", "provider_mailchimp"),
+    providerBrevo: useUiText("admin.settings", "provider_brevo"),
+    providerPostmark: useUiText("admin.settings", "provider_postmark"),
+    providerMailgun: useUiText("admin.settings", "provider_mailgun"),
+    labelEmailFromName: useUiText("admin.settings", "label_email_from_name"),
+    placeholderEmailFromName: useUiText("admin.settings", "placeholder_email_from_name"),
+    descEmailFromName: useUiText("admin.settings", "desc_email_from_name"),
+    labelEmailFromAddress: useUiText("admin.settings", "label_email_from_address"),
+    placeholderEmailFromAddress: useUiText("admin.settings", "placeholder_email_from_address"),
+    descEmailFromAddress: useUiText("admin.settings", "desc_email_from_address"),
+    buttonSaveNewsletterPending: useUiText("admin.settings", "button_save_newsletter_pending"),
+    buttonSaveNewsletter: useUiText("admin.settings", "button_save_newsletter"),
+    cardStatsTitle: useUiText("admin.settings", "card_stats_title"),
+    labelTotalSubscribers: useUiText("admin.settings", "label_total_subscribers"),
+    labelMonthlySubscribers: useUiText("admin.settings", "label_monthly_subscribers"),
+    cardRecentSubscribersTitle: useUiText("admin.settings", "card_recent_subscribers_title"),
+    emptySubscribers: useUiText("admin.settings", "empty_subscribers"),
+    labelDateUnavailable: useUiText("admin.settings", "label_date_unavailable"),
+    toastPartialSaveTitle: useUiText("admin.settings", "toast_partial_save_title"),
+    toastPartialSaveDescription: useUiText("admin.settings", "toast_partial_save_description"),
+    toastSuccessTitle: useUiText("admin.settings", "toast_success_title"),
+    toastSuccessDescription: useUiText("admin.settings", "toast_success_description"),
+    toastErrorTitle: useUiText("admin.settings", "toast_error_title"),
+    toastErrorDescription: useUiText("admin.settings", "toast_error_description"),
+    toastFileUploadTitle: useUiText("admin.settings", "toast_file_upload_title"),
+    toastFileUploadDescription: useUiText("admin.settings", "toast_file_upload_description"),
+    toastFileUploadErrorTitle: useUiText("admin.settings", "toast_file_upload_error_title"),
+    toastFileUploadErrorDescription: useUiText("admin.settings", "toast_file_upload_error_description"),
+    emailInstructionsTitle: useUiText("admin.settings", "email_instructions_title"),
+    emailInstructionsLink: useUiText("admin.settings", "email_instructions_link"),
+    providerResendStep1: useUiText("admin.settings", "provider_resend_step_1"),
+    providerResendStep2: useUiText("admin.settings", "provider_resend_step_2"),
+    providerResendStep3: useUiText("admin.settings", "provider_resend_step_3"),
+    providerResendStep4: useUiText("admin.settings", "provider_resend_step_4"),
+    providerResendStep5: useUiText("admin.settings", "provider_resend_step_5"),
+    providerResendStep6: useUiText("admin.settings", "provider_resend_step_6"),
+    providerSendgridStep1: useUiText("admin.settings", "provider_sendgrid_step_1"),
+    providerSendgridStep2: useUiText("admin.settings", "provider_sendgrid_step_2"),
+    providerSendgridStep3: useUiText("admin.settings", "provider_sendgrid_step_3"),
+    providerSendgridStep4: useUiText("admin.settings", "provider_sendgrid_step_4"),
+    providerSendgridStep5: useUiText("admin.settings", "provider_sendgrid_step_5"),
+    providerSendgridStep6: useUiText("admin.settings", "provider_sendgrid_step_6"),
+    providerMailchimpStep1: useUiText("admin.settings", "provider_mailchimp_step_1"),
+    providerMailchimpStep2: useUiText("admin.settings", "provider_mailchimp_step_2"),
+    providerMailchimpStep3: useUiText("admin.settings", "provider_mailchimp_step_3"),
+    providerMailchimpStep4: useUiText("admin.settings", "provider_mailchimp_step_4"),
+    providerMailchimpStep5: useUiText("admin.settings", "provider_mailchimp_step_5"),
+    providerMailchimpStep6: useUiText("admin.settings", "provider_mailchimp_step_6"),
+    providerMailchimpStep7: useUiText("admin.settings", "provider_mailchimp_step_7"),
+    providerBrevoStep1: useUiText("admin.settings", "provider_brevo_step_1"),
+    providerBrevoStep2: useUiText("admin.settings", "provider_brevo_step_2"),
+    providerBrevoStep3: useUiText("admin.settings", "provider_brevo_step_3"),
+    providerBrevoStep4: useUiText("admin.settings", "provider_brevo_step_4"),
+    providerBrevoStep5: useUiText("admin.settings", "provider_brevo_step_5"),
+    providerBrevoStep6: useUiText("admin.settings", "provider_brevo_step_6"),
+    providerPostmarkStep1: useUiText("admin.settings", "provider_postmark_step_1"),
+    providerPostmarkStep2: useUiText("admin.settings", "provider_postmark_step_2"),
+    providerPostmarkStep3: useUiText("admin.settings", "provider_postmark_step_3"),
+    providerPostmarkStep4: useUiText("admin.settings", "provider_postmark_step_4"),
+    providerPostmarkStep5: useUiText("admin.settings", "provider_postmark_step_5"),
+    providerPostmarkStep6: useUiText("admin.settings", "provider_postmark_step_6"),
+    providerMailgunStep1: useUiText("admin.settings", "provider_mailgun_step_1"),
+    providerMailgunStep2: useUiText("admin.settings", "provider_mailgun_step_2"),
+    providerMailgunStep3: useUiText("admin.settings", "provider_mailgun_step_3"),
+    providerMailgunStep4: useUiText("admin.settings", "provider_mailgun_step_4"),
+    providerMailgunStep5: useUiText("admin.settings", "provider_mailgun_step_5"),
+    providerMailgunStep6: useUiText("admin.settings", "provider_mailgun_step_6"),
+    providerMailgunStep7: useUiText("admin.settings", "provider_mailgun_step_7"),
+  };
 
   const { data: settings = [] } = useQuery<SiteSettings[]>({
     queryKey: selectedAuthorId ? ["/api/settings", { authorId: selectedAuthorId }] : ["/api/settings"],
@@ -250,14 +362,14 @@ export default function SettingsManagement() {
       
       if (failures.length > 0) {
         toast({
-          title: "Configuración parcialmente guardada",
-          description: `${successes.length} configuraciones guardadas, ${failures.length} fallaron.`,
+          title: t.toastPartialSaveTitle,
+          description: t.toastPartialSaveDescription.replace("{successes}", String(successes.length)).replace("{failures}", String(failures.length)),
           variant: "destructive",
         });
       } else {
         toast({
-          title: "Configuración guardada",
-          description: "Los cambios han sido guardados exitosamente.",
+          title: t.toastSuccessTitle,
+          description: t.toastSuccessDescription,
         });
       }
       
@@ -265,8 +377,8 @@ export default function SettingsManagement() {
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "No se pudieron guardar los cambios.",
+        title: t.toastErrorTitle,
+        description: t.toastErrorDescription,
         variant: "destructive",
       });
     },
@@ -325,36 +437,89 @@ export default function SettingsManagement() {
         form.setValue(fieldName, data.objectPath);
         
         toast({
-          title: "Archivo subido",
-          description: "El archivo ha sido subido exitosamente.",
+          title: t.toastFileUploadTitle,
+          description: t.toastFileUploadDescription,
         });
       } catch (error) {
         toast({
-          title: "Error",
-          description: "Error al procesar el archivo subido.",
+          title: t.toastErrorTitle,
+          description: t.toastFileUploadErrorDescription,
           variant: "destructive",
         });
       }
     }
   };
 
+  const providerSteps: Record<string, string[]> = {
+    "Resend": [
+      t.providerResendStep1,
+      t.providerResendStep2,
+      t.providerResendStep3,
+      t.providerResendStep4,
+      t.providerResendStep5,
+      t.providerResendStep6
+    ],
+    "SendGrid": [
+      t.providerSendgridStep1,
+      t.providerSendgridStep2,
+      t.providerSendgridStep3,
+      t.providerSendgridStep4,
+      t.providerSendgridStep5,
+      t.providerSendgridStep6
+    ],
+    "Mailchimp": [
+      t.providerMailchimpStep1,
+      t.providerMailchimpStep2,
+      t.providerMailchimpStep3,
+      t.providerMailchimpStep4,
+      t.providerMailchimpStep5,
+      t.providerMailchimpStep6,
+      t.providerMailchimpStep7
+    ],
+    "Brevo": [
+      t.providerBrevoStep1,
+      t.providerBrevoStep2,
+      t.providerBrevoStep3,
+      t.providerBrevoStep4,
+      t.providerBrevoStep5,
+      t.providerBrevoStep6
+    ],
+    "Postmark": [
+      t.providerPostmarkStep1,
+      t.providerPostmarkStep2,
+      t.providerPostmarkStep3,
+      t.providerPostmarkStep4,
+      t.providerPostmarkStep5,
+      t.providerPostmarkStep6
+    ],
+    "Mailgun": [
+      t.providerMailgunStep1,
+      t.providerMailgunStep2,
+      t.providerMailgunStep3,
+      t.providerMailgunStep4,
+      t.providerMailgunStep5,
+      t.providerMailgunStep6,
+      t.providerMailgunStep7
+    ]
+  };
+
   return (
     <div>
-      <h3 className="text-3xl font-bold text-primary mb-6">Configuración del Sitio</h3>
+      <h3 className="text-3xl font-bold text-primary mb-6">{t.pageTitleMain}</h3>
       
       <Tabs defaultValue="general" className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="general" data-testid="tab-general">General</TabsTrigger>
-          <TabsTrigger value="appearance" data-testid="tab-appearance">Apariencia</TabsTrigger>
-          <TabsTrigger value="social" data-testid="tab-social">Redes Sociales</TabsTrigger>
-          <TabsTrigger value="newsletter" data-testid="tab-newsletter">Newsletter</TabsTrigger>
-          <TabsTrigger value="stats" data-testid="tab-stats">Estadísticas</TabsTrigger>
+          <TabsTrigger value="general" data-testid="tab-general">{t.tabGeneral}</TabsTrigger>
+          <TabsTrigger value="appearance" data-testid="tab-appearance">{t.tabAppearance}</TabsTrigger>
+          <TabsTrigger value="social" data-testid="tab-social">{t.tabSocial}</TabsTrigger>
+          <TabsTrigger value="newsletter" data-testid="tab-newsletter">{t.tabNewsletter}</TabsTrigger>
+          <TabsTrigger value="stats" data-testid="tab-stats">{t.tabStats}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general">
           <Card>
             <CardHeader>
-              <CardTitle>Configuración General</CardTitle>
+              <CardTitle>{t.cardGeneralTitle}</CardTitle>
             </CardHeader>
             <CardContent>
               <Form {...form}>
@@ -364,7 +529,7 @@ export default function SettingsManagement() {
                     name="heroTitle"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Título del Hero</FormLabel>
+                        <FormLabel>{t.labelHeroTitle}</FormLabel>
                         <FormControl>
                           <Input {...field} data-testid="input-hero-title" />
                         </FormControl>
@@ -378,7 +543,7 @@ export default function SettingsManagement() {
                     name="heroSubtitle"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Subtítulo del Hero</FormLabel>
+                        <FormLabel>{t.labelHeroSubtitle}</FormLabel>
                         <FormControl>
                           <Textarea rows={3} {...field} data-testid="textarea-hero-subtitle" />
                         </FormControl>
@@ -392,7 +557,7 @@ export default function SettingsManagement() {
                     name="contactEmail"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email de Contacto</FormLabel>
+                        <FormLabel>{t.labelContactEmail}</FormLabel>
                         <FormControl>
                           <Input type="email" {...field} data-testid="input-contact-email" />
                         </FormControl>
@@ -408,7 +573,7 @@ export default function SettingsManagement() {
                     data-testid="button-save-general"
                   >
                     <Save className="h-4 w-4 mr-2" />
-                    {updateGeneralSettingsMutation.isPending ? "Guardando..." : "Guardar Configuración"}
+                    {updateGeneralSettingsMutation.isPending ? t.buttonSaveGeneralPending : t.buttonSaveGeneral}
                   </Button>
                 </form>
               </Form>
@@ -420,21 +585,21 @@ export default function SettingsManagement() {
           <div className="grid gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>Logo y Favicon</CardTitle>
+                <CardTitle>{t.cardLogoFaviconTitle}</CardTitle>
               </CardHeader>
               <CardContent>
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmitAppearance)} className="space-y-6" data-testid="appearance-settings-form">
                     <div className="space-y-4">
-                      <h4 className="font-medium">Logo del Header</h4>
+                      <h4 className="font-medium">{t.headingLogo}</h4>
                       <p className="text-sm text-muted-foreground">
-                        Si subes un logo, se mostrará en lugar del nombre de la autora en la navegación
+                        {t.descLogoHeader}
                       </p>
                       {form.watch("logoUrl") && (
                         <div className="border rounded-lg p-4 bg-muted/50">
                           <img 
                             src={form.watch("logoUrl")} 
-                            alt="Logo preview" 
+                            alt={t.altLogoPreview} 
                             className="h-12 object-contain"
                           />
                         </div>
@@ -446,19 +611,19 @@ export default function SettingsManagement() {
                         maxFileSize={2 * 1024 * 1024}
                       >
                         <Upload className="h-4 w-4 mr-2" />
-                        Subir Logo
+                        {t.buttonUploadLogo}
                       </ObjectUploader>
                       <FormField
                         control={form.control}
                         name="logoUrl"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>URL del Logo</FormLabel>
+                            <FormLabel>{t.labelLogoUrl}</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="https://..." data-testid="input-logo-url" />
+                              <Input {...field} placeholder={t.placeholderLogoUrl} data-testid="input-logo-url" />
                             </FormControl>
                             <FormDescription>
-                              O puedes pegar una URL directamente
+                              {t.descLogoUrl}
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -467,18 +632,18 @@ export default function SettingsManagement() {
                     </div>
 
                     <div className="space-y-4 pt-6 border-t">
-                      <h4 className="font-medium">Favicon</h4>
+                      <h4 className="font-medium">{t.headingFavicon}</h4>
                       <p className="text-sm text-muted-foreground">
-                        El favicon es el pequeño ícono que aparece en la pestaña del navegador
+                        {t.descFaviconHeader}
                       </p>
                       {form.watch("faviconUrl") && (
                         <div className="border rounded-lg p-4 bg-muted/50 flex items-center gap-4">
                           <img 
                             src={form.watch("faviconUrl")} 
-                            alt="Favicon preview" 
+                            alt={t.altFaviconPreview} 
                             className="w-8 h-8 object-contain"
                           />
-                          <span className="text-sm text-muted-foreground">Vista previa del favicon</span>
+                          <span className="text-sm text-muted-foreground">{t.textFaviconPreview}</span>
                         </div>
                       )}
                       <ObjectUploader
@@ -488,19 +653,19 @@ export default function SettingsManagement() {
                         maxFileSize={100 * 1024}
                       >
                         <Upload className="h-4 w-4 mr-2" />
-                        Subir Favicon
+                        {t.buttonUploadFavicon}
                       </ObjectUploader>
                       <FormField
                         control={form.control}
                         name="faviconUrl"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>URL del Favicon</FormLabel>
+                            <FormLabel>{t.labelFaviconUrl}</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="https://..." data-testid="input-favicon-url" />
+                              <Input {...field} placeholder={t.placeholderFaviconUrl} data-testid="input-favicon-url" />
                             </FormControl>
                             <FormDescription>
-                              Formato recomendado: PNG o ICO, 32x32px
+                              {t.descFaviconUrl}
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -515,7 +680,7 @@ export default function SettingsManagement() {
                       data-testid="button-save-appearance"
                     >
                       <Save className="h-4 w-4 mr-2" />
-                      {updateAppearanceMutation.isPending ? "Guardando..." : "Guardar Apariencia"}
+                      {updateAppearanceMutation.isPending ? t.buttonSaveGeneralPending : t.buttonSaveAppearance}
                     </Button>
                   </form>
                 </Form>
@@ -524,13 +689,13 @@ export default function SettingsManagement() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Colores Personalizados</CardTitle>
+                <CardTitle>{t.cardColorsTitle}</CardTitle>
               </CardHeader>
               <CardContent>
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmitColors)} className="space-y-4" data-testid="colors-settings-form">
                     <p className="text-sm text-muted-foreground mb-4">
-                      Personaliza los colores principales del sitio web
+                      {t.descColorsHeader}
                     </p>
                     
                     <FormField
@@ -538,7 +703,7 @@ export default function SettingsManagement() {
                       name="primaryColor"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Color Primario</FormLabel>
+                          <FormLabel>{t.labelPrimaryColor}</FormLabel>
                           <div className="flex gap-2">
                             <FormControl>
                               <Input type="color" {...field} className="w-20 h-10" data-testid="input-primary-color" />
@@ -552,7 +717,7 @@ export default function SettingsManagement() {
                             />
                           </div>
                           <FormDescription>
-                            Color principal de botones y elementos destacados
+                            {t.descPrimaryColor}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -564,7 +729,7 @@ export default function SettingsManagement() {
                       name="secondaryColor"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Color Secundario</FormLabel>
+                          <FormLabel>{t.labelSecondaryColor}</FormLabel>
                           <div className="flex gap-2">
                             <FormControl>
                               <Input type="color" {...field} className="w-20 h-10" data-testid="input-secondary-color" />
@@ -578,7 +743,7 @@ export default function SettingsManagement() {
                             />
                           </div>
                           <FormDescription>
-                            Color secundario para elementos complementarios
+                            {t.descSecondaryColor}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -590,7 +755,7 @@ export default function SettingsManagement() {
                       name="accentColor"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Color de Acento</FormLabel>
+                          <FormLabel>{t.labelAccentColor}</FormLabel>
                           <div className="flex gap-2">
                             <FormControl>
                               <Input type="color" {...field} className="w-20 h-10" data-testid="input-accent-color" />
@@ -604,7 +769,7 @@ export default function SettingsManagement() {
                             />
                           </div>
                           <FormDescription>
-                            Color para llamadas a la acción y elementos especiales
+                            {t.descAccentColor}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -616,7 +781,7 @@ export default function SettingsManagement() {
                       name="backgroundColor"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Color de Fondo</FormLabel>
+                          <FormLabel>{t.labelBgColor}</FormLabel>
                           <div className="flex gap-2">
                             <FormControl>
                               <Input type="color" {...field} className="w-20 h-10" data-testid="input-background-color" />
@@ -630,7 +795,7 @@ export default function SettingsManagement() {
                             />
                           </div>
                           <FormDescription>
-                            Color de fondo del sitio web
+                            {t.descBgColor}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -642,7 +807,7 @@ export default function SettingsManagement() {
                       name="textColor"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Color de Texto</FormLabel>
+                          <FormLabel>{t.labelTextColor}</FormLabel>
                           <div className="flex gap-2">
                             <FormControl>
                               <Input type="color" {...field} className="w-20 h-10" data-testid="input-text-color" />
@@ -656,7 +821,7 @@ export default function SettingsManagement() {
                             />
                           </div>
                           <FormDescription>
-                            Color principal del texto
+                            {t.descTextColor}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -670,7 +835,7 @@ export default function SettingsManagement() {
                       data-testid="button-save-colors"
                     >
                       <Save className="h-4 w-4 mr-2" />
-                      {updateColorsMutation.isPending ? "Guardando..." : "Guardar Colores"}
+                      {updateColorsMutation.isPending ? t.buttonSaveGeneralPending : t.buttonSaveColors}
                     </Button>
                   </form>
                 </Form>
@@ -682,7 +847,7 @@ export default function SettingsManagement() {
         <TabsContent value="social">
           <Card>
             <CardHeader>
-              <CardTitle>Redes Sociales</CardTitle>
+              <CardTitle>{t.cardSocialTitle}</CardTitle>
             </CardHeader>
             <CardContent>
               <Form {...form}>
@@ -692,11 +857,11 @@ export default function SettingsManagement() {
                     name="instagramUrl"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Instagram</FormLabel>
+                        <FormLabel>{t.labelInstagram}</FormLabel>
                         <FormControl>
                           <Input 
                             type="url" 
-                            placeholder="https://instagram.com/mariagonzalez" 
+                            placeholder={t.placeholderInstagram} 
                             {...field} 
                             data-testid="input-instagram-url"
                           />
@@ -711,11 +876,11 @@ export default function SettingsManagement() {
                     name="twitterUrl"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Twitter</FormLabel>
+                        <FormLabel>{t.labelTwitter}</FormLabel>
                         <FormControl>
                           <Input 
                             type="url" 
-                            placeholder="https://twitter.com/mariagonzalez" 
+                            placeholder={t.placeholderTwitter} 
                             {...field} 
                             data-testid="input-twitter-url"
                           />
@@ -730,11 +895,11 @@ export default function SettingsManagement() {
                     name="facebookUrl"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Facebook</FormLabel>
+                        <FormLabel>{t.labelFacebook}</FormLabel>
                         <FormControl>
                           <Input 
                             type="url" 
-                            placeholder="https://facebook.com/mariagonzalez" 
+                            placeholder={t.placeholderFacebook} 
                             {...field} 
                             data-testid="input-facebook-url"
                           />
@@ -749,11 +914,11 @@ export default function SettingsManagement() {
                     name="amazonUrl"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Amazon Author Page</FormLabel>
+                        <FormLabel>{t.labelAmazon}</FormLabel>
                         <FormControl>
                           <Input 
                             type="url" 
-                            placeholder="https://amazon.com/author/mariagonzalez" 
+                            placeholder={t.placeholderAmazon} 
                             {...field} 
                             data-testid="input-amazon-url"
                           />
@@ -770,7 +935,7 @@ export default function SettingsManagement() {
                     data-testid="button-save-social"
                   >
                     <Save className="h-4 w-4 mr-2" />
-                    {updateSocialMutation.isPending ? "Guardando..." : "Guardar Redes Sociales"}
+                    {updateSocialMutation.isPending ? t.buttonSaveGeneralPending : t.buttonSaveSocial}
                   </Button>
                 </form>
               </Form>
@@ -781,25 +946,25 @@ export default function SettingsManagement() {
         <TabsContent value="newsletter">
           <Card>
             <CardHeader>
-              <CardTitle>Newsletter y Libro de Regalo</CardTitle>
+              <CardTitle>{t.cardNewsletterTitle}</CardTitle>
             </CardHeader>
             <CardContent>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6" data-testid="newsletter-settings-form">
                   <div className="space-y-4">
-                    <h4 className="font-semibold text-lg">Libro de Regalo</h4>
+                    <h4 className="font-semibold text-lg">{t.headingFreeBook}</h4>
                     
                     <FormField
                       control={form.control}
                       name="freeBookTitle"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Título del Libro</FormLabel>
+                          <FormLabel>{t.labelFreeBookTitle}</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="Ej: Primeros Encuentros" data-testid="input-free-book-title" />
+                            <Input {...field} placeholder={t.placeholderFreeBookTitle} data-testid="input-free-book-title" />
                           </FormControl>
                           <FormDescription>
-                            El nombre del libro que se enviará como regalo de bienvenida
+                            {t.descFreeBookTitle}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -811,11 +976,11 @@ export default function SettingsManagement() {
                       name="freeBookFile"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Archivo del Libro (PDF/EPUB, máx 10 MB)</FormLabel>
+                          <FormLabel>{t.labelFreeBookFile}</FormLabel>
                           <div className="flex gap-2">
                             <FormControl>
                               <Input 
-                                placeholder="https://... o /objects/..."
+                                placeholder={t.placeholderFreeBookFile}
                                 {...field}
                                 value={field.value || ""} 
                                 className="flex-1"
@@ -831,11 +996,11 @@ export default function SettingsManagement() {
                               buttonClassName="shrink-0"
                             >
                               <Upload className="h-4 w-4 mr-2" />
-                              Subir
+                              {t.buttonUploadFile}
                             </ObjectUploader>
                           </div>
                           <FormDescription>
-                            Sube el archivo del libro que se enviará por email
+                            {t.descFreeBookFile}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -847,7 +1012,7 @@ export default function SettingsManagement() {
                       name="freeBookFormat"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Formato del Libro</FormLabel>
+                          <FormLabel>{t.labelBookFormat}</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger data-testid="select-book-format">
@@ -855,9 +1020,9 @@ export default function SettingsManagement() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="PDF">PDF</SelectItem>
-                              <SelectItem value="EPUB">EPUB</SelectItem>
-                              <SelectItem value="MOBI">MOBI</SelectItem>
+                              <SelectItem value="PDF">{t.formatPdf}</SelectItem>
+                              <SelectItem value="EPUB">{t.formatEpub}</SelectItem>
+                              <SelectItem value="MOBI">{t.formatMobi}</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -870,17 +1035,17 @@ export default function SettingsManagement() {
                       name="freeBookDescription"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Descripción del Libro</FormLabel>
+                          <FormLabel>{t.labelBookDescription}</FormLabel>
                           <FormControl>
                             <Textarea 
                               {...field} 
-                              placeholder="Una breve historia romántica que te atrapará desde la primera página..."
+                              placeholder={t.placeholderBookDescription}
                               rows={3}
                               data-testid="textarea-book-description"
                             />
                           </FormControl>
                           <FormDescription>
-                            Esta descripción aparecerá en el email de bienvenida
+                            {t.descBookDescription}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -889,14 +1054,14 @@ export default function SettingsManagement() {
                   </div>
 
                   <div className="border-t pt-6 space-y-4">
-                    <h4 className="font-semibold text-lg">Configuración de Email</h4>
+                    <h4 className="font-semibold text-lg">{t.headingEmailConfig}</h4>
                     
                     <FormField
                       control={form.control}
                       name="emailProvider"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Proveedor de Email</FormLabel>
+                          <FormLabel>{t.labelEmailProvider}</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger data-testid="select-email-provider">
@@ -904,12 +1069,12 @@ export default function SettingsManagement() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="Resend">Resend (Recomendado)</SelectItem>
-                              <SelectItem value="SendGrid">SendGrid</SelectItem>
-                              <SelectItem value="Mailchimp">Mailchimp Transactional</SelectItem>
-                              <SelectItem value="Brevo">Brevo (Sendinblue)</SelectItem>
-                              <SelectItem value="Postmark">Postmark</SelectItem>
-                              <SelectItem value="Mailgun">Mailgun</SelectItem>
+                              <SelectItem value="Resend">{t.providerResend}</SelectItem>
+                              <SelectItem value="SendGrid">{t.providerSendgrid}</SelectItem>
+                              <SelectItem value="Mailchimp">{t.providerMailchimp}</SelectItem>
+                              <SelectItem value="Brevo">{t.providerBrevo}</SelectItem>
+                              <SelectItem value="Postmark">{t.providerPostmark}</SelectItem>
+                              <SelectItem value="Mailgun">{t.providerMailgun}</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -918,19 +1083,24 @@ export default function SettingsManagement() {
                     />
 
                     {/* Instrucciones dinámicas según el proveedor */}
-                    <EmailProviderInstructions provider={form.watch("emailProvider")} />
+                    <EmailProviderInstructions 
+                      provider={form.watch("emailProvider")} 
+                      instructionsTitle={t.emailInstructionsTitle}
+                      instructionsLink={t.emailInstructionsLink}
+                      providerSteps={providerSteps}
+                    />
 
                     <FormField
                       control={form.control}
                       name="emailFromName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Nombre del Remitente</FormLabel>
+                          <FormLabel>{t.labelEmailFromName}</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="Ej: María González" data-testid="input-email-from-name" />
+                            <Input {...field} placeholder={t.placeholderEmailFromName} data-testid="input-email-from-name" />
                           </FormControl>
                           <FormDescription>
-                            El nombre que aparecerá como remitente del email
+                            {t.descEmailFromName}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -942,12 +1112,12 @@ export default function SettingsManagement() {
                       name="emailFromAddress"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email del Remitente</FormLabel>
+                          <FormLabel>{t.labelEmailFromAddress}</FormLabel>
                           <FormControl>
-                            <Input {...field} type="email" placeholder="Ej: hola@mariagonzalez.com" data-testid="input-email-from-address" />
+                            <Input {...field} type="email" placeholder={t.placeholderEmailFromAddress} data-testid="input-email-from-address" />
                           </FormControl>
                           <FormDescription>
-                            La dirección de email desde la que se enviarán los mensajes
+                            {t.descEmailFromAddress}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -962,7 +1132,7 @@ export default function SettingsManagement() {
                     data-testid="button-save-newsletter"
                   >
                     <Save className="h-4 w-4 mr-2" />
-                    {updateGeneralSettingsMutation.isPending ? "Guardando..." : "Guardar Configuración"}
+                    {updateGeneralSettingsMutation.isPending ? t.buttonSaveGeneralPending : t.buttonSaveGeneral}
                   </Button>
                 </form>
               </Form>
@@ -974,18 +1144,18 @@ export default function SettingsManagement() {
           <div className="grid gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>Estadísticas del Newsletter</CardTitle>
+                <CardTitle>{t.cardStatsTitle}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
-                    <span className="font-semibold">Total de Suscriptores</span>
+                    <span className="font-semibold">{t.labelTotalSubscribers}</span>
                     <span className="text-2xl font-bold text-primary" data-testid="stat-total-subscribers">
                       {subscribers.length}
                     </span>
                   </div>
                   <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
-                    <span className="font-semibold">Suscriptores este mes</span>
+                    <span className="font-semibold">{t.labelMonthlySubscribers}</span>
                     <span className="text-2xl font-bold text-accent" data-testid="stat-monthly-subscribers">
                       {subscribers.filter(sub => {
                         if (!sub.subscribedAt) return false;
@@ -1002,12 +1172,12 @@ export default function SettingsManagement() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Suscriptores Recientes</CardTitle>
+                <CardTitle>{t.cardRecentSubscribersTitle}</CardTitle>
               </CardHeader>
               <CardContent>
                 {subscribers.length === 0 ? (
                   <p className="text-muted-foreground text-center py-4" data-testid="no-subscribers-message">
-                    No hay suscriptores aún.
+                    {t.emptySubscribers}
                   </p>
                 ) : (
                   <div className="space-y-2">
@@ -1021,7 +1191,7 @@ export default function SettingsManagement() {
                             <div className="text-sm text-muted-foreground">{subscriber.email}</div>
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            {subscriber.subscribedAt ? new Date(subscriber.subscribedAt).toLocaleDateString() : 'Fecha no disponible'}
+                            {subscriber.subscribedAt ? new Date(subscriber.subscribedAt).toLocaleDateString() : t.labelDateUnavailable}
                           </div>
                         </div>
                       ))}

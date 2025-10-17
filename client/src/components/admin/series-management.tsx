@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Edit, Trash2, BookOpen, Upload } from "lucide-react";
 import { useAdminAuthor } from "@/contexts/admin-author-context";
+import { useUiText } from "@/contexts/ui-text-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -29,6 +30,130 @@ export default function SeriesManagement() {
   const [editingSeries, setEditingSeries] = useState<BookSeries | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const t = {
+    // Toast Messages - Create
+    toastCreateTitle: useUiText("admin.series", "toast_create_title", "Serie creada"),
+    toastCreateDescription: useUiText("admin.series", "toast_create_description", "La serie ha sido creada exitosamente."),
+    toastCreateErrorTitle: useUiText("admin.series", "toast_create_error_title", "Error"),
+    toastCreateErrorDescription: useUiText("admin.series", "toast_create_error_description", "No se pudo crear la serie."),
+    // Toast Messages - Update
+    toastUpdateTitle: useUiText("admin.series", "toast_update_title", "Serie actualizada"),
+    toastUpdateDescription: useUiText("admin.series", "toast_update_description", "La serie ha sido actualizada exitosamente."),
+    toastUpdateErrorTitle: useUiText("admin.series", "toast_update_error_title", "Error"),
+    toastUpdateErrorDescription: useUiText("admin.series", "toast_update_error_description", "No se pudo actualizar la serie."),
+    // Toast Messages - Delete
+    toastDeleteTitle: useUiText("admin.series", "toast_delete_title", "Serie eliminada"),
+    toastDeleteDescription: useUiText("admin.series", "toast_delete_description", "La serie ha sido eliminada exitosamente."),
+    toastDeleteErrorTitle: useUiText("admin.series", "toast_delete_error_title", "Error"),
+    toastDeleteErrorDescription: useUiText("admin.series", "toast_delete_error_description", "No se pudo eliminar la serie."),
+    // Toast Messages - Image Upload
+    toastImageUploadTitle: useUiText("admin.series", "toast_image_upload_title", "Imagen subida"),
+    toastImageUploadDescription: useUiText("admin.series", "toast_image_upload_description", "La imagen ha sido subida exitosamente."),
+    toastImageUploadErrorTitle: useUiText("admin.series", "toast_image_upload_error_title", "Error"),
+    toastImageUploadErrorDescription: useUiText("admin.series", "toast_image_upload_error_description", "Error al procesar la imagen subida."),
+    // Toast Messages - Validation
+    toastCannotDeleteTitle: useUiText("admin.series", "toast_cannot_delete_title", "No se puede eliminar"),
+    toastCannotDeleteDescription: useUiText("admin.series", "toast_cannot_delete_description", "No puedes eliminar una serie que tiene libros asociados."),
+    // Window Confirm
+    confirmDelete: useUiText("admin.series", "confirm_delete", "¿Estás seguro de que quieres eliminar esta serie?"),
+    // Page Header
+    pageTitle: useUiText("admin.series", "page_title", "Gestión de Series"),
+    buttonAddSeries: useUiText("admin.series", "button_add_series", "Nueva Serie"),
+    // Empty State
+    emptyState: useUiText("admin.series", "empty_state", "No hay series disponibles"),
+    // Series Card
+    badgeInactive: useUiText("admin.series", "badge_inactive", "Inactiva"),
+    booksCount: useUiText("admin.series", "books_count", "libros en esta serie"),
+    // Dialog Titles
+    dialogTitleEdit: useUiText("admin.series", "dialog_title_edit", "Editar Serie"),
+    dialogTitleAdd: useUiText("admin.series", "dialog_title_add", "Nueva Serie"),
+    // Tabs
+    tabBasicInfo: useUiText("admin.series", "tab_basic_info", "Información Básica"),
+    tabLandingPage: useUiText("admin.series", "tab_landing_page", "Landing Page"),
+    tabPromo: useUiText("admin.series", "tab_promo", "Contenido Promocional"),
+    // Basic Info Tab
+    labelTitle: useUiText("admin.series", "label_title", "Título *"),
+    placeholderTitle: useUiText("admin.series", "placeholder_title", "Título de la serie"),
+    labelDescription: useUiText("admin.series", "label_description", "Descripción *"),
+    placeholderDescription: useUiText("admin.series", "placeholder_description", "Descripción de la serie"),
+    labelGenre: useUiText("admin.series", "label_genre", "Género *"),
+    placeholderGenre: useUiText("admin.series", "placeholder_genre", "Género de la serie"),
+    labelAmazonUrl: useUiText("admin.series", "label_amazon_url", "URL de Amazon"),
+    placeholderAmazonUrl: useUiText("admin.series", "placeholder_amazon_url", "https://amazon.com/..."),
+    labelCardBackgroundImage: useUiText("admin.series", "label_card_background_image", "Imagen de Fondo de Tarjeta (1920×600px, máx 1 MB)"),
+    placeholderUrl: useUiText("admin.series", "placeholder_url", "https://... o /objects/..."),
+    buttonUpload: useUiText("admin.series", "button_upload", "Subir"),
+    descriptionCardBackground: useUiText("admin.series", "description_card_background", "Imagen de fondo para la tarjeta de la serie en la página principal (degradado de izquierda a derecha)"),
+    labelIsActive: useUiText("admin.series", "label_is_active", "Serie activa"),
+    // Landing Page Tab
+    labelLandingHeroImage: useUiText("admin.series", "label_landing_hero_image", "Imagen Hero (1920×600px, máx 1 MB)"),
+    descriptionLandingHero: useUiText("admin.series", "description_landing_hero", "Imagen de fondo para la sección hero de la landing page"),
+    labelTagline: useUiText("admin.series", "label_tagline", "Eslogan"),
+    placeholderTagline: useUiText("admin.series", "placeholder_tagline", "Un eslogan atractivo para la serie..."),
+    descriptionTagline: useUiText("admin.series", "description_tagline", "Frase destacada que aparecerá en la landing page"),
+    labelWorldDescription: useUiText("admin.series", "label_world_description", "Descripción del Mundo"),
+    placeholderWorldDescription: useUiText("admin.series", "placeholder_world_description", "Describe el mundo y ambientación de la serie..."),
+    descriptionWorld: useUiText("admin.series", "description_world", "Información sobre el mundo, ambientación o contexto de la serie"),
+    labelCharacters: useUiText("admin.series", "label_characters", "Personajes Principales"),
+    placeholderCharacters: useUiText("admin.series", "placeholder_characters", "Describe los personajes principales de la serie..."),
+    descriptionCharacters: useUiText("admin.series", "description_characters", "Información sobre los personajes principales que aparecen en la serie"),
+    labelReadingOrder: useUiText("admin.series", "label_reading_order", "Orden de Lectura"),
+    placeholderReadingOrder: useUiText("admin.series", "placeholder_reading_order", "Explica el orden recomendado de lectura..."),
+    descriptionReadingOrder: useUiText("admin.series", "description_reading_order", "Guía sobre el orden en que los lectores deben leer los libros"),
+    labelThemes: useUiText("admin.series", "label_themes", "Temas Principales"),
+    placeholderThemes: useUiText("admin.series", "placeholder_themes", "Un tema por línea..."),
+    descriptionThemes: useUiText("admin.series", "description_themes", "Temas o conceptos principales explorados en la serie (uno por línea)"),
+    // Customization Section
+    sectionCustomization: useUiText("admin.series", "section_customization", "Personalización de Fondo"),
+    customizationIntro: useUiText("admin.series", "customization_intro", "Configura el fondo personalizado para la página de la serie."),
+    labelBgImageUrl: useUiText("admin.series", "label_bg_image_url", "URL de Imagen de Fondo"),
+    descriptionBgImage: useUiText("admin.series", "description_bg_image", "Imagen de fondo para la página de la serie (opcional)"),
+    labelBgColor: useUiText("admin.series", "label_bg_color", "Color de Fondo"),
+    placeholderBgColor: useUiText("admin.series", "placeholder_bg_color", "#ffffff o rgb(255,255,255)"),
+    descriptionBgColor: useUiText("admin.series", "description_bg_color", "Color de fondo para la página de la serie (opcional, se usa si no hay imagen)"),
+    // Promo Tab
+    promoIntro: useUiText("admin.series", "promo_intro", "Agrega contenido promocional adicional para enriquecer la experiencia de tus lectores. Todos estos campos son opcionales. Usa los switches para controlar qué contenidos se muestran en la landing page."),
+    // Promo - Concept Map
+    labelConceptMap: useUiText("admin.series", "label_concept_map", "Mapa Conceptual"),
+    placeholderConceptMap: useUiText("admin.series", "placeholder_concept_map", "URL del mapa conceptual (ej: enlace a imagen o PDF interactivo)"),
+    descriptionConceptMap: useUiText("admin.series", "description_concept_map", "Enlace a un mapa conceptual del mundo, la historia o los conceptos de la serie"),
+    labelShowConceptMap: useUiText("admin.series", "label_show_concept_map", "Mostrar Mapa Conceptual"),
+    descriptionShowContent: useUiText("admin.series", "description_show_content", "Activa para mostrar este contenido en la landing page"),
+    // Promo - Family Tree
+    labelFamilyTree: useUiText("admin.series", "label_family_tree", "Árbol Genealógico"),
+    placeholderFamilyTree: useUiText("admin.series", "placeholder_family_tree", "URL del árbol genealógico (ej: enlace a imagen o diagrama interactivo)"),
+    descriptionFamilyTree: useUiText("admin.series", "description_family_tree", "Enlace a un árbol genealógico de los personajes de la serie"),
+    labelShowFamilyTree: useUiText("admin.series", "label_show_family_tree", "Mostrar Árbol Genealógico"),
+    // Promo - YouTube
+    labelYoutubeBooktrailer: useUiText("admin.series", "label_youtube_booktrailer", "Booktrailer de YouTube"),
+    placeholderYoutube: useUiText("admin.series", "placeholder_youtube", "URL del video de YouTube (ej: https://www.youtube.com/watch?v=...)"),
+    descriptionYoutube: useUiText("admin.series", "description_youtube", "Enlace a un booktrailer o video promocional de la serie en YouTube (se mostrará embebido)"),
+    labelShowBooktrailer: useUiText("admin.series", "label_show_booktrailer", "Mostrar Booktrailer"),
+    descriptionShowYoutube: useUiText("admin.series", "description_show_youtube", "Activa para mostrar el video embebido en la landing page"),
+    // Promo - Spotify
+    labelSpotifyPlaylist: useUiText("admin.series", "label_spotify_playlist", "Lista de Reproducción de Spotify"),
+    placeholderSpotify: useUiText("admin.series", "placeholder_spotify", "URL de la playlist de Spotify (ej: https://open.spotify.com/playlist/...)"),
+    descriptionSpotify: useUiText("admin.series", "description_spotify", "Enlace a una playlist de Spotify que acompaña la lectura de la serie (se mostrará embebida)"),
+    labelShowSpotify: useUiText("admin.series", "label_show_spotify", "Mostrar Playlist de Spotify"),
+    descriptionShowSpotify: useUiText("admin.series", "description_show_spotify", "Activa para mostrar la playlist embebida en la landing page"),
+    // Promo - Press Notes
+    labelPressNotes: useUiText("admin.series", "label_press_notes", "Notas de Prensa"),
+    placeholderPressNotes: useUiText("admin.series", "placeholder_press_notes", "Enlace 1&#10;Enlace 2&#10;Enlace 3"),
+    descriptionPressNotes: useUiText("admin.series", "description_press_notes", "Enlaces a notas de prensa, reseñas o artículos sobre la serie (uno por línea)"),
+    labelShowPressNotes: useUiText("admin.series", "label_show_press_notes", "Mostrar Notas de Prensa"),
+    descriptionShowPressNotes: useUiText("admin.series", "description_show_press_notes", "Activa para mostrar estos enlaces en la landing page"),
+    // Promo - Additional Media
+    labelAdditionalMedia: useUiText("admin.series", "label_additional_media", "Material Gráfico Adicional"),
+    placeholderAdditionalMedia: useUiText("admin.series", "placeholder_additional_media", "URL de imagen 1&#10;URL de imagen 2&#10;URL de PDF o infografía"),
+    descriptionAdditionalMedia: useUiText("admin.series", "description_additional_media", "Enlaces a ilustraciones, infografías, mapas u otro material visual de la serie (uno por línea)"),
+    labelShowAdditionalMedia: useUiText("admin.series", "label_show_additional_media", "Mostrar Material Gráfico"),
+    descriptionShowAdditionalMedia: useUiText("admin.series", "description_show_additional_media", "Activa para mostrar este contenido en la landing page"),
+    // Form Buttons
+    buttonCancel: useUiText("admin.series", "button_cancel", "Cancelar"),
+    buttonUpdate: useUiText("admin.series", "button_update", "Actualizar"),
+    buttonCreate: useUiText("admin.series", "button_create", "Crear"),
+  };
 
   const form = useForm<SeriesFormData>({
     resolver: zodResolver(insertBookSeriesSchema),
@@ -80,8 +205,8 @@ export default function SeriesManagement() {
     },
     onSuccess: () => {
       toast({
-        title: "Serie creada",
-        description: "La serie ha sido creada exitosamente.",
+        title: t.toastCreateTitle,
+        description: t.toastCreateDescription,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/book-series"] });
       setIsModalOpen(false);
@@ -89,8 +214,8 @@ export default function SeriesManagement() {
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "No se pudo crear la serie.",
+        title: t.toastCreateErrorTitle,
+        description: t.toastCreateErrorDescription,
         variant: "destructive",
       });
     },
@@ -103,8 +228,8 @@ export default function SeriesManagement() {
     },
     onSuccess: () => {
       toast({
-        title: "Serie actualizada",
-        description: "La serie ha sido actualizada exitosamente.",
+        title: t.toastUpdateTitle,
+        description: t.toastUpdateDescription,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/book-series"] });
       setIsModalOpen(false);
@@ -113,8 +238,8 @@ export default function SeriesManagement() {
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "No se pudo actualizar la serie.",
+        title: t.toastUpdateErrorTitle,
+        description: t.toastUpdateErrorDescription,
         variant: "destructive",
       });
     },
@@ -126,15 +251,15 @@ export default function SeriesManagement() {
     },
     onSuccess: () => {
       toast({
-        title: "Serie eliminada",
-        description: "La serie ha sido eliminada exitosamente.",
+        title: t.toastDeleteTitle,
+        description: t.toastDeleteDescription,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/book-series"] });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "No se pudo eliminar la serie.",
+        title: t.toastDeleteErrorTitle,
+        description: t.toastDeleteErrorDescription,
         variant: "destructive",
       });
     },
@@ -162,13 +287,13 @@ export default function SeriesManagement() {
         form.setValue(fieldName, data.objectPath);
         
         toast({
-          title: "Imagen subida",
-          description: "La imagen ha sido subida exitosamente.",
+          title: t.toastImageUploadTitle,
+          description: t.toastImageUploadDescription,
         });
       } catch (error) {
         toast({
-          title: "Error",
-          description: "Error al procesar la imagen subida.",
+          title: t.toastImageUploadErrorTitle,
+          description: t.toastImageUploadErrorDescription,
           variant: "destructive",
         });
       }
@@ -249,14 +374,14 @@ export default function SeriesManagement() {
     const bookCount = getSeriesBookCount(seriesId);
     if (bookCount > 0) {
       toast({
-        title: "No se puede eliminar",
-        description: "No puedes eliminar una serie que tiene libros asociados.",
+        title: t.toastCannotDeleteTitle,
+        description: t.toastCannotDeleteDescription,
         variant: "destructive",
       });
       return;
     }
 
-    if (window.confirm("¿Estás seguro de que quieres eliminar esta serie?")) {
+    if (window.confirm(t.confirmDelete)) {
       deleteSeriesMutation.mutate(seriesId);
     }
   };
@@ -272,14 +397,14 @@ export default function SeriesManagement() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-3xl font-bold text-primary">Gestión de Series</h3>
+        <h3 className="text-3xl font-bold text-primary">{t.pageTitle}</h3>
         <Button 
           className="bg-primary text-primary-foreground hover:bg-primary/90" 
           data-testid="button-add-series"
           onClick={handleOpenAddModal}
         >
           <Plus className="h-4 w-4 mr-2" />
-          Nueva Serie
+          {t.buttonAddSeries}
         </Button>
       </div>
 
@@ -287,7 +412,7 @@ export default function SeriesManagement() {
         {series.length === 0 ? (
           <Card>
             <CardContent className="text-center py-8">
-              <p className="text-muted-foreground">No hay series disponibles</p>
+              <p className="text-muted-foreground">{t.emptyState}</p>
             </CardContent>
           </Card>
         ) : (
@@ -300,7 +425,7 @@ export default function SeriesManagement() {
                     <Badge className="bg-accent/20 text-accent-foreground">{serie.genre}</Badge>
                     {serie.isActive === false && (
                       <Badge variant="outline" className="bg-yellow-100 text-yellow-800">
-                        Inactiva
+                        {t.badgeInactive}
                       </Badge>
                     )}
                   </div>
@@ -331,7 +456,7 @@ export default function SeriesManagement() {
               <CardContent>
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <BookOpen className="h-4 w-4" />
-                  <span>{getSeriesBookCount(serie.id)} libros en esta serie</span>
+                  <span>{getSeriesBookCount(serie.id)} {t.booksCount}</span>
                 </div>
               </CardContent>
             </Card>
@@ -343,16 +468,16 @@ export default function SeriesManagement() {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle data-testid="dialog-title-series">
-              {editingSeries ? "Editar Serie" : "Nueva Serie"}
+              {editingSeries ? t.dialogTitleEdit : t.dialogTitleAdd}
             </DialogTitle>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
               <Tabs defaultValue="basic" className="w-full">
                 <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="basic">Información Básica</TabsTrigger>
-                  <TabsTrigger value="landing">Landing Page</TabsTrigger>
-                  <TabsTrigger value="promo" data-testid="tab-promo-series">Contenido Promocional</TabsTrigger>
+                  <TabsTrigger value="basic">{t.tabBasicInfo}</TabsTrigger>
+                  <TabsTrigger value="landing">{t.tabLandingPage}</TabsTrigger>
+                  <TabsTrigger value="promo" data-testid="tab-promo-series">{t.tabPromo}</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="basic" className="space-y-6 mt-6">
@@ -361,10 +486,10 @@ export default function SeriesManagement() {
                     name="title"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Título *</FormLabel>
+                        <FormLabel>{t.labelTitle}</FormLabel>
                         <FormControl>
                           <Input 
-                            placeholder="Título de la serie"
+                            placeholder={t.placeholderTitle}
                             data-testid="input-series-title"
                             {...field} 
                           />
@@ -379,10 +504,10 @@ export default function SeriesManagement() {
                     name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Descripción *</FormLabel>
+                        <FormLabel>{t.labelDescription}</FormLabel>
                         <FormControl>
                           <Textarea 
-                            placeholder="Descripción de la serie"
+                            placeholder={t.placeholderDescription}
                             rows={4}
                             data-testid="textarea-series-description"
                             {...field}
@@ -399,10 +524,10 @@ export default function SeriesManagement() {
                       name="genre"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Género *</FormLabel>
+                          <FormLabel>{t.labelGenre}</FormLabel>
                           <FormControl>
                             <Input 
-                              placeholder="Género de la serie"
+                              placeholder={t.placeholderGenre}
                               data-testid="input-series-genre"
                               {...field} 
                             />
@@ -417,10 +542,10 @@ export default function SeriesManagement() {
                       name="amazonUrl"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>URL de Amazon</FormLabel>
+                          <FormLabel>{t.labelAmazonUrl}</FormLabel>
                           <FormControl>
                             <Input 
-                              placeholder="https://amazon.com/..."
+                              placeholder={t.placeholderAmazonUrl}
                               data-testid="input-series-amazon"
                               {...field}
                               value={field.value || ""} 
@@ -437,11 +562,11 @@ export default function SeriesManagement() {
                     name="cardBackgroundImage"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Imagen de Fondo de Tarjeta (1920×600px, máx 1 MB)</FormLabel>
+                        <FormLabel>{t.labelCardBackgroundImage}</FormLabel>
                         <div className="flex gap-2">
                           <FormControl>
                             <Input 
-                              placeholder="https://... o /objects/..."
+                              placeholder={t.placeholderUrl}
                               {...field}
                               value={field.value || ""} 
                               className="flex-1"
@@ -457,11 +582,11 @@ export default function SeriesManagement() {
                             buttonClassName="shrink-0"
                           >
                             <Upload className="h-4 w-4 mr-2" />
-                            Subir
+                            {t.buttonUpload}
                           </ObjectUploader>
                         </div>
                         <FormDescription>
-                          Imagen de fondo para la tarjeta de la serie en la página principal (degradado de izquierda a derecha)
+                          {t.descriptionCardBackground}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -480,7 +605,7 @@ export default function SeriesManagement() {
                             data-testid="switch-series-active"
                           />
                         </FormControl>
-                        <FormLabel>Serie activa</FormLabel>
+                        <FormLabel>{t.labelIsActive}</FormLabel>
                       </FormItem>
                     )}
                   />
@@ -492,11 +617,11 @@ export default function SeriesManagement() {
                     name="landingHeroImage"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Imagen Hero (1920×600px, máx 1 MB)</FormLabel>
+                        <FormLabel>{t.labelLandingHeroImage}</FormLabel>
                         <div className="flex gap-2">
                           <FormControl>
                             <Input 
-                              placeholder="https://... o /objects/..."
+                              placeholder={t.placeholderUrl}
                               {...field}
                               value={field.value || ""} 
                               className="flex-1"
@@ -511,11 +636,11 @@ export default function SeriesManagement() {
                             buttonClassName="shrink-0"
                           >
                             <Upload className="h-4 w-4 mr-2" />
-                            Subir
+                            {t.buttonUpload}
                           </ObjectUploader>
                         </div>
                         <FormDescription>
-                          Imagen de fondo para la sección hero de la landing page
+                          {t.descriptionLandingHero}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -527,16 +652,16 @@ export default function SeriesManagement() {
                     name="landingTagline"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Eslogan</FormLabel>
+                        <FormLabel>{t.labelTagline}</FormLabel>
                         <FormControl>
                           <Input 
-                            placeholder="Un eslogan atractivo para la serie..."
+                            placeholder={t.placeholderTagline}
                             {...field}
                             value={field.value || ""} 
                           />
                         </FormControl>
                         <FormDescription>
-                          Frase destacada que aparecerá en la landing page
+                          {t.descriptionTagline}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -548,17 +673,17 @@ export default function SeriesManagement() {
                     name="landingWorldDescription"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Descripción del Mundo</FormLabel>
+                        <FormLabel>{t.labelWorldDescription}</FormLabel>
                         <FormControl>
                           <Textarea 
-                            placeholder="Describe el mundo y ambientación de la serie..."
+                            placeholder={t.placeholderWorldDescription}
                             rows={6}
                             {...field}
                             value={field.value || ""} 
                           />
                         </FormControl>
                         <FormDescription>
-                          Información sobre el mundo, ambientación o contexto de la serie
+                          {t.descriptionWorld}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -570,17 +695,17 @@ export default function SeriesManagement() {
                     name="landingCharacters"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Personajes Principales</FormLabel>
+                        <FormLabel>{t.labelCharacters}</FormLabel>
                         <FormControl>
                           <Textarea 
-                            placeholder="Describe los personajes principales de la serie..."
+                            placeholder={t.placeholderCharacters}
                             rows={6}
                             {...field}
                             value={field.value || ""} 
                           />
                         </FormControl>
                         <FormDescription>
-                          Información sobre los personajes principales que aparecen en la serie
+                          {t.descriptionCharacters}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -592,17 +717,17 @@ export default function SeriesManagement() {
                     name="landingReadingOrder"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Orden de Lectura</FormLabel>
+                        <FormLabel>{t.labelReadingOrder}</FormLabel>
                         <FormControl>
                           <Textarea 
-                            placeholder="Explica el orden recomendado de lectura..."
+                            placeholder={t.placeholderReadingOrder}
                             rows={4}
                             {...field}
                             value={field.value || ""} 
                           />
                         </FormControl>
                         <FormDescription>
-                          Guía sobre el orden en que los lectores deben leer los libros
+                          {t.descriptionReadingOrder}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -614,17 +739,17 @@ export default function SeriesManagement() {
                     name="landingThemes"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Temas Principales</FormLabel>
+                        <FormLabel>{t.labelThemes}</FormLabel>
                         <FormControl>
                           <Textarea 
-                            placeholder="Un tema por línea..."
+                            placeholder={t.placeholderThemes}
                             rows={4}
                             value={(field.value as string[] || []).join('\n')}
                             onChange={(e) => field.onChange(e.target.value.split('\n').filter(line => line.trim()))}
                           />
                         </FormControl>
                         <FormDescription>
-                          Temas o conceptos principales explorados en la serie (uno por línea)
+                          {t.descriptionThemes}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -632,20 +757,20 @@ export default function SeriesManagement() {
                   />
 
                   <div className="space-y-4 border-t pt-6 mt-6">
-                    <h3 className="text-lg font-semibold">Personalización de Fondo</h3>
-                    <p className="text-sm text-muted-foreground">Configura el fondo personalizado para la página de la serie.</p>
+                    <h3 className="text-lg font-semibold">{t.sectionCustomization}</h3>
+                    <p className="text-sm text-muted-foreground">{t.customizationIntro}</p>
                     
                     <FormField
                       control={form.control}
                       name="backgroundImageUrl"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>URL de Imagen de Fondo</FormLabel>
+                          <FormLabel>{t.labelBgImageUrl}</FormLabel>
                           <FormControl>
-                            <Input {...field} value={field.value || ""} placeholder="https://... o /objects/..." data-testid="input-series-bg-image" />
+                            <Input {...field} value={field.value || ""} placeholder={t.placeholderUrl} data-testid="input-series-bg-image" />
                           </FormControl>
                           <FormDescription>
-                            Imagen de fondo para la página de la serie (opcional)
+                            {t.descriptionBgImage}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -657,12 +782,12 @@ export default function SeriesManagement() {
                       name="backgroundColor"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Color de Fondo</FormLabel>
+                          <FormLabel>{t.labelBgColor}</FormLabel>
                           <FormControl>
-                            <Input {...field} value={field.value || ""} placeholder="#ffffff o rgb(255,255,255)" data-testid="input-series-bg-color" />
+                            <Input {...field} value={field.value || ""} placeholder={t.placeholderBgColor} data-testid="input-series-bg-color" />
                           </FormControl>
                           <FormDescription>
-                            Color de fondo para la página de la serie (opcional, se usa si no hay imagen)
+                            {t.descriptionBgColor}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -674,8 +799,7 @@ export default function SeriesManagement() {
                 <TabsContent value="promo" className="space-y-6 mt-6">
                   <div className="bg-muted/30 p-4 rounded-lg mb-6">
                     <p className="text-sm text-muted-foreground">
-                      Agrega contenido promocional adicional para enriquecer la experiencia de tus lectores. 
-                      Todos estos campos son opcionales. Usa los switches para controlar qué contenidos se muestran en la landing page.
+                      {t.promoIntro}
                     </p>
                   </div>
 
@@ -685,17 +809,17 @@ export default function SeriesManagement() {
                       name="promoConceptMap"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Mapa Conceptual</FormLabel>
+                          <FormLabel>{t.labelConceptMap}</FormLabel>
                           <FormControl>
                             <Input 
-                              placeholder="URL del mapa conceptual (ej: enlace a imagen o PDF interactivo)"
+                              placeholder={t.placeholderConceptMap}
                               data-testid="input-promo-concept-map-series"
                               {...field}
                               value={field.value || ""}
                             />
                           </FormControl>
                           <FormDescription>
-                            Enlace a un mapa conceptual del mundo, la historia o los conceptos de la serie
+                            {t.descriptionConceptMap}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -708,9 +832,9 @@ export default function SeriesManagement() {
                       render={({ field }) => (
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                           <div className="space-y-0.5">
-                            <FormLabel>Mostrar Mapa Conceptual</FormLabel>
+                            <FormLabel>{t.labelShowConceptMap}</FormLabel>
                             <FormDescription>
-                              Activa para mostrar este contenido en la landing page
+                              {t.descriptionShowContent}
                             </FormDescription>
                           </div>
                           <FormControl>
@@ -731,17 +855,17 @@ export default function SeriesManagement() {
                       name="promoFamilyTree"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Árbol Genealógico</FormLabel>
+                          <FormLabel>{t.labelFamilyTree}</FormLabel>
                           <FormControl>
                             <Input 
-                              placeholder="URL del árbol genealógico (ej: enlace a imagen o diagrama interactivo)"
+                              placeholder={t.placeholderFamilyTree}
                               data-testid="input-promo-family-tree-series"
                               {...field}
                               value={field.value || ""}
                             />
                           </FormControl>
                           <FormDescription>
-                            Enlace a un árbol genealógico de los personajes de la serie
+                            {t.descriptionFamilyTree}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -754,9 +878,9 @@ export default function SeriesManagement() {
                       render={({ field }) => (
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                           <div className="space-y-0.5">
-                            <FormLabel>Mostrar Árbol Genealógico</FormLabel>
+                            <FormLabel>{t.labelShowFamilyTree}</FormLabel>
                             <FormDescription>
-                              Activa para mostrar este contenido en la landing page
+                              {t.descriptionShowContent}
                             </FormDescription>
                           </div>
                           <FormControl>
@@ -777,17 +901,17 @@ export default function SeriesManagement() {
                       name="promoYoutubeBooktrailer"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Booktrailer de YouTube</FormLabel>
+                          <FormLabel>{t.labelYoutubeBooktrailer}</FormLabel>
                           <FormControl>
                             <Input 
-                              placeholder="URL del video de YouTube (ej: https://www.youtube.com/watch?v=...)"
+                              placeholder={t.placeholderYoutube}
                               data-testid="input-promo-youtube-series"
                               {...field}
                               value={field.value || ""}
                             />
                           </FormControl>
                           <FormDescription>
-                            Enlace a un booktrailer o video promocional de la serie en YouTube (se mostrará embebido)
+                            {t.descriptionYoutube}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -800,9 +924,9 @@ export default function SeriesManagement() {
                       render={({ field }) => (
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                           <div className="space-y-0.5">
-                            <FormLabel>Mostrar Booktrailer</FormLabel>
+                            <FormLabel>{t.labelShowBooktrailer}</FormLabel>
                             <FormDescription>
-                              Activa para mostrar el video embebido en la landing page
+                              {t.descriptionShowYoutube}
                             </FormDescription>
                           </div>
                           <FormControl>
@@ -823,17 +947,17 @@ export default function SeriesManagement() {
                       name="promoSpotifyPlaylist"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Lista de Reproducción de Spotify</FormLabel>
+                          <FormLabel>{t.labelSpotifyPlaylist}</FormLabel>
                           <FormControl>
                             <Input 
-                              placeholder="URL de la playlist de Spotify (ej: https://open.spotify.com/playlist/...)"
+                              placeholder={t.placeholderSpotify}
                               data-testid="input-promo-spotify-series"
                               {...field}
                               value={field.value || ""}
                             />
                           </FormControl>
                           <FormDescription>
-                            Enlace a una playlist de Spotify que acompaña la lectura de la serie (se mostrará embebida)
+                            {t.descriptionSpotify}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -846,9 +970,9 @@ export default function SeriesManagement() {
                       render={({ field }) => (
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                           <div className="space-y-0.5">
-                            <FormLabel>Mostrar Playlist de Spotify</FormLabel>
+                            <FormLabel>{t.labelShowSpotify}</FormLabel>
                             <FormDescription>
-                              Activa para mostrar la playlist embebida en la landing page
+                              {t.descriptionShowSpotify}
                             </FormDescription>
                           </div>
                           <FormControl>
@@ -869,10 +993,10 @@ export default function SeriesManagement() {
                       name="promoPressNotes"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Notas de Prensa</FormLabel>
+                          <FormLabel>{t.labelPressNotes}</FormLabel>
                           <FormControl>
                             <Textarea 
-                              placeholder="Enlace 1&#10;Enlace 2&#10;Enlace 3"
+                              placeholder={t.placeholderPressNotes}
                               rows={4}
                               data-testid="textarea-promo-press-notes-series"
                               value={(field.value as string[] || []).join('\n')}
@@ -880,7 +1004,7 @@ export default function SeriesManagement() {
                             />
                           </FormControl>
                           <FormDescription>
-                            Enlaces a notas de prensa, reseñas o artículos sobre la serie (uno por línea)
+                            {t.descriptionPressNotes}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -893,9 +1017,9 @@ export default function SeriesManagement() {
                       render={({ field }) => (
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                           <div className="space-y-0.5">
-                            <FormLabel>Mostrar Notas de Prensa</FormLabel>
+                            <FormLabel>{t.labelShowPressNotes}</FormLabel>
                             <FormDescription>
-                              Activa para mostrar estos enlaces en la landing page
+                              {t.descriptionShowPressNotes}
                             </FormDescription>
                           </div>
                           <FormControl>
@@ -916,10 +1040,10 @@ export default function SeriesManagement() {
                       name="promoAdditionalMedia"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Material Gráfico Adicional</FormLabel>
+                          <FormLabel>{t.labelAdditionalMedia}</FormLabel>
                           <FormControl>
                             <Textarea 
-                              placeholder="URL de imagen 1&#10;URL de imagen 2&#10;URL de PDF o infografía"
+                              placeholder={t.placeholderAdditionalMedia}
                               rows={4}
                               data-testid="textarea-promo-additional-media-series"
                               value={(field.value as string[] || []).join('\n')}
@@ -927,7 +1051,7 @@ export default function SeriesManagement() {
                             />
                           </FormControl>
                           <FormDescription>
-                            Enlaces a ilustraciones, infografías, mapas u otro material visual de la serie (uno por línea)
+                            {t.descriptionAdditionalMedia}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -940,9 +1064,9 @@ export default function SeriesManagement() {
                       render={({ field }) => (
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                           <div className="space-y-0.5">
-                            <FormLabel>Mostrar Material Gráfico</FormLabel>
+                            <FormLabel>{t.labelShowAdditionalMedia}</FormLabel>
                             <FormDescription>
-                              Activa para mostrar este contenido en la landing page
+                              {t.descriptionShowAdditionalMedia}
                             </FormDescription>
                           </div>
                           <FormControl>
@@ -966,14 +1090,14 @@ export default function SeriesManagement() {
                   onClick={() => setIsModalOpen(false)}
                   data-testid="button-cancel-series"
                 >
-                  Cancelar
+                  {t.buttonCancel}
                 </Button>
                 <Button 
                   type="submit"
                   disabled={createSeriesMutation.isPending || updateSeriesMutation.isPending}
                   data-testid="button-save-series"
                 >
-                  {editingSeries ? "Actualizar" : "Crear"}
+                  {editingSeries ? t.buttonUpdate : t.buttonCreate}
                 </Button>
               </div>
             </form>

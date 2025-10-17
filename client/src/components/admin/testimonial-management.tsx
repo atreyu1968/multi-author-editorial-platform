@@ -16,6 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { insertTestimonialSchema, type Testimonial, type InsertTestimonial } from "@shared/schema";
+import { useUiText } from "@/contexts/ui-text-context";
 
 export default function TestimonialManagement() {
   const { selectedAuthorId } = useAdminAuthor();
@@ -23,6 +24,58 @@ export default function TestimonialManagement() {
   const [editingTestimonial, setEditingTestimonial] = useState<Testimonial | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const t = {
+    pageTitle: useUiText("admin.testimonials", "page_title", "Gestión de Testimonios"),
+    buttonAdd: useUiText("admin.testimonials", "button_add", "Agregar Testimonio"),
+    dialogTitleEdit: useUiText("admin.testimonials", "dialog_title_edit", "Editar Testimonio"),
+    dialogTitleNew: useUiText("admin.testimonials", "dialog_title_new", "Nuevo Testimonio"),
+    labelContent: useUiText("admin.testimonials", "label_content", "Contenido del Testimonio"),
+    placeholderContent: useUiText("admin.testimonials", "placeholder_content", "Escribe el testimonio aquí..."),
+    labelAuthorName: useUiText("admin.testimonials", "label_author_name", "Nombre del Autor"),
+    placeholderAuthorName: useUiText("admin.testimonials", "placeholder_author_name", "Nombre completo"),
+    labelAuthorType: useUiText("admin.testimonials", "label_author_type", "Tipo de Lector"),
+    optionTypeVerifiedFemale: useUiText("admin.testimonials", "option_type_verified_female", "Lectora verificada"),
+    optionTypeVerifiedMale: useUiText("admin.testimonials", "option_type_verified_male", "Lector verificado"),
+    optionTypeFan: useUiText("admin.testimonials", "option_type_fan", "Fan #1"),
+    optionTypeFantasy: useUiText("admin.testimonials", "option_type_fantasy", "Amante de la fantasía"),
+    optionTypeLibrarian: useUiText("admin.testimonials", "option_type_librarian", "Bibliotecaria"),
+    optionTypeBlogger: useUiText("admin.testimonials", "option_type_blogger", "Blogger literario"),
+    labelAuthorPhoto: useUiText("admin.testimonials", "label_author_photo", "Foto del Autor (URL)"),
+    placeholderAuthorPhoto: useUiText("admin.testimonials", "placeholder_author_photo", "https://example.com/photo.jpg"),
+    labelRating: useUiText("admin.testimonials", "label_rating", "Calificación"),
+    optionRating5: useUiText("admin.testimonials", "option_rating_5", "5 estrellas"),
+    optionRating4: useUiText("admin.testimonials", "option_rating_4", "4 estrellas"),
+    optionRating3: useUiText("admin.testimonials", "option_rating_3", "3 estrellas"),
+    optionRating2: useUiText("admin.testimonials", "option_rating_2", "2 estrellas"),
+    optionRating1: useUiText("admin.testimonials", "option_rating_1", "1 estrella"),
+    labelFeatured: useUiText("admin.testimonials", "label_featured", "Destacado"),
+    descriptionFeatured: useUiText("admin.testimonials", "description_featured", "Mostrar en la página principal"),
+    labelPublished: useUiText("admin.testimonials", "label_published", "Publicado"),
+    descriptionPublished: useUiText("admin.testimonials", "description_published", "Visible al público"),
+    buttonCancel: useUiText("admin.testimonials", "button_cancel", "Cancelar"),
+    buttonUpdate: useUiText("admin.testimonials", "button_update", "Actualizar"),
+    buttonCreate: useUiText("admin.testimonials", "button_create", "Crear"),
+    buttonSuffix: useUiText("admin.testimonials", "button_suffix", " Testimonio"),
+    emptyState: useUiText("admin.testimonials", "empty_state", "No hay testimonios disponibles."),
+    altPhotoPrefix: useUiText("admin.testimonials", "alt_photo_prefix", "Foto de "),
+    badgePublished: useUiText("admin.testimonials", "badge_published", "Publicado"),
+    badgeDraft: useUiText("admin.testimonials", "badge_draft", "Borrador"),
+    badgeFeatured: useUiText("admin.testimonials", "badge_featured", "Destacado"),
+    toastCreateTitle: useUiText("admin.testimonials", "toast_create_title", "Testimonio creado"),
+    toastCreateDescription: useUiText("admin.testimonials", "toast_create_description", "El testimonio ha sido agregado exitosamente."),
+    toastCreateErrorTitle: useUiText("admin.testimonials", "toast_create_error_title", "Error"),
+    toastCreateErrorDescription: useUiText("admin.testimonials", "toast_create_error_description", "No se pudo crear el testimonio."),
+    toastUpdateTitle: useUiText("admin.testimonials", "toast_update_title", "Testimonio actualizado"),
+    toastUpdateDescription: useUiText("admin.testimonials", "toast_update_description", "Los cambios han sido guardados exitosamente."),
+    toastUpdateErrorTitle: useUiText("admin.testimonials", "toast_update_error_title", "Error"),
+    toastUpdateErrorDescription: useUiText("admin.testimonials", "toast_update_error_description", "No se pudieron guardar los cambios."),
+    toastDeleteTitle: useUiText("admin.testimonials", "toast_delete_title", "Testimonio eliminado"),
+    toastDeleteDescription: useUiText("admin.testimonials", "toast_delete_description", "El testimonio ha sido eliminado exitosamente."),
+    toastDeleteErrorTitle: useUiText("admin.testimonials", "toast_delete_error_title", "Error"),
+    toastDeleteErrorDescription: useUiText("admin.testimonials", "toast_delete_error_description", "No se pudo eliminar el testimonio."),
+    confirmDelete: useUiText("admin.testimonials", "confirm_delete", "¿Estás seguro de que quieres eliminar este testimonio?"),
+  };
 
   const { data: testimonials = [] } = useQuery<Testimonial[]>({
     queryKey: ["/api/testimonials", { authorId: selectedAuthorId }],
@@ -49,8 +102,8 @@ export default function TestimonialManagement() {
     },
     onSuccess: () => {
       toast({
-        title: "Testimonio creado",
-        description: "El testimonio ha sido agregado exitosamente.",
+        title: t.toastCreateTitle,
+        description: t.toastCreateDescription,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/testimonials", { authorId: selectedAuthorId }] });
       setIsDialogOpen(false);
@@ -58,8 +111,8 @@ export default function TestimonialManagement() {
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "No se pudo crear el testimonio.",
+        title: t.toastCreateErrorTitle,
+        description: t.toastCreateErrorDescription,
         variant: "destructive",
       });
     },
@@ -72,8 +125,8 @@ export default function TestimonialManagement() {
     },
     onSuccess: () => {
       toast({
-        title: "Testimonio actualizado",
-        description: "Los cambios han sido guardados exitosamente.",
+        title: t.toastUpdateTitle,
+        description: t.toastUpdateDescription,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/testimonials", { authorId: selectedAuthorId }] });
       setIsDialogOpen(false);
@@ -82,8 +135,8 @@ export default function TestimonialManagement() {
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "No se pudieron guardar los cambios.",
+        title: t.toastUpdateErrorTitle,
+        description: t.toastUpdateErrorDescription,
         variant: "destructive",
       });
     },
@@ -95,15 +148,15 @@ export default function TestimonialManagement() {
     },
     onSuccess: () => {
       toast({
-        title: "Testimonio eliminado",
-        description: "El testimonio ha sido eliminado exitosamente.",
+        title: t.toastDeleteTitle,
+        description: t.toastDeleteDescription,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/testimonials", { authorId: selectedAuthorId }] });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "No se pudo eliminar el testimonio.",
+        title: t.toastDeleteErrorTitle,
+        description: t.toastDeleteErrorDescription,
         variant: "destructive",
       });
     },
@@ -124,7 +177,7 @@ export default function TestimonialManagement() {
   };
 
   const handleDelete = (testimonialId: string) => {
-    if (window.confirm("¿Estás seguro de que quieres eliminar este testimonio?")) {
+    if (window.confirm(t.confirmDelete)) {
       deleteTestimonialMutation.mutate(testimonialId);
     }
   };
@@ -146,18 +199,18 @@ export default function TestimonialManagement() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-3xl font-bold text-primary">Gestión de Testimonios</h3>
+        <h3 className="text-3xl font-bold text-primary">{t.pageTitle}</h3>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-primary text-primary-foreground hover:bg-primary/90" data-testid="button-add-testimonial">
               <Plus className="h-4 w-4 mr-2" />
-              Agregar Testimonio
+              {t.buttonAdd}
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>
-                {editingTestimonial ? "Editar Testimonio" : "Nuevo Testimonio"}
+                {editingTestimonial ? t.dialogTitleEdit : t.dialogTitleNew}
               </DialogTitle>
             </DialogHeader>
             <Form {...form}>
@@ -167,11 +220,11 @@ export default function TestimonialManagement() {
                   name="content"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Contenido del Testimonio</FormLabel>
+                      <FormLabel>{t.labelContent}</FormLabel>
                       <FormControl>
                         <Textarea 
                           rows={4} 
-                          placeholder="Escribe el testimonio aquí..."
+                          placeholder={t.placeholderContent}
                           {...field} 
                           data-testid="textarea-content"
                         />
@@ -187,9 +240,9 @@ export default function TestimonialManagement() {
                     name="authorName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Nombre del Autor</FormLabel>
+                        <FormLabel>{t.labelAuthorName}</FormLabel>
                         <FormControl>
-                          <Input placeholder="Nombre completo" {...field} data-testid="input-author-name" />
+                          <Input placeholder={t.placeholderAuthorName} {...field} data-testid="input-author-name" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -201,7 +254,7 @@ export default function TestimonialManagement() {
                     name="authorType"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Tipo de Lector</FormLabel>
+                        <FormLabel>{t.labelAuthorType}</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger data-testid="select-author-type">
@@ -209,12 +262,12 @@ export default function TestimonialManagement() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="Lectora verificada">Lectora verificada</SelectItem>
-                            <SelectItem value="Lector verificado">Lector verificado</SelectItem>
-                            <SelectItem value="Fan #1">Fan #1</SelectItem>
-                            <SelectItem value="Amante de la fantasía">Amante de la fantasía</SelectItem>
-                            <SelectItem value="Bibliotecaria">Bibliotecaria</SelectItem>
-                            <SelectItem value="Blogger literario">Blogger literario</SelectItem>
+                            <SelectItem value="Lectora verificada">{t.optionTypeVerifiedFemale}</SelectItem>
+                            <SelectItem value="Lector verificado">{t.optionTypeVerifiedMale}</SelectItem>
+                            <SelectItem value="Fan #1">{t.optionTypeFan}</SelectItem>
+                            <SelectItem value="Amante de la fantasía">{t.optionTypeFantasy}</SelectItem>
+                            <SelectItem value="Bibliotecaria">{t.optionTypeLibrarian}</SelectItem>
+                            <SelectItem value="Blogger literario">{t.optionTypeBlogger}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -228,11 +281,11 @@ export default function TestimonialManagement() {
                   name="authorPhoto"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Foto del Autor (URL)</FormLabel>
+                      <FormLabel>{t.labelAuthorPhoto}</FormLabel>
                       <FormControl>
                         <Input 
                           type="url" 
-                          placeholder="https://example.com/photo.jpg"
+                          placeholder={t.placeholderAuthorPhoto}
                           {...field}
                           value={field.value ?? ""}
                           data-testid="input-author-photo"
@@ -248,7 +301,7 @@ export default function TestimonialManagement() {
                   name="rating"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Calificación</FormLabel>
+                      <FormLabel>{t.labelRating}</FormLabel>
                       <Select onValueChange={(value) => field.onChange(parseInt(value))} defaultValue={field.value?.toString() ?? "5"}>
                         <FormControl>
                           <SelectTrigger data-testid="select-rating">
@@ -256,11 +309,11 @@ export default function TestimonialManagement() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="5">5 estrellas</SelectItem>
-                          <SelectItem value="4">4 estrellas</SelectItem>
-                          <SelectItem value="3">3 estrellas</SelectItem>
-                          <SelectItem value="2">2 estrellas</SelectItem>
-                          <SelectItem value="1">1 estrella</SelectItem>
+                          <SelectItem value="5">{t.optionRating5}</SelectItem>
+                          <SelectItem value="4">{t.optionRating4}</SelectItem>
+                          <SelectItem value="3">{t.optionRating3}</SelectItem>
+                          <SelectItem value="2">{t.optionRating2}</SelectItem>
+                          <SelectItem value="1">{t.optionRating1}</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -275,9 +328,9 @@ export default function TestimonialManagement() {
                     render={({ field }) => (
                       <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                         <div className="space-y-0.5">
-                          <FormLabel className="text-base">Destacado</FormLabel>
+                          <FormLabel className="text-base">{t.labelFeatured}</FormLabel>
                           <div className="text-sm text-muted-foreground">
-                            Mostrar en la página principal
+                            {t.descriptionFeatured}
                           </div>
                         </div>
                         <FormControl>
@@ -297,9 +350,9 @@ export default function TestimonialManagement() {
                     render={({ field }) => (
                       <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                         <div className="space-y-0.5">
-                          <FormLabel className="text-base">Publicado</FormLabel>
+                          <FormLabel className="text-base">{t.labelPublished}</FormLabel>
                           <div className="text-sm text-muted-foreground">
-                            Visible al público
+                            {t.descriptionPublished}
                           </div>
                         </div>
                         <FormControl>
@@ -316,14 +369,14 @@ export default function TestimonialManagement() {
 
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="outline" onClick={handleDialogClose}>
-                    Cancelar
+                    {t.buttonCancel}
                   </Button>
                   <Button 
                     type="submit" 
                     disabled={createTestimonialMutation.isPending || updateTestimonialMutation.isPending}
                     data-testid="button-save-testimonial"
                   >
-                    {editingTestimonial ? "Actualizar" : "Crear"} Testimonio
+                    {editingTestimonial ? t.buttonUpdate : t.buttonCreate}{t.buttonSuffix}
                   </Button>
                 </div>
               </form>
@@ -336,7 +389,7 @@ export default function TestimonialManagement() {
         {testimonials.length === 0 ? (
           <Card>
             <CardContent className="text-center py-8">
-              <p className="text-muted-foreground" data-testid="no-testimonials-message">No hay testimonios disponibles.</p>
+              <p className="text-muted-foreground" data-testid="no-testimonials-message">{t.emptyState}</p>
             </CardContent>
           </Card>
         ) : (
@@ -347,7 +400,7 @@ export default function TestimonialManagement() {
                   <div className="flex items-center gap-4">
                     <img 
                       src={testimonial.authorPhoto || "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=60&h=60"} 
-                      alt={`Foto de ${testimonial.authorName}`}
+                      alt={`${t.altPhotoPrefix}${testimonial.authorName}`}
                       className="w-12 h-12 rounded-full object-cover" 
                     />
                     <div>
@@ -389,10 +442,10 @@ export default function TestimonialManagement() {
                 </p>
                 <div className="flex gap-2">
                   <Badge className={testimonial.isPublished ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
-                    {testimonial.isPublished ? "Publicado" : "Borrador"}
+                    {testimonial.isPublished ? t.badgePublished : t.badgeDraft}
                   </Badge>
                   {testimonial.isFeatured && (
-                    <Badge className="bg-blue-100 text-blue-800">Destacado</Badge>
+                    <Badge className="bg-blue-100 text-blue-800">{t.badgeFeatured}</Badge>
                   )}
                 </div>
               </CardContent>

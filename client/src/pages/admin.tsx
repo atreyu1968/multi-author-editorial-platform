@@ -17,12 +17,35 @@ import EditorialSettingsManagement from "@/components/admin/editorial-settings-m
 import AnalyticsManagement from "@/components/admin/analytics-management";
 import OrdersManagement from "@/components/admin/orders-management";
 import { AdminAuthorProvider, useAdminAuthor } from "@/contexts/admin-author-context";
+import { useUiText } from "@/contexts/ui-text-context";
 
 type AdminSection = 'dashboard' | 'books' | 'series' | 'authors' | 'bio' | 'testimonials' | 'blog' | 'settings' | 'ui-texts' | 'editorial-settings' | 'analytics' | 'orders' | 'help';
 
 function AdminContent() {
   const [currentSection, setCurrentSection] = useState<AdminSection>('dashboard');
   const { selectedAuthorId, setSelectedAuthorId, authors, isLoading } = useAdminAuthor();
+  
+  const t = {
+    loadingAuthors: useUiText("admin.shell", "loading_authors", "Cargando autores..."),
+    noAuthorsAvailable: useUiText("admin.shell", "no_authors_available", "No hay autores disponibles"),
+    panelTitle: useUiText("admin.shell", "panel_title", "Panel de Administración"),
+    selectAuthorPlaceholder: useUiText("admin.shell", "select_author_placeholder", "Seleccionar autor"),
+    sectionSelectedAuthor: useUiText("admin.shell", "section_selected_author", "Autor Seleccionado"),
+    navDashboard: useUiText("admin.shell", "nav_dashboard", "Dashboard"),
+    navBooks: useUiText("admin.shell", "nav_books", "Libros"),
+    navBio: useUiText("admin.shell", "nav_bio", "Biografía"),
+    navTestimonials: useUiText("admin.shell", "nav_testimonials", "Testimonios"),
+    navBlog: useUiText("admin.shell", "nav_blog", "Blog"),
+    navUiTexts: useUiText("admin.shell", "nav_ui_texts", "Textos del Sitio"),
+    navSettings: useUiText("admin.shell", "nav_settings", "Configuración"),
+    sectionEditorialGlobal: useUiText("admin.shell", "section_editorial_global", "Editorial (Global)"),
+    navSeries: useUiText("admin.shell", "nav_series", "Series"),
+    navAuthors: useUiText("admin.shell", "nav_authors", "Autores"),
+    navEditorialPage: useUiText("admin.shell", "nav_editorial_page", "Página Editorial"),
+    navAnalytics: useUiText("admin.shell", "nav_analytics", "Analíticas"),
+    navOrders: useUiText("admin.shell", "nav_orders", "Pedidos"),
+    navHelp: useUiText("admin.shell", "nav_help", "Ayuda"),
+  };
 
   const renderContent = () => {
     switch (currentSection) {
@@ -60,7 +83,7 @@ function AdminContent() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-xl text-muted-foreground">Cargando autores...</div>
+        <div className="text-xl text-muted-foreground">{t.loadingAuthors}</div>
       </div>
     );
   }
@@ -68,7 +91,7 @@ function AdminContent() {
   if (!isLoading && !selectedAuthorId) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-xl text-muted-foreground">No hay autores disponibles</div>
+        <div className="text-xl text-muted-foreground">{t.noAuthorsAvailable}</div>
       </div>
     );
   }
@@ -81,11 +104,11 @@ function AdminContent() {
       {/* Header */}
       <div className="bg-primary text-primary-foreground p-6 flex justify-between items-center">
         <div className="flex items-center gap-6">
-          <h1 className="text-2xl font-bold">Panel de Administración</h1>
+          <h1 className="text-2xl font-bold">{t.panelTitle}</h1>
           <Select value={selectedAuthorId || undefined} onValueChange={setSelectedAuthorId} disabled={isLoading}>
             <SelectTrigger className="w-[250px] bg-primary-foreground text-primary" data-testid="select-admin-author">
-              <SelectValue placeholder="Seleccionar autor">
-                {selectedAuthor?.name || "Seleccionar autor"}
+              <SelectValue placeholder={t.selectAuthorPlaceholder}>
+                {selectedAuthor?.name || t.selectAuthorPlaceholder}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -109,7 +132,7 @@ function AdminContent() {
             {/* Sección del Autor */}
             <div>
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-4">
-                Autor Seleccionado
+                {t.sectionSelectedAuthor}
               </h3>
               <div className="space-y-1">
                 <button 
@@ -122,7 +145,7 @@ function AdminContent() {
                   data-testid="nav-dashboard"
                 >
                   <Home className="h-5 w-5" />
-                  Dashboard
+                  {t.navDashboard}
                 </button>
                 <button 
                   onClick={() => setCurrentSection('books')}
@@ -134,7 +157,7 @@ function AdminContent() {
                   data-testid="nav-books"
                 >
                   <BookOpen className="h-5 w-5" />
-                  Libros
+                  {t.navBooks}
                 </button>
                 <button 
                   onClick={() => setCurrentSection('bio')}
@@ -146,7 +169,7 @@ function AdminContent() {
                   data-testid="nav-bio"
                 >
                   <User className="h-5 w-5" />
-                  Biografía
+                  {t.navBio}
                 </button>
                 <button 
                   onClick={() => setCurrentSection('testimonials')}
@@ -158,7 +181,7 @@ function AdminContent() {
                   data-testid="nav-testimonials"
                 >
                   <Star className="h-5 w-5" />
-                  Testimonios
+                  {t.navTestimonials}
                 </button>
                 <button 
                   onClick={() => setCurrentSection('blog')}
@@ -170,7 +193,7 @@ function AdminContent() {
                   data-testid="nav-blog"
                 >
                   <FileText className="h-5 w-5" />
-                  Blog
+                  {t.navBlog}
                 </button>
                 <button 
                   onClick={() => setCurrentSection('ui-texts')}
@@ -182,7 +205,7 @@ function AdminContent() {
                   data-testid="nav-ui-texts"
                 >
                   <Type className="h-5 w-5" />
-                  Textos del Sitio
+                  {t.navUiTexts}
                 </button>
                 <button 
                   onClick={() => setCurrentSection('settings')}
@@ -194,7 +217,7 @@ function AdminContent() {
                   data-testid="nav-settings"
                 >
                   <Settings className="h-5 w-5" />
-                  Configuración
+                  {t.navSettings}
                 </button>
               </div>
             </div>
@@ -205,7 +228,7 @@ function AdminContent() {
             {/* Sección de la Editorial */}
             <div>
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-4">
-                Editorial (Global)
+                {t.sectionEditorialGlobal}
               </h3>
               <div className="space-y-1">
                 <button 
@@ -218,7 +241,7 @@ function AdminContent() {
                   data-testid="nav-series"
                 >
                   <Users className="h-5 w-5" />
-                  Series
+                  {t.navSeries}
                 </button>
                 <button 
                   onClick={() => setCurrentSection('authors')}
@@ -230,7 +253,7 @@ function AdminContent() {
                   data-testid="nav-authors"
                 >
                   <UserCircle className="h-5 w-5" />
-                  Autores
+                  {t.navAuthors}
                 </button>
                 <button 
                   onClick={() => setCurrentSection('editorial-settings')}
@@ -242,7 +265,7 @@ function AdminContent() {
                   data-testid="nav-editorial-settings"
                 >
                   <Building2 className="h-5 w-5" />
-                  Página Editorial
+                  {t.navEditorialPage}
                 </button>
                 <button 
                   onClick={() => setCurrentSection('analytics')}
@@ -254,7 +277,7 @@ function AdminContent() {
                   data-testid="nav-analytics"
                 >
                   <BarChart3 className="h-5 w-5" />
-                  Analíticas
+                  {t.navAnalytics}
                 </button>
                 <button 
                   onClick={() => setCurrentSection('orders')}
@@ -266,7 +289,7 @@ function AdminContent() {
                   data-testid="nav-orders"
                 >
                   <ShoppingCart className="h-5 w-5" />
-                  Pedidos
+                  {t.navOrders}
                 </button>
                 <button 
                   onClick={() => setCurrentSection('help')}
@@ -278,7 +301,7 @@ function AdminContent() {
                   data-testid="nav-help"
                 >
                   <HelpCircle className="h-5 w-5" />
-                  Ayuda
+                  {t.navHelp}
                 </button>
               </div>
             </div>

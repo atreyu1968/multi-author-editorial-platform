@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Edit, Trash2, Upload, Copy, Download, QrCode, Package, FileText, AlertCircle } from "lucide-react";
 import { useAdminAuthor } from "@/contexts/admin-author-context";
+import { useUiText } from "@/contexts/ui-text-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -44,6 +45,288 @@ export default function BookManagement() {
   const [newStoreUrl, setNewStoreUrl] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const t = {
+    // Toast Messages - Create
+    toastCreateTitle: useUiText("admin.books", "toast_create_title", "Libro creado"),
+    toastCreateDescription: useUiText("admin.books", "toast_create_description", "El libro ha sido creado exitosamente."),
+    toastCreateErrorTitle: useUiText("admin.books", "toast_create_error_title", "Error"),
+    toastCreateErrorDescription: useUiText("admin.books", "toast_create_error_description", "No se pudo crear el libro."),
+    // Toast Messages - Update
+    toastUpdateTitle: useUiText("admin.books", "toast_update_title", "Libro actualizado"),
+    toastUpdateDescription: useUiText("admin.books", "toast_update_description", "El libro ha sido actualizado exitosamente."),
+    toastUpdateErrorTitle: useUiText("admin.books", "toast_update_error_title", "Error"),
+    toastUpdateErrorDescription: useUiText("admin.books", "toast_update_error_description", "No se pudo actualizar el libro."),
+    // Toast Messages - Delete
+    toastDeleteTitle: useUiText("admin.books", "toast_delete_title", "Libro eliminado"),
+    toastDeleteDescription: useUiText("admin.books", "toast_delete_description", "El libro ha sido eliminado exitosamente."),
+    toastDeleteErrorTitle: useUiText("admin.books", "toast_delete_error_title", "Error"),
+    toastDeleteErrorDescription: useUiText("admin.books", "toast_delete_error_description", "No se pudo eliminar el libro."),
+    // Toast Messages - Image Upload
+    toastImageUploadTitle: useUiText("admin.books", "toast_image_upload_title", "Imagen subida"),
+    toastImageUploadDescription: useUiText("admin.books", "toast_image_upload_description", "La imagen ha sido subida exitosamente."),
+    toastImageUploadErrorTitle: useUiText("admin.books", "toast_image_upload_error_title", "Error"),
+    toastImageUploadErrorDescription: useUiText("admin.books", "toast_image_upload_error_description", "Error al procesar la imagen subida."),
+    // Toast Messages - Digital Files
+    toastEpubUploadTitle: useUiText("admin.books", "toast_epub_upload_title", "Archivo EPUB subido"),
+    toastEpubUploadDescription: useUiText("admin.books", "toast_epub_upload_description", "El archivo EPUB ha sido subido exitosamente."),
+    toastPdfUploadTitle: useUiText("admin.books", "toast_pdf_upload_title", "Archivo PDF subido"),
+    toastPdfUploadDescription: useUiText("admin.books", "toast_pdf_upload_description", "El archivo PDF ha sido subido exitosamente."),
+    toastMobiUploadTitle: useUiText("admin.books", "toast_mobi_upload_title", "Archivo MOBI subido"),
+    toastMobiUploadDescription: useUiText("admin.books", "toast_mobi_upload_description", "El archivo MOBI ha sido subido exitosamente."),
+    toastAzw3UploadTitle: useUiText("admin.books", "toast_azw3_upload_title", "Archivo AZW3 subido"),
+    toastAzw3UploadDescription: useUiText("admin.books", "toast_azw3_upload_description", "El archivo AZW3 ha sido subido exitosamente."),
+    // Toast Messages - QR Code
+    toastQrErrorTitle: useUiText("admin.books", "toast_qr_error_title", "Error"),
+    toastQrErrorDescription: useUiText("admin.books", "toast_qr_error_description", "No se pudo generar el código QR"),
+    toastUrlCopiedTitle: useUiText("admin.books", "toast_url_copied_title", "Enlace copiado"),
+    toastUrlCopiedDescription: useUiText("admin.books", "toast_url_copied_description", "La URL de la landing page se ha copiado al portapapeles."),
+    toastQrDownloadedTitle: useUiText("admin.books", "toast_qr_downloaded_title", "QR descargado"),
+    toastQrDownloadedDescription: useUiText("admin.books", "toast_qr_downloaded_description", "El código QR se ha descargado exitosamente."),
+    // Toast Messages - Validation
+    toastValidationErrorTitle: useUiText("admin.books", "toast_validation_error_title", "Error de validación"),
+    toastValidationSaleFormat: useUiText("admin.books", "toast_validation_sale_format", "Debes habilitar al menos un formato de venta (físico o digital) cuando la venta directa está activa"),
+    toastValidationDigitalFile: useUiText("admin.books", "toast_validation_digital_file", "Se requiere al menos un archivo digital cuando el formato digital está habilitado"),
+    toastStoreLinkErrorTitle: useUiText("admin.books", "toast_store_link_error_title", "Error"),
+    toastStoreLinkErrorDescription: useUiText("admin.books", "toast_store_link_error_description", "El nombre y la URL de la tienda son requeridos"),
+    // Utility Functions
+    seriesStandalone: useUiText("admin.books", "series_standalone", "Independiente"),
+    seriesUnknown: useUiText("admin.books", "series_unknown", "Serie desconocida"),
+    // Main UI
+    pageTitle: useUiText("admin.books", "page_title", "Gestión de Libros"),
+    buttonAddBook: useUiText("admin.books", "button_add_book", "Agregar Libro"),
+    placeholderSearch: useUiText("admin.books", "placeholder_search", "Buscar libros..."),
+    filterAllGenres: useUiText("admin.books", "filter_all_genres", "Todos los géneros"),
+    // Table Headers
+    tableHeaderCover: useUiText("admin.books", "table_header_cover", "Portada"),
+    tableHeaderTitle: useUiText("admin.books", "table_header_title", "Título"),
+    tableHeaderSeries: useUiText("admin.books", "table_header_series", "Serie"),
+    tableHeaderGenre: useUiText("admin.books", "table_header_genre", "Género"),
+    tableHeaderStatus: useUiText("admin.books", "table_header_status", "Estado"),
+    tableHeaderActions: useUiText("admin.books", "table_header_actions", "Acciones"),
+    // Badges/Status
+    badgePublished: useUiText("admin.books", "badge_published", "Publicado"),
+    badgeDraft: useUiText("admin.books", "badge_draft", "Borrador"),
+    badgeStandalone: useUiText("admin.books", "badge_standalone", "Independiente"),
+    badgeBookNumber: useUiText("admin.books", "badge_book_number", "Libro #"),
+    // Action Buttons
+    buttonEdit: useUiText("admin.books", "button_edit", "Editar"),
+    buttonDelete: useUiText("admin.books", "button_delete", "Eliminar"),
+    // Delete Confirmation
+    confirmDelete: useUiText("admin.books", "confirm_delete", "¿Estás seguro de que quieres eliminar este libro?"),
+    // Modal Titles
+    modalTitleEdit: useUiText("admin.books", "modal_title_edit", "Editar Libro"),
+    modalTitleAdd: useUiText("admin.books", "modal_title_add", "Agregar Libro"),
+    // Tabs
+    tabBasicInfo: useUiText("admin.books", "tab_basic_info", "Información Básica"),
+    tabLandingPage: useUiText("admin.books", "tab_landing_page", "Landing Page"),
+    tabPromoMaterial: useUiText("admin.books", "tab_promo_material", "Material Promocional"),
+    tabSeo: useUiText("admin.books", "tab_seo", "SEO"),
+    tabQrLinks: useUiText("admin.books", "tab_qr_links", "QR y Enlaces"),
+    // Basic Info - Labels
+    labelTitle: useUiText("admin.books", "label_title", "Título"),
+    labelDescription: useUiText("admin.books", "label_description", "Descripción"),
+    labelGenre: useUiText("admin.books", "label_genre", "Género"),
+    labelPrice: useUiText("admin.books", "label_price", "Precio"),
+    labelSeries: useUiText("admin.books", "label_series", "Serie"),
+    labelOrderInSeries: useUiText("admin.books", "label_order_in_series", "Orden en la Serie"),
+    labelStandalone: useUiText("admin.books", "label_standalone", "Libro independiente"),
+    labelPublished: useUiText("admin.books", "label_published", "Publicado"),
+    labelCoverImage: useUiText("admin.books", "label_cover_image", "Imagen de Portada"),
+    labelAmazonUrl: useUiText("admin.books", "label_amazon_url", "URL de Amazon"),
+    // Basic Info - Placeholders
+    placeholderTitle: useUiText("admin.books", "placeholder_title", "Título del libro"),
+    placeholderDescription: useUiText("admin.books", "placeholder_description", "Descripción detallada del libro..."),
+    placeholderGenre: useUiText("admin.books", "placeholder_genre", "Ej: Fantasía, Thriller..."),
+    placeholderPrice: useUiText("admin.books", "placeholder_price", "0.00"),
+    placeholderSelectSeries: useUiText("admin.books", "placeholder_select_series", "Seleccionar serie"),
+    placeholderOrder: useUiText("admin.books", "placeholder_order", "1"),
+    placeholderCoverUrl: useUiText("admin.books", "placeholder_cover_url", "URL de la portada"),
+    placeholderAmazonUrl: useUiText("admin.books", "placeholder_amazon_url", "https://amazon.com/..."),
+    // Basic Info - Descriptions
+    descriptionStandalone: useUiText("admin.books", "description_standalone", "Si el libro no pertenece a ninguna serie"),
+    descriptionPublished: useUiText("admin.books", "description_published", "Controla si el libro es visible en el sitio público"),
+    descriptionCoverUpload: useUiText("admin.books", "description_cover_upload", "Haz clic para subir una imagen de portada"),
+    descriptionAmazonUrl: useUiText("admin.books", "description_amazon_url", "Enlace para comprar en Amazon"),
+    // Series Options
+    seriesOptionNone: useUiText("admin.books", "series_option_none", "Sin serie (independiente)"),
+    // Direct Sale Section
+    sectionDirectSaleTitle: useUiText("admin.books", "section_direct_sale_title", "Venta Directa"),
+    sectionDirectSaleDescription: useUiText("admin.books", "section_direct_sale_description", "Configura la venta directa de este libro en la plataforma."),
+    labelDirectSaleEnabled: useUiText("admin.books", "label_direct_sale_enabled", "Habilitar venta directa"),
+    descriptionDirectSaleEnabled: useUiText("admin.books", "description_direct_sale_enabled", "Permite vender este libro directamente en la plataforma"),
+    labelDirectSalePrice: useUiText("admin.books", "label_direct_sale_price", "Precio de Venta *"),
+    labelDirectSaleStock: useUiText("admin.books", "label_direct_sale_stock", "Stock Disponible *"),
+    sectionSaleFormats: useUiText("admin.books", "section_sale_formats", "Formatos de Venta"),
+    descriptionSaleFormats: useUiText("admin.books", "description_sale_formats", "Selecciona qué formatos quieres ofrecer"),
+    labelSaleFormatPhysical: useUiText("admin.books", "label_sale_format_physical", "Vender formato físico"),
+    descriptionSaleFormatPhysical: useUiText("admin.books", "description_sale_format_physical", "Libro físico enviado por correo"),
+    labelSaleFormatDigital: useUiText("admin.books", "label_sale_format_digital", "Vender formato digital"),
+    descriptionSaleFormatDigital: useUiText("admin.books", "description_sale_format_digital", "Archivo digital descargable (requiere configurar archivo digital abajo)"),
+    alertSelectFormatTitle: useUiText("admin.books", "alert_select_format_title", "Selecciona al menos un formato"),
+    alertSelectFormatDescription: useUiText("admin.books", "alert_select_format_description", "Debes habilitar al menos un formato de venta (físico o digital)"),
+    // Digital File Section
+    sectionDigitalFileTitle: useUiText("admin.books", "section_digital_file_title", "Archivo Digital"),
+    sectionDigitalFileDescription: useUiText("admin.books", "section_digital_file_description", "Configura el archivo digital para descarga después de la compra."),
+    labelIsDigitalProduct: useUiText("admin.books", "label_is_digital_product", "Es producto digital"),
+    descriptionIsDigitalProduct: useUiText("admin.books", "description_is_digital_product", "Marca si este libro es un producto digital descargable"),
+    digitalFilesIntro: useUiText("admin.books", "digital_files_intro", "Sube archivos en los formatos que desees ofrecer. Puedes subir múltiples formatos."),
+    // Digital Files - Individual formats
+    labelDigitalFileEpub: useUiText("admin.books", "label_digital_file_epub", "Archivo EPUB"),
+    placeholderDigitalFileEpub: useUiText("admin.books", "placeholder_digital_file_epub", "URL del archivo EPUB"),
+    buttonUpload: useUiText("admin.books", "button_upload", "Subir"),
+    descriptionEpub: useUiText("admin.books", "description_epub", "Formato compatible con la mayoría de lectores"),
+    labelDigitalFilePdf: useUiText("admin.books", "label_digital_file_pdf", "Archivo PDF"),
+    placeholderDigitalFilePdf: useUiText("admin.books", "placeholder_digital_file_pdf", "URL del archivo PDF"),
+    descriptionPdf: useUiText("admin.books", "description_pdf", "Formato universal compatible con todos los dispositivos"),
+    labelDigitalFileMobi: useUiText("admin.books", "label_digital_file_mobi", "Archivo MOBI"),
+    placeholderDigitalFileMobi: useUiText("admin.books", "placeholder_digital_file_mobi", "URL del archivo MOBI"),
+    descriptionMobi: useUiText("admin.books", "description_mobi", "Formato compatible con Kindle (versiones antiguas)"),
+    labelDigitalFileAzw3: useUiText("admin.books", "label_digital_file_azw3", "Archivo AZW3"),
+    placeholderDigitalFileAzw3: useUiText("admin.books", "placeholder_digital_file_azw3", "URL del archivo AZW3"),
+    descriptionAzw3: useUiText("admin.books", "description_azw3", "Formato Kindle Format 8 (KF8) para dispositivos modernos"),
+    digitalFilesStorageInfo: useUiText("admin.books", "digital_files_storage_info", "Todos los archivos se almacenan de forma segura en Object Storage privado (máx 50 MB por archivo)."),
+    // SEO Section
+    sectionSeoTitle: useUiText("admin.books", "section_seo_title", "SEO - Optimización para Buscadores"),
+    sectionSeoDescription: useUiText("admin.books", "section_seo_description", "Configura cómo aparecerá la página del libro en Google y redes sociales."),
+    labelSeoTitle: useUiText("admin.books", "label_seo_title", "Título SEO"),
+    descriptionSeoTitleAuto: useUiText("admin.books", "description_seo_title_auto", "Deja vacío para usar automáticamente:"),
+    labelSeoDescription: useUiText("admin.books", "label_seo_description", "Descripción SEO"),
+    placeholderSeoDescription: useUiText("admin.books", "placeholder_seo_description", "Descripción breve para buscadores (150-160 caracteres)"),
+    descriptionSeoDescriptionChars: useUiText("admin.books", "description_seo_description_chars", "caracteres. Deja vacío para usar la descripción del libro."),
+    labelSeoKeywords: useUiText("admin.books", "label_seo_keywords", "Palabras Clave SEO"),
+    placeholderSeoKeywords: useUiText("admin.books", "placeholder_seo_keywords", "novela, fantasía, aventura, etc."),
+    descriptionSeoKeywords: useUiText("admin.books", "description_seo_keywords", "Separa las palabras clave con comas. Se incluirá automáticamente el título y género."),
+    // Background Section
+    sectionBackgroundTitle: useUiText("admin.books", "section_background_title", "Personalización de Fondo"),
+    sectionBackgroundDescription: useUiText("admin.books", "section_background_description", "Configura el fondo personalizado para la página del libro."),
+    labelBgImage: useUiText("admin.books", "label_bg_image", "URL de Imagen de Fondo"),
+    placeholderBgImage: useUiText("admin.books", "placeholder_bg_image", "https://... o /objects/..."),
+    descriptionBgImage: useUiText("admin.books", "description_bg_image", "Deja vacío para usar el fondo del tema del autor"),
+    labelBgColor: useUiText("admin.books", "label_bg_color", "Color de Fondo (Opcional)"),
+    placeholderBgColor: useUiText("admin.books", "placeholder_bg_color", "#RRGGBB"),
+    descriptionBgColor: useUiText("admin.books", "description_bg_color", "Se usará si no hay imagen. Deja vacío para tema del autor."),
+    // Landing Page - Hero
+    sectionLandingHeroTitle: useUiText("admin.books", "section_landing_hero_title", "Hero de la Landing Page"),
+    sectionLandingHeroDescription: useUiText("admin.books", "section_landing_hero_description", "Imagen y texto principal que verán los lectores al entrar"),
+    labelLandingHeroImage: useUiText("admin.books", "label_landing_hero_image", "Imagen Hero"),
+    descriptionLandingHeroUpload: useUiText("admin.books", "description_landing_hero_upload", "Imagen destacada (recomendado: 1920x1080px)"),
+    labelLandingTagline: useUiText("admin.books", "label_landing_tagline", "Tagline"),
+    placeholderLandingTagline: useUiText("admin.books", "placeholder_landing_tagline", "Una frase impactante que describa el libro"),
+    descriptionLandingTagline: useUiText("admin.books", "description_landing_tagline", "Frase corta y memorable que capture la esencia"),
+    // Landing Page - Synopsis
+    sectionLandingSynopsisTitle: useUiText("admin.books", "section_landing_synopsis_title", "Sinopsis Extendida"),
+    labelLandingSynopsis: useUiText("admin.books", "label_landing_synopsis", "Sinopsis para Landing"),
+    placeholderLandingSynopsis: useUiText("admin.books", "placeholder_landing_synopsis", "Escribe una sinopsis atractiva y detallada..."),
+    descriptionLandingSynopsis: useUiText("admin.books", "description_landing_synopsis", "Puedes usar Markdown para formato"),
+    // Landing Page - Features
+    sectionLandingFeaturesTitle: useUiText("admin.books", "section_landing_features_title", "Características Destacadas"),
+    labelLandingFeatures: useUiText("admin.books", "label_landing_features", "Características"),
+    placeholderLandingFeature: useUiText("admin.books", "placeholder_landing_feature", "Ej: Más de 500 páginas de aventuras épicas"),
+    buttonAddFeature: useUiText("admin.books", "button_add_feature", "Agregar característica"),
+    // Landing Page - Quotes
+    sectionLandingQuotesTitle: useUiText("admin.books", "section_landing_quotes_title", "Citas del Libro"),
+    labelLandingQuotes: useUiText("admin.books", "label_landing_quotes", "Citas Memorables"),
+    placeholderLandingQuote: useUiText("admin.books", "placeholder_landing_quote", "Escribe una cita impactante del libro..."),
+    buttonAddQuote: useUiText("admin.books", "button_add_quote", "Agregar cita"),
+    // Landing Page - CTA
+    sectionLandingCtaTitle: useUiText("admin.books", "section_landing_cta_title", "Call to Action"),
+    labelLandingCta: useUiText("admin.books", "label_landing_cta", "Texto del Botón CTA"),
+    placeholderLandingCta: useUiText("admin.books", "placeholder_landing_cta", "Ej: Consigue tu copia ahora"),
+    descriptionLandingCta: useUiText("admin.books", "description_landing_cta", "Texto del botón principal de acción"),
+    // Landing Page - Gallery
+    sectionLandingGalleryTitle: useUiText("admin.books", "section_landing_gallery_title", "Galería de Imágenes"),
+    labelLandingGallery: useUiText("admin.books", "label_landing_gallery", "URLs de Galería"),
+    placeholderLandingGalleryUrl: useUiText("admin.books", "placeholder_landing_gallery_url", "URL de la imagen"),
+    buttonAddGalleryImage: useUiText("admin.books", "button_add_gallery_image", "Agregar imagen a galería"),
+    // Landing Page - Awards
+    sectionLandingAwardsTitle: useUiText("admin.books", "section_landing_awards_title", "Premios y Reconocimientos"),
+    labelLandingAwards: useUiText("admin.books", "label_landing_awards", "Premios"),
+    placeholderLandingAward: useUiText("admin.books", "placeholder_landing_award", "Ej: Ganador del Premio XYZ 2023"),
+    buttonAddAward: useUiText("admin.books", "button_add_award", "Agregar premio"),
+    // Promo Material - Concept Map
+    sectionPromoConceptMapTitle: useUiText("admin.books", "section_promo_concept_map_title", "Mapa Conceptual"),
+    labelPromoConceptMap: useUiText("admin.books", "label_promo_concept_map", "URL del Mapa Conceptual"),
+    descriptionPromoConceptMapUpload: useUiText("admin.books", "description_promo_concept_map_upload", "Imagen del mapa conceptual del universo/historia"),
+    labelShowConceptMap: useUiText("admin.books", "label_show_concept_map", "Mostrar mapa conceptual"),
+    descriptionShowConceptMap: useUiText("admin.books", "description_show_concept_map", "Si está activo, el mapa se mostrará en la landing"),
+    // Promo Material - Family Tree
+    sectionPromoFamilyTreeTitle: useUiText("admin.books", "section_promo_family_tree_title", "Árbol Genealógico"),
+    labelPromoFamilyTree: useUiText("admin.books", "label_promo_family_tree", "URL del Árbol Genealógico"),
+    descriptionPromoFamilyTreeUpload: useUiText("admin.books", "description_promo_family_tree_upload", "Imagen del árbol genealógico de personajes"),
+    labelShowFamilyTree: useUiText("admin.books", "label_show_family_tree", "Mostrar árbol genealógico"),
+    descriptionShowFamilyTree: useUiText("admin.books", "description_show_family_tree", "Si está activo, el árbol se mostrará en la landing"),
+    // Promo Material - Press Notes
+    sectionPromoPressNotesTitle: useUiText("admin.books", "section_promo_press_notes_title", "Notas de Prensa"),
+    labelPromoPressNotes: useUiText("admin.books", "label_promo_press_notes", "Notas de Prensa / Reseñas"),
+    placeholderPressNote: useUiText("admin.books", "placeholder_press_note", 'Ej: "Una obra maestra" - El Periódico'),
+    buttonAddPressNote: useUiText("admin.books", "button_add_press_note", "Agregar nota de prensa"),
+    labelShowPressNotes: useUiText("admin.books", "label_show_press_notes", "Mostrar notas de prensa"),
+    descriptionShowPressNotes: useUiText("admin.books", "description_show_press_notes", "Si está activo, las notas se mostrarán en la landing"),
+    // Promo Material - Additional Media
+    sectionPromoAdditionalMediaTitle: useUiText("admin.books", "section_promo_additional_media_title", "Medios Adicionales"),
+    labelPromoAdditionalMedia: useUiText("admin.books", "label_promo_additional_media", "URLs de Medios Adicionales"),
+    placeholderAdditionalMedia: useUiText("admin.books", "placeholder_additional_media", "URL de imagen o video promocional"),
+    buttonAddAdditionalMedia: useUiText("admin.books", "button_add_additional_media", "Agregar medio"),
+    labelShowAdditionalMedia: useUiText("admin.books", "label_show_additional_media", "Mostrar medios adicionales"),
+    descriptionShowAdditionalMedia: useUiText("admin.books", "description_show_additional_media", "Si está activo, los medios se mostrarán en la landing"),
+    // Promo Material - Spotify
+    sectionPromoSpotifyTitle: useUiText("admin.books", "section_promo_spotify_title", "Playlist de Spotify"),
+    labelPromoSpotify: useUiText("admin.books", "label_promo_spotify", "URL de Playlist de Spotify"),
+    placeholderSpotify: useUiText("admin.books", "placeholder_spotify", "URL de embed de Spotify"),
+    descriptionSpotify: useUiText("admin.books", "description_spotify", "Playlist inspirada en el libro"),
+    labelShowSpotify: useUiText("admin.books", "label_show_spotify", "Mostrar playlist de Spotify"),
+    descriptionShowSpotify: useUiText("admin.books", "description_show_spotify", "Si está activo, la playlist se mostrará en la landing"),
+    // Promo Material - YouTube
+    sectionPromoYoutubeTitle: useUiText("admin.books", "section_promo_youtube_title", "Booktrailer de YouTube"),
+    labelPromoYoutube: useUiText("admin.books", "label_promo_youtube", "URL de Booktrailer (YouTube)"),
+    placeholderYoutube: useUiText("admin.books", "placeholder_youtube", "URL de embed de YouTube"),
+    descriptionYoutube: useUiText("admin.books", "description_youtube", "Video promocional del libro"),
+    labelShowYoutube: useUiText("admin.books", "label_show_youtube", "Mostrar booktrailer"),
+    descriptionShowYoutube: useUiText("admin.books", "description_show_youtube", "Si está activo, el video se mostrará en la landing"),
+    // Store Links Section
+    sectionStoreLinksTitle: useUiText("admin.books", "section_store_links_title", "Enlaces a Librerías"),
+    sectionStoreLinksDescription: useUiText("admin.books", "section_store_links_description", "Agrega enlaces donde los lectores pueden comprar el libro"),
+    labelStoreName: useUiText("admin.books", "label_store_name", "Nombre de la Tienda"),
+    placeholderStoreName: useUiText("admin.books", "placeholder_store_name", "Ej: Amazon, Casa del Libro..."),
+    labelStoreUrl: useUiText("admin.books", "label_store_url", "URL de la Tienda"),
+    placeholderStoreUrl: useUiText("admin.books", "placeholder_store_url", "https://..."),
+    buttonAddStoreLink: useUiText("admin.books", "button_add_store_link", "Agregar tienda"),
+    storeLinksListTitle: useUiText("admin.books", "store_links_list_title", "Tiendas configuradas:"),
+    buttonRemove: useUiText("admin.books", "button_remove", "Eliminar"),
+    // QR & Links Tab
+    sectionQrTitle: useUiText("admin.books", "section_qr_title", "Código QR de la Landing Page"),
+    sectionQrDescription: useUiText("admin.books", "section_qr_description", "Genera un código QR que lleva directamente a la landing page del libro"),
+    buttonCopyUrl: useUiText("admin.books", "button_copy_url", "Copiar URL"),
+    buttonDownloadQr: useUiText("admin.books", "button_download_qr", "Descargar QR"),
+    qrGenerating: useUiText("admin.books", "qr_generating", "Generando QR..."),
+    qrDescription: useUiText("admin.books", "qr_description", "Este código QR lleva directamente a la landing page del libro"),
+    sectionLandingUrlTitle: useUiText("admin.books", "section_landing_url_title", "Enlace de la Landing Page"),
+    buttonCopyLink: useUiText("admin.books", "button_copy_link", "Copiar Enlace"),
+    qrSuggestionsTitle: useUiText("admin.books", "qr_suggestions_title", "💡 Sugerencias de uso"),
+    qrSuggestion1: useUiText("admin.books", "qr_suggestion_1", "• Incluye el QR en la última página de tu libro"),
+    qrSuggestion2: useUiText("admin.books", "qr_suggestion_2", "• Comparte el enlace en redes sociales"),
+    qrSuggestion3: useUiText("admin.books", "qr_suggestion_3", "• Agrega el QR a materiales promocionales"),
+    qrSuggestion4: useUiText("admin.books", "qr_suggestion_4", "• Usa el enlace en tu biografía de autor"),
+    // Form Buttons
+    buttonCancel: useUiText("admin.books", "button_cancel", "Cancelar"),
+    buttonUpdate: useUiText("admin.books", "button_update", "Actualizar"),
+    buttonCreate: useUiText("admin.books", "button_create", "Crear"),
+    // Additional Descriptions - Format helpers
+    descriptionLandingFeaturesFormat: useUiText("admin.books", "description_landing_features_format", "Una característica o aspecto destacado por línea"),
+    descriptionLandingQuotesFormat: useUiText("admin.books", "description_landing_quotes_format", "Citas o extractos destacados del libro (una por línea)"),
+    descriptionLandingGalleryFormat: useUiText("admin.books", "description_landing_gallery_format", "URLs de imágenes para la galería (una por línea)"),
+    descriptionLandingAwardsFormat: useUiText("admin.books", "description_landing_awards_format", "Premios o reconocimientos recibidos (uno por línea)"),
+    descriptionPromoIntro: useUiText("admin.books", "description_promo_intro", "Agrega contenido promocional adicional para enriquecer la experiencia de tus lectores. Todos estos campos son opcionales. Usa los switches para controlar qué contenidos se muestran en la landing page."),
+    // Additional Placeholders
+    placeholderLandingHeroUrl: useUiText("admin.books", "placeholder_landing_hero_url", "https://... o /objects/..."),
+    placeholderDirectSalePrice: useUiText("admin.books", "placeholder_direct_sale_price", "0.00"),
+    placeholderDirectSaleStock: useUiText("admin.books", "placeholder_direct_sale_stock", "0"),
+    // SEO Dynamic Text
+    seoNovelPrefix: useUiText("admin.books", "seo_novel_prefix", " - Novela "),
+    seoAutoTitlePrefix: useUiText("admin.books", "seo_auto_title_prefix", "Deja vacío para usar automáticamente: \""),
+    seoCharCountSuffix: useUiText("admin.books", "seo_char_count_suffix", "/160 caracteres. Deja vacío para usar la descripción del libro."),
+  };
 
   const form = useForm<BookFormData>({
     resolver: zodResolver(bookFormSchema),
@@ -114,8 +397,8 @@ export default function BookManagement() {
     },
     onSuccess: () => {
       toast({
-        title: "Libro creado",
-        description: "El libro ha sido creado exitosamente.",
+        title: t.toastCreateTitle,
+        description: t.toastCreateDescription,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/books", { authorId: selectedAuthorId }] });
       queryClient.invalidateQueries({ queryKey: ["/api/books"] }); // Invalidate global books for series management
@@ -125,8 +408,8 @@ export default function BookManagement() {
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "No se pudo crear el libro.",
+        title: t.toastCreateErrorTitle,
+        description: t.toastCreateErrorDescription,
         variant: "destructive",
       });
     },
@@ -139,8 +422,8 @@ export default function BookManagement() {
     },
     onSuccess: () => {
       toast({
-        title: "Libro actualizado",
-        description: "El libro ha sido actualizado exitosamente.",
+        title: t.toastUpdateTitle,
+        description: t.toastUpdateDescription,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/books", { authorId: selectedAuthorId }] });
       queryClient.invalidateQueries({ queryKey: ["/api/books"] }); // Invalidate global books for series management
@@ -151,8 +434,8 @@ export default function BookManagement() {
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "No se pudo actualizar el libro.",
+        title: t.toastUpdateErrorTitle,
+        description: t.toastUpdateErrorDescription,
         variant: "destructive",
       });
     },
@@ -164,8 +447,8 @@ export default function BookManagement() {
     },
     onSuccess: () => {
       toast({
-        title: "Libro eliminado",
-        description: "El libro ha sido eliminado exitosamente.",
+        title: t.toastDeleteTitle,
+        description: t.toastDeleteDescription,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/books", { authorId: selectedAuthorId }] });
       queryClient.invalidateQueries({ queryKey: ["/api/books"] }); // Invalidate global books for series management
@@ -173,8 +456,8 @@ export default function BookManagement() {
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "No se pudo eliminar el libro.",
+        title: t.toastDeleteErrorTitle,
+        description: t.toastDeleteErrorDescription,
         variant: "destructive",
       });
     },
@@ -202,13 +485,13 @@ export default function BookManagement() {
         form.setValue(fieldName, data.objectPath);
         
         toast({
-          title: "Imagen subida",
-          description: "La imagen ha sido subida exitosamente.",
+          title: t.toastImageUploadTitle,
+          description: t.toastImageUploadDescription,
         });
       } catch (error) {
         toast({
-          title: "Error",
-          description: "Error al procesar la imagen subida.",
+          title: t.toastImageUploadErrorTitle,
+          description: t.toastImageUploadErrorDescription,
           variant: "destructive",
         });
       }
@@ -221,8 +504,8 @@ export default function BookManagement() {
       const fileURL = uploadedFile.uploadURL;
       form.setValue('digitalFileEpub', fileURL);
       toast({
-        title: "Archivo EPUB subido",
-        description: "El archivo EPUB ha sido subido exitosamente.",
+        title: t.toastEpubUploadTitle,
+        description: t.toastEpubUploadDescription,
       });
     }
   };
@@ -233,8 +516,8 @@ export default function BookManagement() {
       const fileURL = uploadedFile.uploadURL;
       form.setValue('digitalFilePdf', fileURL);
       toast({
-        title: "Archivo PDF subido",
-        description: "El archivo PDF ha sido subido exitosamente.",
+        title: t.toastPdfUploadTitle,
+        description: t.toastPdfUploadDescription,
       });
     }
   };
@@ -245,8 +528,8 @@ export default function BookManagement() {
       const fileURL = uploadedFile.uploadURL;
       form.setValue('digitalFileMobi', fileURL);
       toast({
-        title: "Archivo MOBI subido",
-        description: "El archivo MOBI ha sido subido exitosamente.",
+        title: t.toastMobiUploadTitle,
+        description: t.toastMobiUploadDescription,
       });
     }
   };
@@ -257,16 +540,16 @@ export default function BookManagement() {
       const fileURL = uploadedFile.uploadURL;
       form.setValue('digitalFileAzw3', fileURL);
       toast({
-        title: "Archivo AZW3 subido",
-        description: "El archivo AZW3 ha sido subido exitosamente.",
+        title: t.toastAzw3UploadTitle,
+        description: t.toastAzw3UploadDescription,
       });
     }
   };
 
   const getSeriesTitle = (seriesId: string | null) => {
-    if (!seriesId) return "Independiente";
+    if (!seriesId) return t.seriesStandalone;
     const serie = series.find(s => s.id === seriesId);
-    return serie?.title || "Serie desconocida";
+    return serie?.title || t.seriesUnknown;
   };
 
   // QR Code and Landing Page URL functions
@@ -290,8 +573,8 @@ export default function BookManagement() {
     } catch (error) {
       console.error('Error generating QR code:', error);
       toast({
-        title: "Error",
-        description: "No se pudo generar el código QR",
+        title: t.toastQrErrorTitle,
+        description: t.toastQrErrorDescription,
         variant: "destructive",
       });
     }
@@ -302,8 +585,8 @@ export default function BookManagement() {
     const url = getBookLandingPageUrl(editingBook.id);
     navigator.clipboard.writeText(url);
     toast({
-      title: "Enlace copiado",
-      description: "La URL de la landing page se ha copiado al portapapeles.",
+      title: t.toastUrlCopiedTitle,
+      description: t.toastUrlCopiedDescription,
     });
   };
 
@@ -314,8 +597,8 @@ export default function BookManagement() {
     link.href = qrCodeDataUrl;
     link.click();
     toast({
-      title: "QR descargado",
-      description: "El código QR se ha descargado exitosamente.",
+      title: t.toastQrDownloadedTitle,
+      description: t.toastQrDownloadedDescription,
     });
   };
 
@@ -337,7 +620,7 @@ export default function BookManagement() {
   const genres = Array.from(new Set(books.map(book => book.genre).filter(genre => genre && genre.trim() !== "")));
 
   const handleDeleteBook = (bookId: string) => {
-    if (window.confirm("¿Estás seguro de que quieres eliminar este libro?")) {
+    if (window.confirm(t.confirmDelete)) {
       deleteBookMutation.mutate(bookId);
     }
   };
@@ -472,8 +755,8 @@ export default function BookManagement() {
     if (data.directSaleEnabled) {
       if (!data.saleFormatPhysical && !data.saleFormatDigital) {
         toast({
-          title: "Error de validación",
-          description: "Debes habilitar al menos un formato de venta (físico o digital) cuando la venta directa está activa",
+          title: t.toastValidationErrorTitle,
+          description: t.toastValidationSaleFormat,
           variant: "destructive",
         });
         return;
@@ -483,8 +766,8 @@ export default function BookManagement() {
       const hasAnyDigitalFile = !!(data.digitalFileEpub || data.digitalFilePdf || data.digitalFileMobi || data.digitalFileAzw3);
       if (data.saleFormatDigital && !hasAnyDigitalFile) {
         toast({
-          title: "Error de validación",
-          description: "Se requiere al menos un archivo digital cuando el formato digital está habilitado",
+          title: t.toastValidationErrorTitle,
+          description: t.toastValidationDigitalFile,
           variant: "destructive",
         });
         return;
@@ -520,8 +803,8 @@ export default function BookManagement() {
   const handleAddStoreLink = () => {
     if (!newStoreName.trim() || !newStoreUrl.trim()) {
       toast({
-        title: "Error",
-        description: "El nombre y la URL de la tienda son requeridos",
+        title: t.toastStoreLinkErrorTitle,
+        description: t.toastStoreLinkErrorDescription,
         variant: "destructive",
       });
       return;
@@ -575,14 +858,14 @@ export default function BookManagement() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-3xl font-bold text-primary">Gestión de Libros</h3>
+        <h3 className="text-3xl font-bold text-primary">{t.pageTitle}</h3>
         <Button 
           className="bg-primary text-primary-foreground hover:bg-primary/90" 
           data-testid="button-add-book"
           onClick={handleOpenAddModal}
         >
           <Plus className="h-4 w-4 mr-2" />
-          Agregar Libro
+          {t.buttonAddBook}
         </Button>
       </div>
 
@@ -592,7 +875,7 @@ export default function BookManagement() {
             <div className="flex-1">
               <Input
                 type="text"
-                placeholder="Buscar libros..."
+                placeholder={t.placeholderSearch}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="bg-input"
@@ -604,7 +887,7 @@ export default function BookManagement() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos los géneros</SelectItem>
+                <SelectItem value="all">{t.filterAllGenres}</SelectItem>
                 {genres.map(genre => (
                   <SelectItem key={genre} value={genre}>{genre}</SelectItem>
                 ))}
@@ -617,12 +900,12 @@ export default function BookManagement() {
             <table className="w-full">
               <thead className="bg-muted">
                 <tr>
-                  <th className="text-left p-4">Portada</th>
-                  <th className="text-left p-4">Título</th>
-                  <th className="text-left p-4">Serie</th>
-                  <th className="text-left p-4">Género</th>
-                  <th className="text-left p-4">Estado</th>
-                  <th className="text-left p-4">Acciones</th>
+                  <th className="text-left p-4">{t.tableHeaderCover}</th>
+                  <th className="text-left p-4">{t.tableHeaderTitle}</th>
+                  <th className="text-left p-4">{t.tableHeaderSeries}</th>
+                  <th className="text-left p-4">{t.tableHeaderGenre}</th>
+                  <th className="text-left p-4">{t.tableHeaderStatus}</th>
+                  <th className="text-left p-4">{t.tableHeaderActions}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -647,7 +930,7 @@ export default function BookManagement() {
                           : "bg-yellow-100 text-yellow-800"
                         }
                       >
-                        {book.isPublished ? "Publicado" : "Borrador"}
+                        {book.isPublished ? t.badgePublished : t.badgeDraft}
                       </Badge>
                     </td>
                     <td className="p-4">
@@ -693,17 +976,17 @@ export default function BookManagement() {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle data-testid="dialog-title-book">
-              {editingBook ? "Editar Libro" : "Agregar Libro"}
+              {editingBook ? t.modalTitleEdit : t.modalTitleAdd}
             </DialogTitle>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
               <Tabs defaultValue="basic" className="w-full">
                 <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="basic">Información Básica</TabsTrigger>
-                  <TabsTrigger value="landing">Landing Page</TabsTrigger>
-                  <TabsTrigger value="promo" data-testid="tab-promo">Contenido Promocional</TabsTrigger>
-                  <TabsTrigger value="qr" disabled={!editingBook} data-testid="tab-qr">QR y Enlaces</TabsTrigger>
+                  <TabsTrigger value="basic">{t.tabBasicInfo}</TabsTrigger>
+                  <TabsTrigger value="landing">{t.tabLandingPage}</TabsTrigger>
+                  <TabsTrigger value="promo" data-testid="tab-promo">{t.tabPromoMaterial}</TabsTrigger>
+                  <TabsTrigger value="qr" disabled={!editingBook} data-testid="tab-qr">{t.tabQrLinks}</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="basic" className="space-y-6 mt-6">
@@ -713,10 +996,10 @@ export default function BookManagement() {
                       name="title"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Título *</FormLabel>
+                          <FormLabel>{t.labelTitle}</FormLabel>
                           <FormControl>
                             <Input 
-                              placeholder="Título del libro"
+                              placeholder={t.placeholderTitle}
                               data-testid="input-book-title"
                               {...field} 
                             />
@@ -731,10 +1014,10 @@ export default function BookManagement() {
                       name="genre"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Género *</FormLabel>
+                          <FormLabel>{t.labelGenre}</FormLabel>
                           <FormControl>
                             <Input 
-                              placeholder="Género del libro"
+                              placeholder={t.placeholderGenre}
                               data-testid="input-book-genre"
                               {...field} 
                             />
@@ -750,10 +1033,10 @@ export default function BookManagement() {
                     name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Descripción</FormLabel>
+                        <FormLabel>{t.labelDescription}</FormLabel>
                         <FormControl>
                           <Textarea 
-                            placeholder="Descripción del libro"
+                            placeholder={t.placeholderDescription}
                             data-testid="textarea-book-description"
                             {...field}
                             value={field.value || ""} 
@@ -770,11 +1053,11 @@ export default function BookManagement() {
                       name="coverImage"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Portada (400×600px, máx 500 KB)</FormLabel>
+                          <FormLabel>{t.labelCoverImage}</FormLabel>
                           <div className="flex gap-2">
                             <FormControl>
                               <Input 
-                                placeholder="https://... o /objects/..."
+                                placeholder={t.placeholderImageUrl}
                                 data-testid="input-book-cover"
                                 {...field}
                                 value={field.value || ""} 
@@ -790,7 +1073,7 @@ export default function BookManagement() {
                               buttonClassName="shrink-0"
                             >
                               <Upload className="h-4 w-4 mr-2" />
-                              Subir
+                              {t.buttonUpload}
                             </ObjectUploader>
                           </div>
                           <FormMessage />
@@ -803,12 +1086,12 @@ export default function BookManagement() {
                       name="price"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Precio</FormLabel>
+                          <FormLabel>{t.labelPrice}</FormLabel>
                           <FormControl>
                             <Input 
                               type="number"
                               step="0.01"
-                              placeholder="0.00"
+                              placeholder={t.placeholderPrice}
                               data-testid="input-book-price"
                               value={field.value || 0}
                               onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
@@ -825,10 +1108,10 @@ export default function BookManagement() {
                     name="amazonUrl"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>URL de Amazon</FormLabel>
+                        <FormLabel>{t.labelAmazonUrl}</FormLabel>
                         <FormControl>
                           <Input 
-                            placeholder="https://amazon.com/..."
+                            placeholder={t.placeholderAmazonUrl}
                             data-testid="input-book-amazon"
                             {...field}
                             value={field.value || ""} 
@@ -841,16 +1124,16 @@ export default function BookManagement() {
 
                   {/* Multiple Store Links Section */}
                   <div className="space-y-4">
-                    <FormLabel>Enlaces a Tiendas Adicionales</FormLabel>
+                    <FormLabel>{t.labelAdditionalStores}</FormLabel>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <Input
-                        placeholder="Nombre de la tienda (ej: Google Play)"
+                        placeholder={t.placeholderStoreName}
                         value={newStoreName}
                         onChange={(e) => setNewStoreName(e.target.value)}
                         data-testid="input-store-name"
                       />
                       <Input
-                        placeholder="URL de la tienda"
+                        placeholder={t.placeholderStoreUrl}
                         value={newStoreUrl}
                         onChange={(e) => setNewStoreUrl(e.target.value)}
                         data-testid="input-store-url"
@@ -863,12 +1146,12 @@ export default function BookManagement() {
                       data-testid="button-add-store-link"
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      Añadir Tienda
+                      {t.buttonAddStoreLink}
                     </Button>
 
                     {getStoreLinksArray().length > 0 && (
                       <div className="mt-4 space-y-2">
-                        <p className="text-sm text-muted-foreground">Enlaces añadidos:</p>
+                        <p className="text-sm text-muted-foreground">{t.storeLinksListTitle}</p>
                         {getStoreLinksArray().map((link, index) => (
                           <div
                             key={index}
@@ -899,15 +1182,15 @@ export default function BookManagement() {
                     name="seriesId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Serie</FormLabel>
+                        <FormLabel>{t.labelSeries}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || ""}>
                           <FormControl>
                             <SelectTrigger data-testid="select-book-series">
-                              <SelectValue placeholder="Selecciona una serie (opcional)" />
+                              <SelectValue placeholder={t.placeholderSeries} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="none">Libro independiente</SelectItem>
+                            <SelectItem value="none">{t.seriesOptionNone}</SelectItem>
                             {series.map((serie) => (
                               <SelectItem key={serie.id} value={serie.id}>
                                 {serie.title}
@@ -926,11 +1209,11 @@ export default function BookManagement() {
                       name="orderInSeries"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Orden en Serie</FormLabel>
+                          <FormLabel>{t.labelSeriesOrder}</FormLabel>
                           <FormControl>
                             <Input 
                               type="number"
-                              placeholder="1, 2, 3..."
+                              placeholder={t.placeholderSeriesOrder}
                               data-testid="input-book-order"
                               value={field.value || ""}
                               onChange={(e) => field.onChange(parseInt(e.target.value) || null)}
@@ -954,7 +1237,7 @@ export default function BookManagement() {
                                 data-testid="switch-book-standalone"
                               />
                             </FormControl>
-                            <FormLabel>Libro independiente</FormLabel>
+                            <FormLabel>{t.labelStandalone}</FormLabel>
                           </FormItem>
                         )}
                       />
@@ -971,7 +1254,7 @@ export default function BookManagement() {
                                 data-testid="switch-book-published"
                               />
                             </FormControl>
-                            <FormLabel>Publicado</FormLabel>
+                            <FormLabel>{t.labelPublished}</FormLabel>
                           </FormItem>
                         )}
                       />
@@ -979,8 +1262,8 @@ export default function BookManagement() {
                   </div>
 
                   <div className="space-y-4 border-t pt-6 mt-6">
-                    <h3 className="text-lg font-semibold">Venta Directa</h3>
-                    <p className="text-sm text-muted-foreground">Configura la venta directa de este libro en la plataforma.</p>
+                    <h3 className="text-lg font-semibold">{t.sectionDirectSaleTitle}</h3>
+                    <p className="text-sm text-muted-foreground">{t.sectionDirectSaleDescription}</p>
                     
                     <FormField
                       control={form.control}
@@ -995,9 +1278,9 @@ export default function BookManagement() {
                             />
                           </FormControl>
                           <div className="space-y-1 leading-none">
-                            <FormLabel>Habilitar venta directa</FormLabel>
+                            <FormLabel>{t.labelEnableDirectSale}</FormLabel>
                             <FormDescription>
-                              Permite vender este libro directamente en la plataforma
+                              {t.descriptionDirectSaleEnabled}
                             </FormDescription>
                           </div>
                         </FormItem>
@@ -1012,12 +1295,12 @@ export default function BookManagement() {
                             name="directSalePrice"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Precio de Venta *</FormLabel>
+                                <FormLabel>{t.labelSalePrice}</FormLabel>
                                 <FormControl>
                                   <Input 
                                     type="number"
                                     step="0.01"
-                                    placeholder="0.00"
+                                    placeholder={t.placeholderDirectSalePrice}
                                     data-testid="input-direct-sale-price"
                                     value={field.value || 0}
                                     onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
@@ -1033,11 +1316,11 @@ export default function BookManagement() {
                             name="directSaleStock"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Stock Disponible *</FormLabel>
+                                <FormLabel>{t.labelStock}</FormLabel>
                                 <FormControl>
                                   <Input 
                                     type="number"
-                                    placeholder="0"
+                                    placeholder={t.placeholderDirectSaleStock}
                                     data-testid="input-direct-sale-stock"
                                     value={field.value || 0}
                                     onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
@@ -1050,8 +1333,8 @@ export default function BookManagement() {
                         </div>
 
                         <div className="space-y-4">
-                          <h4 className="text-sm font-semibold">Formatos de Venta</h4>
-                          <p className="text-sm text-muted-foreground">Selecciona qué formatos quieres ofrecer</p>
+                          <h4 className="text-sm font-semibold">{t.sectionSaleFormats}</h4>
+                          <p className="text-sm text-muted-foreground">{t.descriptionSaleFormats}</p>
                           
                           <FormField
                             control={form.control}
@@ -1066,9 +1349,9 @@ export default function BookManagement() {
                                   />
                                 </FormControl>
                                 <div className="space-y-1 leading-none">
-                                  <FormLabel>Vender formato físico</FormLabel>
+                                  <FormLabel>{t.labelSellPhysical}</FormLabel>
                                   <FormDescription>
-                                    Libro físico enviado por correo
+                                    {t.descriptionSaleFormatPhysical}
                                   </FormDescription>
                                 </div>
                               </FormItem>
@@ -1088,9 +1371,9 @@ export default function BookManagement() {
                                   />
                                 </FormControl>
                                 <div className="space-y-1 leading-none">
-                                  <FormLabel>Vender formato digital</FormLabel>
+                                  <FormLabel>{t.labelSellDigital}</FormLabel>
                                   <FormDescription>
-                                    Archivo digital descargable (requiere configurar archivo digital abajo)
+                                    {t.descriptionSaleFormatDigital}
                                   </FormDescription>
                                 </div>
                               </FormItem>
@@ -1100,9 +1383,9 @@ export default function BookManagement() {
                           {!form.watch("saleFormatPhysical") && !form.watch("saleFormatDigital") && (
                             <Alert>
                               <AlertCircle className="h-4 w-4" />
-                              <AlertTitle>Selecciona al menos un formato</AlertTitle>
+                              <AlertTitle>{t.alertSelectFormatTitle}</AlertTitle>
                               <AlertDescription>
-                                Debes habilitar al menos un formato de venta (físico o digital)
+                                {t.alertSelectFormatDescription}
                               </AlertDescription>
                             </Alert>
                           )}
@@ -1112,8 +1395,8 @@ export default function BookManagement() {
                   </div>
 
                   <div className="space-y-4 border-t pt-6 mt-6">
-                    <h3 className="text-lg font-semibold">Archivo Digital</h3>
-                    <p className="text-sm text-muted-foreground">Configura el archivo digital para descarga después de la compra.</p>
+                    <h3 className="text-lg font-semibold">{t.sectionDigitalFileTitle}</h3>
+                    <p className="text-sm text-muted-foreground">{t.sectionDigitalFileDescription}</p>
                     
                     <FormField
                       control={form.control}
@@ -1128,9 +1411,9 @@ export default function BookManagement() {
                             />
                           </FormControl>
                           <div className="space-y-1 leading-none">
-                            <FormLabel>Es producto digital</FormLabel>
+                            <FormLabel>{t.labelIsDigital}</FormLabel>
                             <FormDescription>
-                              Marca si este libro es un producto digital descargable
+                              {t.descriptionIsDigitalProduct}
                             </FormDescription>
                           </div>
                         </FormItem>
@@ -1140,7 +1423,7 @@ export default function BookManagement() {
                     {form.watch('isDigitalProduct') && (
                       <div className="space-y-6 pl-4 border-l-2 border-primary/20">
                         <p className="text-sm text-muted-foreground">
-                          Sube archivos en los formatos que desees ofrecer. Puedes subir múltiples formatos.
+                          {t.digitalFilesIntro}
                         </p>
                         
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1149,12 +1432,12 @@ export default function BookManagement() {
                             name="digitalFileEpub"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Archivo EPUB</FormLabel>
+                                <FormLabel>{t.labelFileEpub}</FormLabel>
                                 <div className="space-y-2">
                                   <div className="flex gap-2">
                                     <FormControl>
                                       <Input 
-                                        placeholder="URL del archivo EPUB"
+                                        placeholder={t.placeholderFileUrl}
                                         data-testid="input-digital-file-epub"
                                         {...field}
                                         value={field.value || ""} 
@@ -1171,7 +1454,7 @@ export default function BookManagement() {
                                       buttonClassName="shrink-0"
                                     >
                                       <Upload className="h-4 w-4 mr-2" />
-                                      Subir
+                                      {t.buttonUpload}
                                     </ObjectUploader>
                                     {field.value && (
                                       <Button
@@ -1186,7 +1469,7 @@ export default function BookManagement() {
                                     )}
                                   </div>
                                   <FormDescription className="text-xs">
-                                    Formato compatible con la mayoría de lectores
+                                    {t.descriptionEpub}
                                   </FormDescription>
                                 </div>
                                 <FormMessage />
@@ -1199,12 +1482,12 @@ export default function BookManagement() {
                             name="digitalFilePdf"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Archivo PDF</FormLabel>
+                                <FormLabel>{t.labelFilePdf}</FormLabel>
                                 <div className="space-y-2">
                                   <div className="flex gap-2">
                                     <FormControl>
                                       <Input 
-                                        placeholder="URL del archivo PDF"
+                                        placeholder={t.placeholderFileUrl}
                                         data-testid="input-digital-file-pdf"
                                         {...field}
                                         value={field.value || ""} 
@@ -1221,7 +1504,7 @@ export default function BookManagement() {
                                       buttonClassName="shrink-0"
                                     >
                                       <Upload className="h-4 w-4 mr-2" />
-                                      Subir
+                                      {t.buttonUpload}
                                     </ObjectUploader>
                                     {field.value && (
                                       <Button
@@ -1236,7 +1519,7 @@ export default function BookManagement() {
                                     )}
                                   </div>
                                   <FormDescription className="text-xs">
-                                    Formato universal compatible con todos los dispositivos
+                                    {t.descriptionPdf}
                                   </FormDescription>
                                 </div>
                                 <FormMessage />
@@ -1249,12 +1532,12 @@ export default function BookManagement() {
                             name="digitalFileMobi"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Archivo MOBI</FormLabel>
+                                <FormLabel>{t.labelFileMobi}</FormLabel>
                                 <div className="space-y-2">
                                   <div className="flex gap-2">
                                     <FormControl>
                                       <Input 
-                                        placeholder="URL del archivo MOBI"
+                                        placeholder={t.placeholderFileUrl}
                                         data-testid="input-digital-file-mobi"
                                         {...field}
                                         value={field.value || ""} 
@@ -1271,7 +1554,7 @@ export default function BookManagement() {
                                       buttonClassName="shrink-0"
                                     >
                                       <Upload className="h-4 w-4 mr-2" />
-                                      Subir
+                                      {t.buttonUpload}
                                     </ObjectUploader>
                                     {field.value && (
                                       <Button
@@ -1286,7 +1569,7 @@ export default function BookManagement() {
                                     )}
                                   </div>
                                   <FormDescription className="text-xs">
-                                    Formato compatible con Kindle (versiones antiguas)
+                                    {t.descriptionMobi}
                                   </FormDescription>
                                 </div>
                                 <FormMessage />
@@ -1299,12 +1582,12 @@ export default function BookManagement() {
                             name="digitalFileAzw3"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Archivo AZW3</FormLabel>
+                                <FormLabel>{t.labelFileAzw3}</FormLabel>
                                 <div className="space-y-2">
                                   <div className="flex gap-2">
                                     <FormControl>
                                       <Input 
-                                        placeholder="URL del archivo AZW3"
+                                        placeholder={t.placeholderFileUrl}
                                         data-testid="input-digital-file-azw3"
                                         {...field}
                                         value={field.value || ""} 
@@ -1321,7 +1604,7 @@ export default function BookManagement() {
                                       buttonClassName="shrink-0"
                                     >
                                       <Upload className="h-4 w-4 mr-2" />
-                                      Subir
+                                      {t.buttonUpload}
                                     </ObjectUploader>
                                     {field.value && (
                                       <Button
@@ -1336,7 +1619,7 @@ export default function BookManagement() {
                                     )}
                                   </div>
                                   <FormDescription className="text-xs">
-                                    Formato Kindle Format 8 (KF8) para dispositivos modernos
+                                    {t.descriptionAzw3}
                                   </FormDescription>
                                 </div>
                                 <FormMessage />
@@ -1347,7 +1630,7 @@ export default function BookManagement() {
 
                         <div className="bg-muted/30 p-3 rounded-md">
                           <p className="text-xs text-muted-foreground">
-                            Todos los archivos se almacenan de forma segura en Object Storage privado (máx 50 MB por archivo).
+                            {t.digitalFilesStorageInfo}
                           </p>
                         </div>
                       </div>
@@ -1355,20 +1638,20 @@ export default function BookManagement() {
                   </div>
 
                   <div className="space-y-4 border-t pt-6 mt-6">
-                    <h3 className="text-lg font-semibold">SEO - Optimización para Buscadores</h3>
-                    <p className="text-sm text-muted-foreground">Configura cómo aparecerá la página del libro en Google y redes sociales.</p>
+                    <h3 className="text-lg font-semibold">{t.sectionSeoTitle}</h3>
+                    <p className="text-sm text-muted-foreground">{t.sectionSeoDescription}</p>
                     
                     <FormField
                       control={form.control}
                       name="seoTitle"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Título SEO</FormLabel>
+                          <FormLabel>{t.labelSeoTitle}</FormLabel>
                           <FormControl>
-                            <Input {...field} value={field.value || ""} placeholder={`${form.watch('title')}${form.watch('genre') ? ` - Novela ${form.watch('genre')}` : ''}`} data-testid="input-book-seo-title" />
+                            <Input {...field} value={field.value || ""} placeholder={`${form.watch('title')}${form.watch('genre') ? `${t.seoNovelPrefix}${form.watch('genre')}` : ''}`} data-testid="input-book-seo-title" />
                           </FormControl>
                           <div className="text-xs text-muted-foreground">
-                            Deja vacío para usar automáticamente: "{form.watch('title')}{form.watch('genre') ? ` - Novela ${form.watch('genre')}` : ''}"
+                            {t.seoAutoTitlePrefix}{form.watch('title')}{form.watch('genre') ? `${t.seoNovelPrefix}${form.watch('genre')}` : ''}"
                           </div>
                           <FormMessage />
                         </FormItem>
@@ -1380,12 +1663,12 @@ export default function BookManagement() {
                       name="seoDescription"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Descripción SEO</FormLabel>
+                          <FormLabel>{t.labelSeoDescription}</FormLabel>
                           <FormControl>
-                            <Textarea {...field} value={field.value || ""} rows={3} placeholder="Descripción breve para buscadores (150-160 caracteres)" data-testid="textarea-book-seo-description" />
+                            <Textarea {...field} value={field.value || ""} rows={3} placeholder={t.placeholderSeoDescription} data-testid="textarea-book-seo-description" />
                           </FormControl>
                           <div className="text-xs text-muted-foreground">
-                            {field.value?.length || 0}/160 caracteres. Deja vacío para usar la descripción del libro.
+                            {field.value?.length || 0}{t.seoCharCountSuffix}
                           </div>
                           <FormMessage />
                         </FormItem>
@@ -1397,12 +1680,12 @@ export default function BookManagement() {
                       name="seoKeywords"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Palabras Clave SEO</FormLabel>
+                          <FormLabel>{t.labelSeoKeywords}</FormLabel>
                           <FormControl>
-                            <Input {...field} value={field.value || ""} placeholder="novela, fantasía, aventura, etc." data-testid="input-book-seo-keywords" />
+                            <Input {...field} value={field.value || ""} placeholder={t.placeholderSeoKeywords} data-testid="input-book-seo-keywords" />
                           </FormControl>
                           <div className="text-xs text-muted-foreground">
-                            Separa las palabras clave con comas. Se incluirá automáticamente el título y género.
+                            {t.descriptionSeoKeywords}
                           </div>
                           <FormMessage />
                         </FormItem>
@@ -1410,20 +1693,20 @@ export default function BookManagement() {
                     />
 
                     <div className="space-y-4 border-t pt-6 mt-6">
-                      <h3 className="text-lg font-semibold">Personalización de Fondo</h3>
-                      <p className="text-sm text-muted-foreground">Configura el fondo personalizado para la página del libro.</p>
+                      <h3 className="text-lg font-semibold">{t.sectionBackgroundTitle}</h3>
+                      <p className="text-sm text-muted-foreground">{t.sectionBackgroundDescription}</p>
                       
                       <FormField
                         control={form.control}
                         name="backgroundImageUrl"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>URL de Imagen de Fondo</FormLabel>
+                            <FormLabel>{t.labelBackgroundImageUrl}</FormLabel>
                             <FormControl>
-                              <Input {...field} value={field.value || ""} placeholder="https://... o /objects/..." data-testid="input-book-bg-image" />
+                              <Input {...field} value={field.value || ""} placeholder={t.placeholderBgImage} data-testid="input-book-bg-image" />
                             </FormControl>
                             <FormDescription>
-                              Imagen de fondo para la página del libro (opcional)
+                              {t.descriptionBgImage}
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -1435,12 +1718,12 @@ export default function BookManagement() {
                         name="backgroundColor"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Color de Fondo</FormLabel>
+                            <FormLabel>{t.labelBackgroundColor}</FormLabel>
                             <FormControl>
-                              <Input {...field} value={field.value || ""} placeholder="#ffffff o rgb(255,255,255)" data-testid="input-book-bg-color" />
+                              <Input {...field} value={field.value || ""} placeholder={t.placeholderBackgroundColor} data-testid="input-book-bg-color" />
                             </FormControl>
                             <FormDescription>
-                              Color de fondo para la página del libro (opcional, se usa si no hay imagen)
+                              {t.descriptionBgColor}
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -1456,11 +1739,11 @@ export default function BookManagement() {
                     name="landingHeroImage"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Imagen Hero (1920×600px, máx 1 MB)</FormLabel>
+                        <FormLabel>{t.labelHeroImage}</FormLabel>
                         <div className="flex gap-2">
                           <FormControl>
                             <Input 
-                              placeholder="https://... o /objects/..."
+                              placeholder={t.placeholderLandingHeroUrl}
                               {...field}
                               value={field.value || ""} 
                               className="flex-1"
@@ -1475,11 +1758,11 @@ export default function BookManagement() {
                             buttonClassName="shrink-0"
                           >
                             <Upload className="h-4 w-4 mr-2" />
-                            Subir
+                            {t.buttonUpload}
                           </ObjectUploader>
                         </div>
                         <FormDescription>
-                          Imagen de fondo para la sección hero de la landing page
+                          {t.descriptionLandingHeroUpload}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -1491,16 +1774,16 @@ export default function BookManagement() {
                     name="landingTagline"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Eslogan</FormLabel>
+                        <FormLabel>{t.labelSlogan}</FormLabel>
                         <FormControl>
                           <Input 
-                            placeholder="Un eslogan atractivo..."
+                            placeholder={t.placeholderSlogan}
                             {...field}
                             value={field.value || ""} 
                           />
                         </FormControl>
                         <FormDescription>
-                          Frase destacada que aparecerá en la landing page
+                          {t.descriptionLandingTagline}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -1512,17 +1795,17 @@ export default function BookManagement() {
                     name="landingSynopsis"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Sinopsis Extendida</FormLabel>
+                        <FormLabel>{t.labelExtendedSynopsis}</FormLabel>
                         <FormControl>
                           <Textarea 
-                            placeholder="Una sinopsis más detallada del libro..."
+                            placeholder={t.placeholderExtendedSynopsis}
                             rows={6}
                             {...field}
                             value={field.value || ""} 
                           />
                         </FormControl>
                         <FormDescription>
-                          Versión más detallada de la sinopsis para la landing page
+                          {t.descriptionLandingSynopsis}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -1534,16 +1817,16 @@ export default function BookManagement() {
                     name="landingCTA"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Call To Action</FormLabel>
+                        <FormLabel>{t.labelCta}</FormLabel>
                         <FormControl>
                           <Input 
-                            placeholder="Comprar ahora en Amazon"
+                            placeholder={t.placeholderCta}
                             {...field}
                             value={field.value || ""} 
                           />
                         </FormControl>
                         <FormDescription>
-                          Texto del botón de acción principal
+                          {t.descriptionLandingCta}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -1555,17 +1838,17 @@ export default function BookManagement() {
                     name="landingFeatures"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Características Destacadas</FormLabel>
+                        <FormLabel>{t.labelFeatures}</FormLabel>
                         <FormControl>
                           <Textarea 
-                            placeholder="Una característica por línea..."
+                            placeholder={t.placeholderFeatures}
                             rows={4}
                             value={(field.value as string[] || []).join('\n')}
                             onChange={(e) => field.onChange(e.target.value.split('\n').filter(line => line.trim()))}
                           />
                         </FormControl>
                         <FormDescription>
-                          Una característica o aspecto destacado por línea
+                          {t.descriptionLandingFeaturesFormat}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -1577,17 +1860,17 @@ export default function BookManagement() {
                     name="landingQuotes"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Citas Memorables</FormLabel>
+                        <FormLabel>{t.labelQuotes}</FormLabel>
                         <FormControl>
                           <Textarea 
-                            placeholder="Una cita por línea..."
+                            placeholder={t.placeholderQuotes}
                             rows={4}
                             value={(field.value as string[] || []).join('\n')}
                             onChange={(e) => field.onChange(e.target.value.split('\n').filter(line => line.trim()))}
                           />
                         </FormControl>
                         <FormDescription>
-                          Citas o extractos destacados del libro (una por línea)
+                          {t.descriptionLandingQuotesFormat}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -1599,17 +1882,17 @@ export default function BookManagement() {
                     name="landingGallery"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Galería de Imágenes</FormLabel>
+                        <FormLabel>{t.labelGallery}</FormLabel>
                         <FormControl>
                           <Textarea 
-                            placeholder="https://imagen1.jpg&#10;https://imagen2.jpg&#10;https://imagen3.jpg"
+                            placeholder={t.placeholderGallery}
                             rows={4}
                             value={(field.value as string[] || []).join('\n')}
                             onChange={(e) => field.onChange(e.target.value.split('\n').filter(line => line.trim()))}
                           />
                         </FormControl>
                         <FormDescription>
-                          URLs de imágenes para la galería (una por línea)
+                          {t.descriptionLandingGalleryFormat}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -1621,17 +1904,17 @@ export default function BookManagement() {
                     name="landingAwards"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Premios y Reconocimientos</FormLabel>
+                        <FormLabel>{t.labelAwards}</FormLabel>
                         <FormControl>
                           <Textarea 
-                            placeholder="Premio al mejor libro del año&#10;Finalista en..."
+                            placeholder={t.placeholderAwards}
                             rows={4}
                             value={(field.value as string[] || []).join('\n')}
                             onChange={(e) => field.onChange(e.target.value.split('\n').filter(line => line.trim()))}
                           />
                         </FormControl>
                         <FormDescription>
-                          Premios o reconocimientos recibidos (uno por línea)
+                          {t.descriptionLandingAwardsFormat}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -1642,8 +1925,7 @@ export default function BookManagement() {
                 <TabsContent value="promo" className="space-y-6 mt-6">
                   <div className="bg-muted/30 p-4 rounded-lg mb-6">
                     <p className="text-sm text-muted-foreground">
-                      Agrega contenido promocional adicional para enriquecer la experiencia de tus lectores. 
-                      Todos estos campos son opcionales. Usa los switches para controlar qué contenidos se muestran en la landing page.
+                      {t.descriptionPromoIntro}
                     </p>
                   </div>
 
@@ -1653,10 +1935,10 @@ export default function BookManagement() {
                       name="promoConceptMap"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Mapa Conceptual</FormLabel>
+                          <FormLabel>{t.labelConceptMap}</FormLabel>
                           <FormControl>
                             <Input 
-                              placeholder="URL del mapa conceptual (ej: enlace a imagen o PDF interactivo)"
+                              placeholder={t.placeholderConceptMap}
                               data-testid="input-promo-concept-map"
                               {...field}
                               value={field.value || ""}
@@ -1676,7 +1958,7 @@ export default function BookManagement() {
                       render={({ field }) => (
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                           <div className="space-y-0.5">
-                            <FormLabel>Mostrar Mapa Conceptual</FormLabel>
+                            <FormLabel>{t.labelShowConceptMap}</FormLabel>
                             <FormDescription>
                               Activa para mostrar este contenido en la landing page
                             </FormDescription>
@@ -1699,10 +1981,10 @@ export default function BookManagement() {
                       name="promoFamilyTree"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Árbol Genealógico</FormLabel>
+                          <FormLabel>{t.labelFamilyTree}</FormLabel>
                           <FormControl>
                             <Input 
-                              placeholder="URL del árbol genealógico (ej: enlace a imagen o diagrama interactivo)"
+                              placeholder={t.placeholderFamilyTree}
                               data-testid="input-promo-family-tree"
                               {...field}
                               value={field.value || ""}
@@ -1722,7 +2004,7 @@ export default function BookManagement() {
                       render={({ field }) => (
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                           <div className="space-y-0.5">
-                            <FormLabel>Mostrar Árbol Genealógico</FormLabel>
+                            <FormLabel>{t.labelShowFamilyTree}</FormLabel>
                             <FormDescription>
                               Activa para mostrar este contenido en la landing page
                             </FormDescription>
@@ -1745,10 +2027,10 @@ export default function BookManagement() {
                       name="promoYoutubeBooktrailer"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Booktrailer de YouTube</FormLabel>
+                          <FormLabel>{t.labelBooktrailer}</FormLabel>
                           <FormControl>
                             <Input 
-                              placeholder="URL del video de YouTube (ej: https://www.youtube.com/watch?v=...)"
+                              placeholder={t.placeholderBooktrailer}
                               data-testid="input-promo-youtube"
                               {...field}
                               value={field.value || ""}
@@ -1768,7 +2050,7 @@ export default function BookManagement() {
                       render={({ field }) => (
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                           <div className="space-y-0.5">
-                            <FormLabel>Mostrar Booktrailer</FormLabel>
+                            <FormLabel>{t.labelShowBooktrailer}</FormLabel>
                             <FormDescription>
                               Activa para mostrar el video embebido en la landing page
                             </FormDescription>
@@ -1791,10 +2073,10 @@ export default function BookManagement() {
                       name="promoSpotifyPlaylist"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Lista de Reproducción de Spotify</FormLabel>
+                          <FormLabel>{t.labelSpotifyPlaylist}</FormLabel>
                           <FormControl>
                             <Input 
-                              placeholder="URL de la playlist de Spotify (ej: https://open.spotify.com/playlist/...)"
+                              placeholder={t.placeholderSpotifyPlaylist}
                               data-testid="input-promo-spotify"
                               {...field}
                               value={field.value || ""}
@@ -1814,7 +2096,7 @@ export default function BookManagement() {
                       render={({ field }) => (
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                           <div className="space-y-0.5">
-                            <FormLabel>Mostrar Playlist de Spotify</FormLabel>
+                            <FormLabel>{t.labelShowSpotify}</FormLabel>
                             <FormDescription>
                               Activa para mostrar la playlist embebida en la landing page
                             </FormDescription>
@@ -1837,10 +2119,10 @@ export default function BookManagement() {
                       name="promoPressNotes"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Notas de Prensa</FormLabel>
+                          <FormLabel>{t.labelPressNotes}</FormLabel>
                           <FormControl>
                             <Textarea 
-                              placeholder="Enlace 1&#10;Enlace 2&#10;Enlace 3"
+                              placeholder={t.placeholderPressNotes}
                               rows={4}
                               data-testid="textarea-promo-press-notes"
                               value={(field.value as string[] || []).join('\n')}
@@ -1861,7 +2143,7 @@ export default function BookManagement() {
                       render={({ field }) => (
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                           <div className="space-y-0.5">
-                            <FormLabel>Mostrar Notas de Prensa</FormLabel>
+                            <FormLabel>{t.labelShowPress}</FormLabel>
                             <FormDescription>
                               Activa para mostrar estos enlaces en la landing page
                             </FormDescription>
@@ -1884,10 +2166,10 @@ export default function BookManagement() {
                       name="promoAdditionalMedia"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Material Gráfico Adicional</FormLabel>
+                          <FormLabel>{t.labelGraphicMaterial}</FormLabel>
                           <FormControl>
                             <Textarea 
-                              placeholder="URL de imagen 1&#10;URL de imagen 2&#10;URL de PDF o infografía"
+                              placeholder={t.placeholderGraphicMaterial}
                               rows={4}
                               data-testid="textarea-promo-additional-media"
                               value={(field.value as string[] || []).join('\n')}
@@ -1908,7 +2190,7 @@ export default function BookManagement() {
                       render={({ field }) => (
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                           <div className="space-y-0.5">
-                            <FormLabel>Mostrar Material Gráfico</FormLabel>
+                            <FormLabel>{t.labelShowGraphic}</FormLabel>
                             <FormDescription>
                               Activa para mostrar estos enlaces en la landing page
                             </FormDescription>
@@ -2021,14 +2303,14 @@ export default function BookManagement() {
                   onClick={() => setIsModalOpen(false)}
                   data-testid="button-cancel-book"
                 >
-                  Cancelar
+                  {t.buttonCancel}
                 </Button>
                 <Button 
                   type="submit"
                   disabled={createBookMutation.isPending || updateBookMutation.isPending}
                   data-testid="button-save-book"
                 >
-                  {editingBook ? "Actualizar" : "Crear"}
+                  {editingBook ? t.buttonUpdate : t.buttonCreate}
                 </Button>
               </div>
             </form>

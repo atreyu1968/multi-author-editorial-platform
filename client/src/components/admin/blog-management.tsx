@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Edit, Trash2, Search, Eye, Calendar } from "lucide-react";
 import { useAdminAuthor } from "@/contexts/admin-author-context";
+import { useUiText } from "@/contexts/ui-text-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -31,6 +32,56 @@ export default function BlogManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const t = {
+    toastCreateTitle: useUiText("admin.blog", "toast_create_title", "Artículo creado"),
+    toastCreateDescription: useUiText("admin.blog", "toast_create_description", "El artículo ha sido creado exitosamente."),
+    toastCreateErrorTitle: useUiText("admin.blog", "toast_create_error_title", "Error"),
+    toastCreateErrorDescription: useUiText("admin.blog", "toast_create_error_description", "No se pudo crear el artículo."),
+    toastUpdateTitle: useUiText("admin.blog", "toast_update_title", "Artículo actualizado"),
+    toastUpdateDescription: useUiText("admin.blog", "toast_update_description", "El artículo ha sido actualizado exitosamente."),
+    toastUpdateErrorTitle: useUiText("admin.blog", "toast_update_error_title", "Error"),
+    toastUpdateErrorDescription: useUiText("admin.blog", "toast_update_error_description", "No se pudo actualizar el artículo."),
+    toastDeleteTitle: useUiText("admin.blog", "toast_delete_title", "Artículo eliminado"),
+    toastDeleteDescription: useUiText("admin.blog", "toast_delete_description", "El artículo ha sido eliminado exitosamente."),
+    toastDeleteErrorTitle: useUiText("admin.blog", "toast_delete_error_title", "Error"),
+    toastDeleteErrorDescription: useUiText("admin.blog", "toast_delete_error_description", "No se pudo eliminar el artículo."),
+    confirmDelete: useUiText("admin.blog", "confirm_delete", "¿Estás seguro de que quieres eliminar este artículo?"),
+    pageTitle: useUiText("admin.blog", "page_title", "Gestión de Blog"),
+    buttonAddPost: useUiText("admin.blog", "button_add_post", "Nuevo Artículo"),
+    placeholderSearch: useUiText("admin.blog", "placeholder_search", "Buscar artículos..."),
+    placeholderCategoryFilter: useUiText("admin.blog", "placeholder_category_filter", "Filtrar por categoría"),
+    filterAllCategories: useUiText("admin.blog", "filter_all_categories", "Todas las categorías"),
+    placeholderStatusFilter: useUiText("admin.blog", "placeholder_status_filter", "Filtrar por estado"),
+    filterAllStatuses: useUiText("admin.blog", "filter_all_statuses", "Todos los estados"),
+    statusPublished: useUiText("admin.blog", "status_published", "Publicado"),
+    statusDraft: useUiText("admin.blog", "status_draft", "Borrador"),
+    tableHeaderTitle: useUiText("admin.blog", "table_header_title", "Título"),
+    tableHeaderCategory: useUiText("admin.blog", "table_header_category", "Categoría"),
+    tableHeaderStatus: useUiText("admin.blog", "table_header_status", "Estado"),
+    tableHeaderDate: useUiText("admin.blog", "table_header_date", "Fecha"),
+    tableHeaderActions: useUiText("admin.blog", "table_header_actions", "Acciones"),
+    dateNotPublished: useUiText("admin.blog", "date_not_published", "No publicado"),
+    emptyStateFiltered: useUiText("admin.blog", "empty_state_filtered", "No se encontraron artículos con los filtros aplicados."),
+    emptyStateDefault: useUiText("admin.blog", "empty_state_default", "No hay artículos disponibles."),
+    dialogTitleEdit: useUiText("admin.blog", "dialog_title_edit", "Editar Artículo"),
+    dialogTitleAdd: useUiText("admin.blog", "dialog_title_add", "Nuevo Artículo"),
+    labelTitle: useUiText("admin.blog", "label_title", "Título *"),
+    labelCategory: useUiText("admin.blog", "label_category", "Categoría *"),
+    labelExcerpt: useUiText("admin.blog", "label_excerpt", "Resumen *"),
+    labelContent: useUiText("admin.blog", "label_content", "Contenido *"),
+    labelFeaturedImage: useUiText("admin.blog", "label_featured_image", "Imagen Destacada"),
+    labelPublish: useUiText("admin.blog", "label_publish", "Publicar artículo"),
+    placeholderTitle: useUiText("admin.blog", "placeholder_title", "Título del artículo"),
+    placeholderCategory: useUiText("admin.blog", "placeholder_category", "Categoría del artículo"),
+    placeholderExcerpt: useUiText("admin.blog", "placeholder_excerpt", "Breve resumen del artículo"),
+    placeholderContent: useUiText("admin.blog", "placeholder_content", "Contenido completo del artículo"),
+    placeholderUrl: useUiText("admin.blog", "placeholder_url", "https://..."),
+    buttonCancel: useUiText("admin.blog", "button_cancel", "Cancelar"),
+    buttonSaving: useUiText("admin.blog", "button_saving", "Guardando..."),
+    buttonUpdate: useUiText("admin.blog", "button_update", "Actualizar Artículo"),
+    buttonCreate: useUiText("admin.blog", "button_create", "Crear Artículo"),
+  };
+
   const form = useForm<BlogPostFormData>({
     resolver: zodResolver(insertBlogPostSchema),
     defaultValues: {
@@ -57,8 +108,8 @@ export default function BlogManagement() {
     },
     onSuccess: () => {
       toast({
-        title: "Artículo creado",
-        description: "El artículo ha sido creado exitosamente.",
+        title: t.toastCreateTitle,
+        description: t.toastCreateDescription,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/blog-posts", { authorId: selectedAuthorId }] });
       setIsModalOpen(false);
@@ -66,8 +117,8 @@ export default function BlogManagement() {
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "No se pudo crear el artículo.",
+        title: t.toastCreateErrorTitle,
+        description: t.toastCreateErrorDescription,
         variant: "destructive",
       });
     },
@@ -80,8 +131,8 @@ export default function BlogManagement() {
     },
     onSuccess: () => {
       toast({
-        title: "Artículo actualizado",
-        description: "El artículo ha sido actualizado exitosamente.",
+        title: t.toastUpdateTitle,
+        description: t.toastUpdateDescription,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/blog-posts", { authorId: selectedAuthorId }] });
       setIsModalOpen(false);
@@ -90,8 +141,8 @@ export default function BlogManagement() {
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "No se pudo actualizar el artículo.",
+        title: t.toastUpdateErrorTitle,
+        description: t.toastUpdateErrorDescription,
         variant: "destructive",
       });
     },
@@ -103,15 +154,15 @@ export default function BlogManagement() {
     },
     onSuccess: () => {
       toast({
-        title: "Artículo eliminado",
-        description: "El artículo ha sido eliminado exitosamente.",
+        title: t.toastDeleteTitle,
+        description: t.toastDeleteDescription,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/blog-posts", { authorId: selectedAuthorId }] });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "No se pudo eliminar el artículo.",
+        title: t.toastDeleteErrorTitle,
+        description: t.toastDeleteErrorDescription,
         variant: "destructive",
       });
     },
@@ -130,7 +181,7 @@ export default function BlogManagement() {
   const categories = Array.from(new Set(posts.map(post => post.category).filter(category => category && category.trim() !== "")));
 
   const handleDeletePost = (postId: string) => {
-    if (window.confirm("¿Estás seguro de que quieres eliminar este artículo?")) {
+    if (window.confirm(t.confirmDelete)) {
       deletePostMutation.mutate(postId);
     }
   };
@@ -174,21 +225,21 @@ export default function BlogManagement() {
   };
 
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return "No publicado";
+    if (!dateString) return t.dateNotPublished;
     return new Date(dateString).toLocaleDateString("es-ES");
   };
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-3xl font-bold text-primary">Gestión de Blog</h3>
+        <h3 className="text-3xl font-bold text-primary">{t.pageTitle}</h3>
         <Button 
           className="bg-primary text-primary-foreground hover:bg-primary/90" 
           data-testid="button-add-post"
           onClick={handleOpenAddModal}
         >
           <Plus className="h-4 w-4 mr-2" />
-          Nuevo Artículo
+          {t.buttonAddPost}
         </Button>
       </div>
 
@@ -198,7 +249,7 @@ export default function BlogManagement() {
             <div>
               <Input
                 type="text"
-                placeholder="Buscar artículos..."
+                placeholder={t.placeholderSearch}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="bg-input"
@@ -207,10 +258,10 @@ export default function BlogManagement() {
             </div>
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
               <SelectTrigger data-testid="select-category-filter">
-                <SelectValue placeholder="Filtrar por categoría" />
+                <SelectValue placeholder={t.placeholderCategoryFilter} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todas las categorías</SelectItem>
+                <SelectItem value="all">{t.filterAllCategories}</SelectItem>
                 {categories.map(category => (
                   <SelectItem key={category} value={category}>{category}</SelectItem>
                 ))}
@@ -218,12 +269,12 @@ export default function BlogManagement() {
             </Select>
             <Select value={selectedStatus} onValueChange={setSelectedStatus}>
               <SelectTrigger data-testid="select-status-filter">
-                <SelectValue placeholder="Filtrar por estado" />
+                <SelectValue placeholder={t.placeholderStatusFilter} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos los estados</SelectItem>
-                <SelectItem value="published">Publicado</SelectItem>
-                <SelectItem value="draft">Borrador</SelectItem>
+                <SelectItem value="all">{t.filterAllStatuses}</SelectItem>
+                <SelectItem value="published">{t.statusPublished}</SelectItem>
+                <SelectItem value="draft">{t.statusDraft}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -233,11 +284,11 @@ export default function BlogManagement() {
             <table className="w-full">
               <thead className="bg-muted">
                 <tr>
-                  <th className="text-left p-4">Título</th>
-                  <th className="text-left p-4">Categoría</th>
-                  <th className="text-left p-4">Estado</th>
-                  <th className="text-left p-4">Fecha</th>
-                  <th className="text-left p-4">Acciones</th>
+                  <th className="text-left p-4">{t.tableHeaderTitle}</th>
+                  <th className="text-left p-4">{t.tableHeaderCategory}</th>
+                  <th className="text-left p-4">{t.tableHeaderStatus}</th>
+                  <th className="text-left p-4">{t.tableHeaderDate}</th>
+                  <th className="text-left p-4">{t.tableHeaderActions}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -259,7 +310,7 @@ export default function BlogManagement() {
                           : "bg-yellow-100 text-yellow-800"
                         }
                       >
-                        {post.isPublished ? "Publicado" : "Borrador"}
+                        {post.isPublished ? t.statusPublished : t.statusDraft}
                       </Badge>
                     </td>
                     <td className="p-4 text-sm text-muted-foreground">
@@ -298,8 +349,8 @@ export default function BlogManagement() {
             {filteredPosts.length === 0 && (
               <div className="text-center py-8 text-muted-foreground" data-testid="no-posts-message">
                 {searchTerm || selectedCategory !== "all" || selectedStatus !== "all"
-                  ? "No se encontraron artículos con los filtros aplicados." 
-                  : "No hay artículos disponibles."
+                  ? t.emptyStateFiltered
+                  : t.emptyStateDefault
                 }
               </div>
             )}
@@ -312,7 +363,7 @@ export default function BlogManagement() {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle data-testid="dialog-title-post">
-              {editingPost ? "Editar Artículo" : "Nuevo Artículo"}
+              {editingPost ? t.dialogTitleEdit : t.dialogTitleAdd}
             </DialogTitle>
           </DialogHeader>
           <Form {...form}>
@@ -323,10 +374,10 @@ export default function BlogManagement() {
                   name="title"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Título *</FormLabel>
+                      <FormLabel>{t.labelTitle}</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="Título del artículo"
+                          placeholder={t.placeholderTitle}
                           data-testid="input-post-title"
                           {...field}
                           value={field.value || ""} 
@@ -342,10 +393,10 @@ export default function BlogManagement() {
                   name="category"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Categoría *</FormLabel>
+                      <FormLabel>{t.labelCategory}</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="Categoría del artículo"
+                          placeholder={t.placeholderCategory}
                           data-testid="input-post-category"
                           {...field}
                           value={field.value || ""} 
@@ -362,10 +413,10 @@ export default function BlogManagement() {
                 name="excerpt"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Resumen *</FormLabel>
+                    <FormLabel>{t.labelExcerpt}</FormLabel>
                     <FormControl>
                       <Textarea 
-                        placeholder="Breve resumen del artículo"
+                        placeholder={t.placeholderExcerpt}
                         data-testid="textarea-post-excerpt"
                         {...field}
                         value={field.value || ""} 
@@ -381,10 +432,10 @@ export default function BlogManagement() {
                 name="content"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Contenido *</FormLabel>
+                    <FormLabel>{t.labelContent}</FormLabel>
                     <FormControl>
                       <Textarea 
-                        placeholder="Contenido completo del artículo"
+                        placeholder={t.placeholderContent}
                         className="min-h-[200px]"
                         data-testid="textarea-post-content"
                         {...field}
@@ -401,10 +452,10 @@ export default function BlogManagement() {
                 name="featuredImage"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Imagen Destacada</FormLabel>
+                    <FormLabel>{t.labelFeaturedImage}</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder="https://..."
+                        placeholder={t.placeholderUrl}
                         data-testid="input-post-image"
                         {...field}
                         value={field.value || ""} 
@@ -428,7 +479,7 @@ export default function BlogManagement() {
                           data-testid="switch-post-published"
                         />
                       </FormControl>
-                      <FormLabel>Publicar artículo</FormLabel>
+                      <FormLabel>{t.labelPublish}</FormLabel>
                     </FormItem>
                   )}
                 />
@@ -441,7 +492,7 @@ export default function BlogManagement() {
                   onClick={() => setIsModalOpen(false)}
                   data-testid="button-cancel-post"
                 >
-                  Cancelar
+                  {t.buttonCancel}
                 </Button>
                 <Button 
                   type="submit" 
@@ -449,9 +500,9 @@ export default function BlogManagement() {
                   data-testid="button-submit-post"
                 >
                   {createPostMutation.isPending || updatePostMutation.isPending ? (
-                    "Guardando..."
+                    t.buttonSaving
                   ) : (
-                    editingPost ? "Actualizar Artículo" : "Crear Artículo"
+                    editingPost ? t.buttonUpdate : t.buttonCreate
                   )}
                 </Button>
               </div>

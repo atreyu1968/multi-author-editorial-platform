@@ -19,19 +19,19 @@ import { z } from "zod";
 import type { Author } from "@shared/schema";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import type { UploadResult } from "@uppy/core";
+import { useUiText } from "@/contexts/ui-text-context";
 
 type AuthorFormData = z.infer<typeof insertAuthorSchema>;
 
-// Helper function to generate slug from name
 function generateSlug(name: string): string {
   return name
     .toLowerCase()
-    .normalize("NFD") // Normalize to decomposed form
-    .replace(/[\u0300-\u036f]/g, "") // Remove diacritics
-    .replace(/[^a-z0-9\s-]/g, "") // Remove special characters
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
     .trim()
-    .replace(/\s+/g, "-") // Replace spaces with hyphens
-    .replace(/-+/g, "-"); // Replace multiple hyphens with single hyphen
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
 }
 
 export default function AuthorManagement() {
@@ -40,6 +40,86 @@ export default function AuthorManagement() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAuthor, setEditingAuthor] = useState<Author | null>(null);
   const { toast } = useToast();
+
+  const t = {
+    toastCreateTitle: useUiText("admin.authors", "toast_create_title", "Autor creado"),
+    toastCreateDescription: useUiText("admin.authors", "toast_create_description", "El autor ha sido creado exitosamente."),
+    toastCreateErrorTitle: useUiText("admin.authors", "toast_create_error_title", "Error"),
+    toastCreateErrorDescription: useUiText("admin.authors", "toast_create_error_description", "No se pudo crear el autor."),
+    toastUpdateTitle: useUiText("admin.authors", "toast_update_title", "Autor actualizado"),
+    toastUpdateDescription: useUiText("admin.authors", "toast_update_description", "El autor ha sido actualizado exitosamente."),
+    toastUpdateErrorTitle: useUiText("admin.authors", "toast_update_error_title", "Error"),
+    toastUpdateErrorDescription: useUiText("admin.authors", "toast_update_error_description", "No se pudo actualizar el autor."),
+    toastDeleteTitle: useUiText("admin.authors", "toast_delete_title", "Autor eliminado"),
+    toastDeleteDescription: useUiText("admin.authors", "toast_delete_description", "El autor ha sido eliminado exitosamente."),
+    toastDeleteErrorTitle: useUiText("admin.authors", "toast_delete_error_title", "Error"),
+    toastDeleteErrorDescription: useUiText("admin.authors", "toast_delete_error_description", "No se pudo eliminar el autor."),
+    toastImageUploadTitle: useUiText("admin.authors", "toast_image_upload_title", "Imagen subida"),
+    toastImageUploadDescription: useUiText("admin.authors", "toast_image_upload_description", "La imagen ha sido subida exitosamente."),
+    toastImageUploadErrorTitle: useUiText("admin.authors", "toast_image_upload_error_title", "Error"),
+    toastImageUploadErrorDescription: useUiText("admin.authors", "toast_image_upload_error_description", "Error al procesar la imagen subida."),
+    confirmDelete: useUiText("admin.authors", "confirm_delete", "¿Estás seguro de que quieres eliminar este autor?"),
+    pageTitle: useUiText("admin.authors", "page_title", "Gestión de Autores"),
+    buttonAddAuthor: useUiText("admin.authors", "button_add_author", "Agregar Autor"),
+    placeholderSearch: useUiText("admin.authors", "placeholder_search", "Buscar autores..."),
+    filterAllStatus: useUiText("admin.authors", "filter_all_status", "Todos los estados"),
+    filterActive: useUiText("admin.authors", "filter_active", "Activos"),
+    filterInactive: useUiText("admin.authors", "filter_inactive", "Inactivos"),
+    tableHeaderName: useUiText("admin.authors", "table_header_name", "Nombre"),
+    tableHeaderSlug: useUiText("admin.authors", "table_header_slug", "Slug"),
+    tableHeaderStatus: useUiText("admin.authors", "table_header_status", "Estado"),
+    tableHeaderActions: useUiText("admin.authors", "table_header_actions", "Acciones"),
+    badgeActive: useUiText("admin.authors", "badge_active", "Activo"),
+    badgeInactive: useUiText("admin.authors", "badge_inactive", "Inactivo"),
+    modalTitleEdit: useUiText("admin.authors", "modal_title_edit", "Editar Autor"),
+    modalTitleAdd: useUiText("admin.authors", "modal_title_add", "Agregar Autor"),
+    labelName: useUiText("admin.authors", "label_name", "Nombre *"),
+    labelSlug: useUiText("admin.authors", "label_slug", "Slug (URL) *"),
+    descriptionSlugAuto: useUiText("admin.authors", "description_slug_auto", "Se genera automáticamente del nombre"),
+    labelHeroTitle: useUiText("admin.authors", "label_hero_title", "Título Hero *"),
+    labelHeroSubtitle: useUiText("admin.authors", "label_hero_subtitle", "Subtítulo Hero *"),
+    labelBioParagraph1: useUiText("admin.authors", "label_bio_paragraph_1", "Biografía - Párrafo 1 *"),
+    labelBioParagraph2: useUiText("admin.authors", "label_bio_paragraph_2", "Biografía - Párrafo 2 *"),
+    labelBioParagraph3: useUiText("admin.authors", "label_bio_paragraph_3", "Biografía - Párrafo 3 *"),
+    labelPhoto: useUiText("admin.authors", "label_photo", "Foto del Autor"),
+    placeholderPhoto: useUiText("admin.authors", "placeholder_photo", "URL de la foto"),
+    buttonUpload: useUiText("admin.authors", "button_upload", "Subir"),
+    altPhotoPreview: useUiText("admin.authors", "alt_photo_preview", "Preview"),
+    labelEmail: useUiText("admin.authors", "label_email", "Email"),
+    labelInstagram: useUiText("admin.authors", "label_instagram", "Instagram URL"),
+    placeholderInstagram: useUiText("admin.authors", "placeholder_instagram", "https://instagram.com/..."),
+    labelTwitter: useUiText("admin.authors", "label_twitter", "Twitter URL"),
+    placeholderTwitter: useUiText("admin.authors", "placeholder_twitter", "https://twitter.com/..."),
+    labelFacebook: useUiText("admin.authors", "label_facebook", "Facebook URL"),
+    placeholderFacebook: useUiText("admin.authors", "placeholder_facebook", "https://facebook.com/..."),
+    labelAmazon: useUiText("admin.authors", "label_amazon", "Amazon Author URL"),
+    placeholderAmazon: useUiText("admin.authors", "placeholder_amazon", "https://amazon.com/author/..."),
+    sectionSeoTitle: useUiText("admin.authors", "section_seo_title", "SEO - Optimización para Buscadores"),
+    sectionSeoDescription: useUiText("admin.authors", "section_seo_description", "Configura cómo aparecerá la página del autor en Google y redes sociales."),
+    labelSeoTitle: useUiText("admin.authors", "label_seo_title", "Título SEO"),
+    placeholderSeoTitleSuffix: useUiText("admin.authors", "placeholder_seo_title_suffix", " - Autor"),
+    descriptionSeoTitlePrefix: useUiText("admin.authors", "description_seo_title_prefix", "Deja vacío para usar: \""),
+    descriptionSeoTitleSuffix: useUiText("admin.authors", "description_seo_title_suffix", "\""),
+    labelSeoDescription: useUiText("admin.authors", "label_seo_description", "Descripción SEO"),
+    placeholderSeoDescription: useUiText("admin.authors", "placeholder_seo_description", "Descripción breve para buscadores (150-160 caracteres)"),
+    descriptionSeoCharCount: useUiText("admin.authors", "description_seo_char_count", "/160 caracteres. Deja vacío para usar el primer párrafo de la biografía."),
+    labelSeoKeywords: useUiText("admin.authors", "label_seo_keywords", "Palabras Clave SEO"),
+    placeholderSeoKeywords: useUiText("admin.authors", "placeholder_seo_keywords", "autor, escritor, novela, fantasía, etc."),
+    descriptionSeoKeywords: useUiText("admin.authors", "description_seo_keywords", "Separa las palabras clave con comas"),
+    sectionBackgroundTitle: useUiText("admin.authors", "section_background_title", "Personalización de Fondo"),
+    sectionBackgroundDescription: useUiText("admin.authors", "section_background_description", "Configura el fondo personalizado para la página del autor."),
+    labelBgImage: useUiText("admin.authors", "label_bg_image", "URL de Imagen de Fondo"),
+    placeholderBgImage: useUiText("admin.authors", "placeholder_bg_image", "https://... o /objects/..."),
+    descriptionBgImage: useUiText("admin.authors", "description_bg_image", "Imagen de fondo para la página del autor (opcional)"),
+    labelBgColor: useUiText("admin.authors", "label_bg_color", "Color de Fondo"),
+    placeholderBgColor: useUiText("admin.authors", "placeholder_bg_color", "#ffffff o rgb(255,255,255)"),
+    descriptionBgColor: useUiText("admin.authors", "description_bg_color", "Color de fondo para la página del autor (opcional, se usa si no hay imagen)"),
+    labelIsActive: useUiText("admin.authors", "label_is_active", "Estado Activo"),
+    descriptionIsActive: useUiText("admin.authors", "description_is_active", "El autor estará visible en el sitio web"),
+    buttonCancel: useUiText("admin.authors", "button_cancel", "Cancelar"),
+    buttonUpdate: useUiText("admin.authors", "button_update", "Actualizar"),
+    buttonCreate: useUiText("admin.authors", "button_create", "Crear"),
+  };
 
   const form = useForm<AuthorFormData>({
     resolver: zodResolver(insertAuthorSchema),
@@ -77,8 +157,8 @@ export default function AuthorManagement() {
     },
     onSuccess: () => {
       toast({
-        title: "Autor creado",
-        description: "El autor ha sido creado exitosamente.",
+        title: t.toastCreateTitle,
+        description: t.toastCreateDescription,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/authors"] });
       setIsModalOpen(false);
@@ -86,8 +166,8 @@ export default function AuthorManagement() {
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "No se pudo crear el autor.",
+        title: t.toastCreateErrorTitle,
+        description: t.toastCreateErrorDescription,
         variant: "destructive",
       });
     },
@@ -100,8 +180,8 @@ export default function AuthorManagement() {
     },
     onSuccess: () => {
       toast({
-        title: "Autor actualizado",
-        description: "El autor ha sido actualizado exitosamente.",
+        title: t.toastUpdateTitle,
+        description: t.toastUpdateDescription,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/authors"] });
       setIsModalOpen(false);
@@ -110,8 +190,8 @@ export default function AuthorManagement() {
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "No se pudo actualizar el autor.",
+        title: t.toastUpdateErrorTitle,
+        description: t.toastUpdateErrorDescription,
         variant: "destructive",
       });
     },
@@ -123,21 +203,20 @@ export default function AuthorManagement() {
     },
     onSuccess: () => {
       toast({
-        title: "Autor eliminado",
-        description: "El autor ha sido eliminado exitosamente.",
+        title: t.toastDeleteTitle,
+        description: t.toastDeleteDescription,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/authors"] });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "No se pudo eliminar el autor.",
+        title: t.toastDeleteErrorTitle,
+        description: t.toastDeleteErrorDescription,
         variant: "destructive",
       });
     },
   });
 
-  // Helper functions for image upload
   const handleGetUploadParameters = async () => {
     const response = await apiRequest("POST", "/api/objects/upload", {});
     const data = await response.json();
@@ -159,13 +238,13 @@ export default function AuthorManagement() {
         form.setValue("photo", data.objectPath);
         
         toast({
-          title: "Imagen subida",
-          description: "La imagen ha sido subida exitosamente.",
+          title: t.toastImageUploadTitle,
+          description: t.toastImageUploadDescription,
         });
       } catch (error) {
         toast({
-          title: "Error",
-          description: "Error al procesar la imagen subida.",
+          title: t.toastImageUploadErrorTitle,
+          description: t.toastImageUploadErrorDescription,
           variant: "destructive",
         });
       }
@@ -182,7 +261,7 @@ export default function AuthorManagement() {
   });
 
   const handleDeleteAuthor = (authorId: string) => {
-    if (window.confirm("¿Estás seguro de que quieres eliminar este autor?")) {
+    if (window.confirm(t.confirmDelete)) {
       deleteAuthorMutation.mutate(authorId);
     }
   };
@@ -247,11 +326,9 @@ export default function AuthorManagement() {
     }
   };
 
-  // Auto-generate slug when name changes
   const handleNameChange = (value: string) => {
     form.setValue("name", value);
     if (!editingAuthor) {
-      // Only auto-generate slug for new authors
       const generatedSlug = generateSlug(value);
       form.setValue("slug", generatedSlug);
     }
@@ -260,14 +337,14 @@ export default function AuthorManagement() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-3xl font-bold text-primary">Gestión de Autores</h3>
+        <h3 className="text-3xl font-bold text-primary">{t.pageTitle}</h3>
         <Button 
           className="bg-primary text-primary-foreground hover:bg-primary/90" 
           data-testid="button-add-author"
           onClick={handleOpenAddModal}
         >
           <Plus className="h-4 w-4 mr-2" />
-          Agregar Autor
+          {t.buttonAddAuthor}
         </Button>
       </div>
 
@@ -277,7 +354,7 @@ export default function AuthorManagement() {
             <div className="flex-1">
               <Input
                 type="text"
-                placeholder="Buscar autores..."
+                placeholder={t.placeholderSearch}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="bg-input"
@@ -289,9 +366,9 @@ export default function AuthorManagement() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos los estados</SelectItem>
-                <SelectItem value="active">Activos</SelectItem>
-                <SelectItem value="inactive">Inactivos</SelectItem>
+                <SelectItem value="all">{t.filterAllStatus}</SelectItem>
+                <SelectItem value="active">{t.filterActive}</SelectItem>
+                <SelectItem value="inactive">{t.filterInactive}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -301,10 +378,10 @@ export default function AuthorManagement() {
             <table className="w-full">
               <thead className="bg-muted">
                 <tr>
-                  <th className="text-left p-4">Nombre</th>
-                  <th className="text-left p-4">Slug</th>
-                  <th className="text-left p-4">Estado</th>
-                  <th className="text-left p-4">Acciones</th>
+                  <th className="text-left p-4">{t.tableHeaderName}</th>
+                  <th className="text-left p-4">{t.tableHeaderSlug}</th>
+                  <th className="text-left p-4">{t.tableHeaderStatus}</th>
+                  <th className="text-left p-4">{t.tableHeaderActions}</th>
                 </tr>
               </thead>
               <tbody>
@@ -317,7 +394,7 @@ export default function AuthorManagement() {
                         variant={author.isActive ? "default" : "secondary"}
                         data-testid={`badge-author-status-${author.id}`}
                       >
-                        {author.isActive ? "Activo" : "Inactivo"}
+                        {author.isActive ? t.badgeActive : t.badgeInactive}
                       </Badge>
                     </td>
                     <td className="p-4">
@@ -352,7 +429,7 @@ export default function AuthorManagement() {
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingAuthor ? "Editar Autor" : "Agregar Autor"}
+              {editingAuthor ? t.modalTitleEdit : t.modalTitleAdd}
             </DialogTitle>
           </DialogHeader>
 
@@ -364,7 +441,7 @@ export default function AuthorManagement() {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nombre *</FormLabel>
+                      <FormLabel>{t.labelName}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -382,7 +459,7 @@ export default function AuthorManagement() {
                   name="slug"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Slug (URL) *</FormLabel>
+                      <FormLabel>{t.labelSlug}</FormLabel>
                       <FormControl>
                         <Input 
                           {...field} 
@@ -392,7 +469,7 @@ export default function AuthorManagement() {
                         />
                       </FormControl>
                       <p className="text-sm text-muted-foreground">
-                        Se genera automáticamente del nombre
+                        {t.descriptionSlugAuto}
                       </p>
                       <FormMessage />
                     </FormItem>
@@ -405,7 +482,7 @@ export default function AuthorManagement() {
                 name="heroTitle"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Título Hero *</FormLabel>
+                    <FormLabel>{t.labelHeroTitle}</FormLabel>
                     <FormControl>
                       <Input {...field} data-testid="input-author-hero-title" />
                     </FormControl>
@@ -419,7 +496,7 @@ export default function AuthorManagement() {
                 name="heroSubtitle"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Subtítulo Hero *</FormLabel>
+                    <FormLabel>{t.labelHeroSubtitle}</FormLabel>
                     <FormControl>
                       <Textarea {...field} rows={3} data-testid="textarea-author-hero-subtitle" />
                     </FormControl>
@@ -433,7 +510,7 @@ export default function AuthorManagement() {
                 name="bioParagraph1"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Biografía - Párrafo 1 *</FormLabel>
+                    <FormLabel>{t.labelBioParagraph1}</FormLabel>
                     <FormControl>
                       <Textarea {...field} rows={4} data-testid="textarea-author-bio-1" />
                     </FormControl>
@@ -447,7 +524,7 @@ export default function AuthorManagement() {
                 name="bioParagraph2"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Biografía - Párrafo 2 *</FormLabel>
+                    <FormLabel>{t.labelBioParagraph2}</FormLabel>
                     <FormControl>
                       <Textarea {...field} rows={4} data-testid="textarea-author-bio-2" />
                     </FormControl>
@@ -461,7 +538,7 @@ export default function AuthorManagement() {
                 name="bioParagraph3"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Biografía - Párrafo 3 *</FormLabel>
+                    <FormLabel>{t.labelBioParagraph3}</FormLabel>
                     <FormControl>
                       <Textarea {...field} rows={4} data-testid="textarea-author-bio-3" />
                     </FormControl>
@@ -475,10 +552,10 @@ export default function AuthorManagement() {
                 name="photo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Foto del Autor</FormLabel>
+                    <FormLabel>{t.labelPhoto}</FormLabel>
                     <FormControl>
                       <div className="flex gap-4 items-center">
-                        <Input {...field} value={field.value || ""} placeholder="URL de la foto" data-testid="input-author-photo" />
+                        <Input {...field} value={field.value || ""} placeholder={t.placeholderPhoto} data-testid="input-author-photo" />
                         <ObjectUploader
                           onGetUploadParameters={handleGetUploadParameters}
                           onComplete={handleImageUploadComplete}
@@ -486,7 +563,7 @@ export default function AuthorManagement() {
                           buttonClassName="shrink-0"
                         >
                           <Upload className="h-4 w-4 mr-2" />
-                          Subir
+                          {t.buttonUpload}
                         </ObjectUploader>
                       </div>
                     </FormControl>
@@ -494,7 +571,7 @@ export default function AuthorManagement() {
                       <div className="mt-2">
                         <img 
                           src={field.value} 
-                          alt="Preview" 
+                          alt={t.altPhotoPreview}
                           className="h-32 w-32 object-cover rounded"
                           data-testid="image-author-photo-preview"
                         />
@@ -510,7 +587,7 @@ export default function AuthorManagement() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>{t.labelEmail}</FormLabel>
                     <FormControl>
                       <Input {...field} value={field.value || ""} type="email" data-testid="input-author-email" />
                     </FormControl>
@@ -525,9 +602,9 @@ export default function AuthorManagement() {
                   name="instagramUrl"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Instagram URL</FormLabel>
+                      <FormLabel>{t.labelInstagram}</FormLabel>
                       <FormControl>
-                        <Input {...field} value={field.value || ""} placeholder="https://instagram.com/..." data-testid="input-author-instagram" />
+                        <Input {...field} value={field.value || ""} placeholder={t.placeholderInstagram} data-testid="input-author-instagram" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -539,9 +616,9 @@ export default function AuthorManagement() {
                   name="twitterUrl"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Twitter URL</FormLabel>
+                      <FormLabel>{t.labelTwitter}</FormLabel>
                       <FormControl>
-                        <Input {...field} value={field.value || ""} placeholder="https://twitter.com/..." data-testid="input-author-twitter" />
+                        <Input {...field} value={field.value || ""} placeholder={t.placeholderTwitter} data-testid="input-author-twitter" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -553,9 +630,9 @@ export default function AuthorManagement() {
                   name="facebookUrl"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Facebook URL</FormLabel>
+                      <FormLabel>{t.labelFacebook}</FormLabel>
                       <FormControl>
-                        <Input {...field} value={field.value || ""} placeholder="https://facebook.com/..." data-testid="input-author-facebook" />
+                        <Input {...field} value={field.value || ""} placeholder={t.placeholderFacebook} data-testid="input-author-facebook" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -567,9 +644,9 @@ export default function AuthorManagement() {
                   name="amazonUrl"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Amazon Author URL</FormLabel>
+                      <FormLabel>{t.labelAmazon}</FormLabel>
                       <FormControl>
-                        <Input {...field} value={field.value || ""} placeholder="https://amazon.com/author/..." data-testid="input-author-amazon" />
+                        <Input {...field} value={field.value || ""} placeholder={t.placeholderAmazon} data-testid="input-author-amazon" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -578,20 +655,20 @@ export default function AuthorManagement() {
               </div>
 
               <div className="space-y-4 border-t pt-6 mt-6">
-                <h3 className="text-lg font-semibold">SEO - Optimización para Buscadores</h3>
-                <p className="text-sm text-muted-foreground">Configura cómo aparecerá la página del autor en Google y redes sociales.</p>
+                <h3 className="text-lg font-semibold">{t.sectionSeoTitle}</h3>
+                <p className="text-sm text-muted-foreground">{t.sectionSeoDescription}</p>
                 
                 <FormField
                   control={form.control}
                   name="seoTitle"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Título SEO</FormLabel>
+                      <FormLabel>{t.labelSeoTitle}</FormLabel>
                       <FormControl>
-                        <Input {...field} value={field.value || ""} placeholder={`${form.watch('name')} - Autor`} data-testid="input-author-seo-title" />
+                        <Input {...field} value={field.value || ""} placeholder={`${form.watch('name')}${t.placeholderSeoTitleSuffix}`} data-testid="input-author-seo-title" />
                       </FormControl>
                       <div className="text-xs text-muted-foreground">
-                        Deja vacío para usar: "{form.watch('name')} - Autor"
+                        {t.descriptionSeoTitlePrefix}{form.watch('name')}{t.placeholderSeoTitleSuffix}{t.descriptionSeoTitleSuffix}
                       </div>
                       <FormMessage />
                     </FormItem>
@@ -603,12 +680,12 @@ export default function AuthorManagement() {
                   name="seoDescription"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Descripción SEO</FormLabel>
+                      <FormLabel>{t.labelSeoDescription}</FormLabel>
                       <FormControl>
-                        <Textarea {...field} value={field.value || ""} rows={3} placeholder="Descripción breve para buscadores (150-160 caracteres)" data-testid="textarea-author-seo-description" />
+                        <Textarea {...field} value={field.value || ""} rows={3} placeholder={t.placeholderSeoDescription} data-testid="textarea-author-seo-description" />
                       </FormControl>
                       <div className="text-xs text-muted-foreground">
-                        {field.value?.length || 0}/160 caracteres. Deja vacío para usar el primer párrafo de la biografía.
+                        {field.value?.length || 0}{t.descriptionSeoCharCount}
                       </div>
                       <FormMessage />
                     </FormItem>
@@ -620,12 +697,12 @@ export default function AuthorManagement() {
                   name="seoKeywords"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Palabras Clave SEO</FormLabel>
+                      <FormLabel>{t.labelSeoKeywords}</FormLabel>
                       <FormControl>
-                        <Input {...field} value={field.value || ""} placeholder="autor, escritor, novela, fantasía, etc." data-testid="input-author-seo-keywords" />
+                        <Input {...field} value={field.value || ""} placeholder={t.placeholderSeoKeywords} data-testid="input-author-seo-keywords" />
                       </FormControl>
                       <div className="text-xs text-muted-foreground">
-                        Separa las palabras clave con comas
+                        {t.descriptionSeoKeywords}
                       </div>
                       <FormMessage />
                     </FormItem>
@@ -634,20 +711,20 @@ export default function AuthorManagement() {
               </div>
 
               <div className="space-y-4 border-t pt-6 mt-6">
-                <h3 className="text-lg font-semibold">Personalización de Fondo</h3>
-                <p className="text-sm text-muted-foreground">Configura el fondo personalizado para la página del autor.</p>
+                <h3 className="text-lg font-semibold">{t.sectionBackgroundTitle}</h3>
+                <p className="text-sm text-muted-foreground">{t.sectionBackgroundDescription}</p>
                 
                 <FormField
                   control={form.control}
                   name="backgroundImageUrl"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>URL de Imagen de Fondo</FormLabel>
+                      <FormLabel>{t.labelBgImage}</FormLabel>
                       <FormControl>
-                        <Input {...field} value={field.value || ""} placeholder="https://... o /objects/..." data-testid="input-author-bg-image" />
+                        <Input {...field} value={field.value || ""} placeholder={t.placeholderBgImage} data-testid="input-author-bg-image" />
                       </FormControl>
                       <div className="text-xs text-muted-foreground">
-                        Imagen de fondo para la página del autor (opcional)
+                        {t.descriptionBgImage}
                       </div>
                       <FormMessage />
                     </FormItem>
@@ -659,12 +736,12 @@ export default function AuthorManagement() {
                   name="backgroundColor"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Color de Fondo</FormLabel>
+                      <FormLabel>{t.labelBgColor}</FormLabel>
                       <FormControl>
-                        <Input {...field} value={field.value || ""} placeholder="#ffffff o rgb(255,255,255)" data-testid="input-author-bg-color" />
+                        <Input {...field} value={field.value || ""} placeholder={t.placeholderBgColor} data-testid="input-author-bg-color" />
                       </FormControl>
                       <div className="text-xs text-muted-foreground">
-                        Color de fondo para la página del autor (opcional, se usa si no hay imagen)
+                        {t.descriptionBgColor}
                       </div>
                       <FormMessage />
                     </FormItem>
@@ -678,9 +755,9 @@ export default function AuthorManagement() {
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                     <div className="space-y-0.5">
-                      <FormLabel className="text-base">Estado Activo</FormLabel>
+                      <FormLabel className="text-base">{t.labelIsActive}</FormLabel>
                       <div className="text-sm text-muted-foreground">
-                        El autor estará visible en el sitio web
+                        {t.descriptionIsActive}
                       </div>
                     </div>
                     <FormControl>
@@ -705,7 +782,7 @@ export default function AuthorManagement() {
                   }}
                   data-testid="button-cancel-author"
                 >
-                  Cancelar
+                  {t.buttonCancel}
                 </Button>
                 <Button 
                   type="submit" 
@@ -713,7 +790,7 @@ export default function AuthorManagement() {
                   disabled={createAuthorMutation.isPending || updateAuthorMutation.isPending}
                   data-testid="button-submit-author"
                 >
-                  {editingAuthor ? "Actualizar" : "Crear"}
+                  {editingAuthor ? t.buttonUpdate : t.buttonCreate}
                 </Button>
               </div>
             </form>
