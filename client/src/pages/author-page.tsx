@@ -13,6 +13,7 @@ import { buildBackgroundStyle } from "@/lib/utils";
 import type { Author, BookSeries, Book, Testimonial } from "@shared/schema";
 import { useState } from "react";
 import { apiRequest } from "@/lib/queryClient";
+import { useUiText } from "@/contexts/ui-text-context";
 
 export default function AuthorPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -57,10 +58,52 @@ export default function AuthorPage() {
     enabled: allSeries.length > 0 && !!author?.id,
   });
 
+  // Load all UI texts
+  const t = {
+    loading: useUiText("author_page", "loading", "Cargando..."),
+    errorNotFoundTitle: useUiText("author_page", "error_not_found_title", "Autor no encontrado"),
+    errorNotFoundDesc: useUiText("author_page", "error_not_found_desc", "El autor que buscas no existe o ha sido eliminado."),
+    buttonBackHome: useUiText("author_page", "button_back_home", "Volver al inicio"),
+    seoSuffixAutor: useUiText("author_page", "seo_suffix_autor", "Autor"),
+    seoKeywordAutor: useUiText("author_page", "seo_keyword_autor", "autor"),
+    seoKeywordEscritor: useUiText("author_page", "seo_keyword_escritor", "escritor"),
+    seoKeywordLibros: useUiText("author_page", "seo_keyword_libros", "libros"),
+    buttonDownload: useUiText("author_page", "button_download", "Descarga Gratuita"),
+    buttonBooks: useUiText("author_page", "button_books", "Ver Libros"),
+    bioTitlePrefix: useUiText("author_page", "bio_title_prefix", "Sobre"),
+    socialInstagram: useUiText("author_page", "social_instagram", "Instagram"),
+    socialTwitter: useUiText("author_page", "social_twitter", "Twitter"),
+    socialFacebook: useUiText("author_page", "social_facebook", "Facebook"),
+    seriesTitle: useUiText("author_page", "series_title", "Series de Libros"),
+    seriesDescPrefix: useUiText("author_page", "series_desc_prefix", "Explora las emocionantes series de"),
+    seriesLibroSingular: useUiText("author_page", "series_libro_singular", "libro"),
+    seriesLibroPlural: useUiText("author_page", "series_libro_plural", "libros"),
+    buttonViewSeries: useUiText("author_page", "button_view_series", "Ver serie completa"),
+    buttonAmazon: useUiText("author_page", "button_amazon", "Ver en Amazon"),
+    standaloneTitle: useUiText("author_page", "standalone_title", "Libros Independientes"),
+    standaloneDescPrefix: useUiText("author_page", "standalone_desc_prefix", "Historias completas y autoconclusivas de"),
+    bookDefaultDesc: useUiText("author_page", "book_default_desc", "Una historia emocionante que no querrás dejar de leer."),
+    buttonViewDetails: useUiText("author_page", "button_view_details", "Ver detalles"),
+    buttonBuy: useUiText("author_page", "button_buy", "Comprar"),
+    testimonialsTitle: useUiText("author_page", "testimonials_title", "Lo que Dicen los Lectores"),
+    testimonialsDescPrefix: useUiText("author_page", "testimonials_desc_prefix", "Descubre qué dicen sobre los libros de"),
+    footerQuickLinks: useUiText("author_page", "footer_quick_links", "Enlaces Rápidos"),
+    footerBio: useUiText("author_page", "footer_bio", "Biografía"),
+    footerSeries: useUiText("author_page", "footer_series", "Series"),
+    footerBooks: useUiText("author_page", "footer_books", "Libros"),
+    footerReviews: useUiText("author_page", "footer_reviews", "Reseñas"),
+    footerContact: useUiText("author_page", "footer_contact", "Contacto"),
+    footerRights: useUiText("author_page", "footer_rights", "Todos los derechos reservados."),
+    altPhotoPrefix: useUiText("author_page", "alt_photo_prefix", "Foto de"),
+    altPortraitPrefix: useUiText("author_page", "alt_portrait_prefix", "Retrato profesional de"),
+    altBookCoverPrefix: useUiText("author_page", "alt_book_cover_prefix", "Portada del libro"),
+    altProfilePhotoPrefix: useUiText("author_page", "alt_profile_photo_prefix", "Foto de perfil de"),
+  };
+
   if (authorLoading) {
     return (
       <div className="bg-background text-foreground font-sans min-h-screen flex items-center justify-center">
-        <div className="text-xl text-muted-foreground">Cargando...</div>
+        <div className="text-xl text-muted-foreground">{t.loading}</div>
       </div>
     );
   }
@@ -70,13 +113,13 @@ export default function AuthorPage() {
       <div className="bg-background text-foreground font-sans min-h-screen">
         <Navigation />
         <div className="container mx-auto px-4 py-20 text-center">
-          <h1 className="text-4xl font-serif font-bold text-primary mb-4">Autor no encontrado</h1>
+          <h1 className="text-4xl font-serif font-bold text-primary mb-4">{t.errorNotFoundTitle}</h1>
           <p className="text-xl text-muted-foreground mb-8">
-            El autor que buscas no existe o ha sido eliminado.
+            {t.errorNotFoundDesc}
           </p>
           <Link href="/">
             <Button data-testid="button-home">
-              Volver al inicio
+              {t.buttonBackHome}
             </Button>
           </Link>
         </div>
@@ -91,9 +134,9 @@ export default function AuthorPage() {
     <DynamicTheme authorId={author.id}>
       <div className="bg-background text-foreground font-sans" style={buildBackgroundStyle({ imageUrl: author?.backgroundImageUrl, color: author?.backgroundColor })}>
         <SEOHead
-          title={author.seoTitle || `${author.name} - Autor`}
+          title={author.seoTitle || `${author.name} - ${t.seoSuffixAutor}`}
           description={author.seoDescription || author.bioParagraph1.substring(0, 160)}
-          keywords={author.seoKeywords ? author.seoKeywords.split(',').map(k => k.trim()) : ["autor", "escritor", "libros", author.name]}
+          keywords={author.seoKeywords ? author.seoKeywords.split(',').map(k => k.trim()) : [t.seoKeywordAutor, t.seoKeywordEscritor, t.seoKeywordLibros, author.name]}
           ogType="website"
           ogImage={author.photo || undefined}
           structuredData={generateStructuredData.author({
@@ -112,7 +155,7 @@ export default function AuthorPage() {
             {author.photo && (
               <img 
                 src={author.photo} 
-                alt={`Foto de ${author.name}`}
+                alt={`${t.altPhotoPrefix} ${author.name}`}
                 className="w-32 h-32 rounded-full mx-auto mb-6 object-cover border-4 border-white/30 shadow-2xl"
                 data-testid="author-hero-photo"
               />
@@ -131,7 +174,7 @@ export default function AuthorPage() {
                 onClick={() => document.getElementById('newsletter')?.scrollIntoView({ behavior: 'smooth' })}
               >
                 <Download className="h-5 w-5 mr-2" />
-                Descarga Gratuita
+                {t.buttonDownload}
               </Button>
               <Button 
                 variant="outline" 
@@ -140,7 +183,7 @@ export default function AuthorPage() {
                 onClick={() => document.getElementById('books')?.scrollIntoView({ behavior: 'smooth' })}
               >
                 <BookOpen className="h-5 w-5 mr-2" />
-                Ver Libros
+                {t.buttonBooks}
               </Button>
             </div>
           </div>
@@ -154,7 +197,7 @@ export default function AuthorPage() {
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div className="order-2 lg:order-1">
                 <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary mb-8">
-                  Sobre {author.name}
+                  {t.bioTitlePrefix} {author.name}
                 </h2>
                 <div className="prose prose-lg max-w-none text-muted-foreground leading-relaxed space-y-6">
                   <p data-testid="bio-paragraph-1">{author.bioParagraph1}</p>
@@ -165,21 +208,21 @@ export default function AuthorPage() {
                   {author.instagramUrl && (
                     <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90" data-testid="button-instagram">
                       <a href={author.instagramUrl} target="_blank" rel="noopener noreferrer">
-                        <i className="fab fa-instagram mr-2"></i>Instagram
+                        <i className="fab fa-instagram mr-2"></i>{t.socialInstagram}
                       </a>
                     </Button>
                   )}
                   {author.twitterUrl && (
                     <Button asChild variant="secondary" className="hover:bg-secondary/80" data-testid="button-twitter">
                       <a href={author.twitterUrl} target="_blank" rel="noopener noreferrer">
-                        <i className="fab fa-twitter mr-2"></i>Twitter
+                        <i className="fab fa-twitter mr-2"></i>{t.socialTwitter}
                       </a>
                     </Button>
                   )}
                   {author.facebookUrl && (
                     <Button asChild variant="secondary" className="hover:bg-secondary/80" data-testid="button-facebook">
                       <a href={author.facebookUrl} target="_blank" rel="noopener noreferrer">
-                        <i className="fab fa-facebook mr-2"></i>Facebook
+                        <i className="fab fa-facebook mr-2"></i>{t.socialFacebook}
                       </a>
                     </Button>
                   )}
@@ -189,7 +232,7 @@ export default function AuthorPage() {
                 <div className="relative">
                   <img 
                     src={author.photo || "https://images.unsplash.com/photo-1494790108755-2616b612b47c?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400"} 
-                    alt={`Retrato profesional de ${author.name}`}
+                    alt={`${t.altPortraitPrefix} ${author.name}`}
                     className="rounded-2xl shadow-2xl w-full max-w-md mx-auto object-cover" 
                     data-testid="author-bio-photo"
                   />
@@ -205,9 +248,9 @@ export default function AuthorPage() {
         <section id="series" className="py-20" data-testid="section-series">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary mb-6">Series de Libros</h2>
+              <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary mb-6">{t.seriesTitle}</h2>
               <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-                Explora las emocionantes series de {author.name}
+                {t.seriesDescPrefix} {author.name}
               </p>
             </div>
 
@@ -239,7 +282,7 @@ export default function AuthorPage() {
                         <div className="flex flex-wrap gap-2 mb-6">
                           <Badge className="bg-accent/20 text-accent-foreground">{serie.genre}</Badge>
                           <Badge className="bg-accent/20 text-accent-foreground">
-                            {publishedBooks.length} {publishedBooks.length === 1 ? 'libro' : 'libros'}
+                            {publishedBooks.length} {publishedBooks.length === 1 ? t.seriesLibroSingular : t.seriesLibroPlural}
                           </Badge>
                         </div>
                         <div className="flex flex-wrap gap-3">
@@ -250,7 +293,7 @@ export default function AuthorPage() {
                               data-testid={`button-view-series-${serie.id}`}
                             >
                               <ArrowRight className="h-4 w-4 mr-2" />
-                              Ver serie completa
+                              {t.buttonViewSeries}
                             </Button>
                           </Link>
                           {serie.amazonUrl && (
@@ -261,7 +304,7 @@ export default function AuthorPage() {
                             >
                               <a href={serie.amazonUrl} target="_blank" rel="noopener noreferrer">
                                 <ShoppingCart className="h-4 w-4 mr-2" />
-                                Ver en Amazon
+                                {t.buttonAmazon}
                               </a>
                             </Button>
                           )}
@@ -272,7 +315,7 @@ export default function AuthorPage() {
                           <img 
                             key={book.id}
                             src={book.coverImage || "https://images.unsplash.com/photo-1516414447565-b14be0adf13e?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=450"} 
-                            alt={`Portada del libro ${book.title}`}
+                            alt={`${t.altBookCoverPrefix} ${book.title}`}
                             className="w-full h-64 object-cover rounded-lg shadow-lg" 
                             data-testid={`series-book-cover-${book.id}`}
                           />
@@ -292,9 +335,9 @@ export default function AuthorPage() {
         <section id="books" className="py-20 bg-muted/30" data-testid="section-standalone">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary mb-6">Libros Independientes</h2>
+              <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary mb-6">{t.standaloneTitle}</h2>
               <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-                Historias completas y autoconclusivas de {author.name}
+                {t.standaloneDescPrefix} {author.name}
               </p>
             </div>
 
@@ -303,7 +346,7 @@ export default function AuthorPage() {
                 <Card key={book.id} className="book-card bg-card rounded-xl shadow-lg border border-border overflow-hidden" data-testid={`standalone-book-${book.id}`}>
                   <img 
                     src={book.coverImage || "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=600"} 
-                    alt={`Portada del libro ${book.title}`}
+                    alt={`${t.altBookCoverPrefix} ${book.title}`}
                     className="w-full h-80 object-cover" 
                   />
                   <div className="p-6">
@@ -311,7 +354,7 @@ export default function AuthorPage() {
                       {book.title}
                     </h3>
                     <p className="text-muted-foreground mb-4 leading-relaxed">
-                      {book.description || "Una historia emocionante que no querrás dejar de leer."}
+                      {book.description || t.bookDefaultDesc}
                     </p>
                     <div className="flex flex-wrap gap-2 mb-6">
                       <Badge className="bg-accent/20 text-accent-foreground">{book.genre}</Badge>
@@ -329,7 +372,7 @@ export default function AuthorPage() {
                           data-testid={`button-view-book-${book.id}`}
                         >
                           <BookOpen className="h-4 w-4 mr-2" />
-                          Ver detalles
+                          {t.buttonViewDetails}
                         </Button>
                       </Link>
                       {book.amazonUrl && (
@@ -340,7 +383,7 @@ export default function AuthorPage() {
                         >
                           <a href={book.amazonUrl} target="_blank" rel="noopener noreferrer">
                             <ShoppingCart className="h-4 w-4 mr-2" />
-                            Comprar
+                            {t.buttonBuy}
                           </a>
                         </Button>
                       )}
@@ -359,10 +402,10 @@ export default function AuthorPage() {
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary mb-6">
-                Lo que Dicen los Lectores
+                {t.testimonialsTitle}
               </h2>
               <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-                Descubre qué dicen sobre los libros de {author.name}
+                {t.testimonialsDescPrefix} {author.name}
               </p>
             </div>
 
@@ -383,7 +426,7 @@ export default function AuthorPage() {
                   <div className="flex items-center">
                     <img 
                       src={testimonial.authorPhoto || "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100"} 
-                      alt={`Foto de perfil de ${testimonial.authorName}`}
+                      alt={`${t.altProfilePhotoPrefix} ${testimonial.authorName}`}
                       className="w-12 h-12 rounded-full mr-3 object-cover" 
                     />
                     <div>
@@ -438,23 +481,23 @@ export default function AuthorPage() {
               </div>
             </div>
             <div>
-              <h3 className="font-semibold text-primary mb-4">Enlaces Rápidos</h3>
+              <h3 className="font-semibold text-primary mb-4">{t.footerQuickLinks}</h3>
               <ul className="space-y-2">
-                <li><a href="#biografia" className="text-muted-foreground hover:text-primary transition-colors">Biografía</a></li>
-                {activeSeries.length > 0 && <li><a href="#series" className="text-muted-foreground hover:text-primary transition-colors">Series</a></li>}
-                {publishedStandaloneBooks.length > 0 && <li><a href="#books" className="text-muted-foreground hover:text-primary transition-colors">Libros</a></li>}
-                {testimonials.length > 0 && <li><a href="#testimonios" className="text-muted-foreground hover:text-primary transition-colors">Reseñas</a></li>}
+                <li><a href="#biografia" className="text-muted-foreground hover:text-primary transition-colors">{t.footerBio}</a></li>
+                {activeSeries.length > 0 && <li><a href="#series" className="text-muted-foreground hover:text-primary transition-colors">{t.footerSeries}</a></li>}
+                {publishedStandaloneBooks.length > 0 && <li><a href="#books" className="text-muted-foreground hover:text-primary transition-colors">{t.footerBooks}</a></li>}
+                {testimonials.length > 0 && <li><a href="#testimonios" className="text-muted-foreground hover:text-primary transition-colors">{t.footerReviews}</a></li>}
               </ul>
             </div>
             <div>
-              <h3 className="font-semibold text-primary mb-4">Contacto</h3>
+              <h3 className="font-semibold text-primary mb-4">{t.footerContact}</h3>
               <ul className="space-y-2 text-muted-foreground">
                 {author.email && <li><i className="fas fa-envelope mr-2"></i>{author.email}</li>}
               </ul>
             </div>
           </div>
           <div className="border-t border-border mt-8 pt-8 text-center text-muted-foreground">
-            <p>&copy; 2024 {author.name}. Todos los derechos reservados.</p>
+            <p>&copy; 2024 {author.name}. {t.footerRights}</p>
           </div>
         </div>
       </footer>
