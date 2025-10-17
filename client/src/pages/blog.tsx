@@ -10,11 +10,42 @@ import { Link } from "wouter";
 import Navigation from "@/components/navigation";
 import Newsletter from "@/components/newsletter";
 import { SEOHead, generateStructuredData } from "@/components/seo/seo-head";
+import { useUiText } from "@/contexts/ui-text-context";
 import type { BlogPost } from "@shared/schema";
 
 export default function BlogList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+
+  // Load all UI texts
+  const t = {
+    seoTitle: useUiText("blog", "seo_title", "Blog - María González Autora"),
+    seoDescription: useUiText("blog", "seo_description", "Lee los últimos artículos de María González sobre escritura, proceso creativo, próximos lanzamientos y consejos para escritores emergentes."),
+    seoKeywordBlog: useUiText("blog", "seo_keyword_blog", "blog"),
+    seoKeywordEscritura: useUiText("blog", "seo_keyword_escritura", "escritura"),
+    seoKeywordProcesoCreativo: useUiText("blog", "seo_keyword_proceso_creativo", "proceso creativo"),
+    seoKeywordConsejos: useUiText("blog", "seo_keyword_consejos", "consejos"),
+    seoKeywordNoticias: useUiText("blog", "seo_keyword_noticias", "noticias"),
+    seoKeywordAutora: useUiText("blog", "seo_keyword_autora", "autora"),
+    pageTitle: useUiText("blog", "page_title", "Mi Blog"),
+    heroSubtitle: useUiText("blog", "hero_subtitle", "Comparto mi proceso creativo, noticias sobre mis próximos libros, consejos para escritores y reflexiones sobre el maravilloso mundo de la literatura."),
+    searchPlaceholder: useUiText("blog", "search_placeholder", "Buscar artículos..."),
+    categoryFilterPlaceholder: useUiText("blog", "category_filter_placeholder", "Todas las categorías"),
+    categoryAll: useUiText("blog", "category_all", "Todas las categorías"),
+    noArticlesFound: useUiText("blog", "no_articles_found", "No se encontraron artículos"),
+    articleCountSingular: useUiText("blog", "article_count_singular", "artículo encontrado"),
+    articleCountPlural: useUiText("blog", "article_count_plural", "artículos encontrados"),
+    noArticlesAvailable: useUiText("blog", "no_articles_available", "No hay artículos disponibles"),
+    tryOtherSearch: useUiText("blog", "try_other_search", "Prueba con otros términos de búsqueda o cambia los filtros."),
+    comingSoon: useUiText("blog", "coming_soon", "Pronto compartiré más contenido aquí. ¡Mantente atento!"),
+    clearFilters: useUiText("blog", "clear_filters", "Limpiar filtros"),
+    imageAltPrefix: useUiText("blog", "image_alt_prefix", "Imagen de:"),
+    readMore: useUiText("blog", "read_more", "Leer más"),
+    tagsMore: useUiText("blog", "tags_more", "más"),
+    footerName: useUiText("blog", "footer_name", "María González"),
+    footerBio: useUiText("blog", "footer_bio", "Autora bestseller especializada en romance, thriller y fantasía. Creando historias que tocan el corazón desde 2012."),
+    footerCopyright: useUiText("blog", "footer_copyright", "© 2024 María González. Todos los derechos reservados."),
+  };
 
   const { data: posts = [], isLoading } = useQuery<BlogPost[]>({
     queryKey: ["/api/blog-posts/published"],
@@ -46,9 +77,9 @@ export default function BlogList() {
   return (
     <div className="bg-background text-foreground font-sans">
       <SEOHead
-        title="Blog - María González Autora"
-        description="Lee los últimos artículos de María González sobre escritura, proceso creativo, próximos lanzamientos y consejos para escritores emergentes."
-        keywords={["blog", "escritura", "proceso creativo", "consejos", "noticias", "autora"]}
+        title={t.seoTitle}
+        description={t.seoDescription}
+        keywords={[t.seoKeywordBlog, t.seoKeywordEscritura, t.seoKeywordProcesoCreativo, t.seoKeywordConsejos, t.seoKeywordNoticias, t.seoKeywordAutora]}
         ogType="website"
       />
       
@@ -60,11 +91,10 @@ export default function BlogList() {
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-4xl mx-auto">
               <h1 className="text-4xl lg:text-6xl font-serif font-bold mb-6 text-primary" data-testid="blog-title">
-                Mi Blog
+                {t.pageTitle}
               </h1>
               <p className="text-xl text-muted-foreground leading-relaxed">
-                Comparto mi proceso creativo, noticias sobre mis próximos libros, 
-                consejos para escritores y reflexiones sobre el maravilloso mundo de la literatura.
+                {t.heroSubtitle}
               </p>
             </div>
           </div>
@@ -78,7 +108,7 @@ export default function BlogList() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar artículos..."
+                  placeholder={t.searchPlaceholder}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -89,10 +119,10 @@ export default function BlogList() {
               {/* Category Filter */}
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                 <SelectTrigger className="w-full sm:w-48" data-testid="category-filter">
-                  <SelectValue placeholder="Todas las categorías" />
+                  <SelectValue placeholder={t.categoryFilterPlaceholder} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todas las categorías</SelectItem>
+                  <SelectItem value="all">{t.categoryAll}</SelectItem>
                   {categories.map(category => (
                     <SelectItem key={category} value={category}>
                       {category}
@@ -105,8 +135,8 @@ export default function BlogList() {
             {/* Results Info */}
             <div className="mb-8">
               <p className="text-muted-foreground" data-testid="results-count">
-                {filteredPosts.length === 0 ? 'No se encontraron artículos' : 
-                 `${filteredPosts.length} ${filteredPosts.length === 1 ? 'artículo encontrado' : 'artículos encontrados'}`}
+                {filteredPosts.length === 0 ? t.noArticlesFound : 
+                 `${filteredPosts.length} ${filteredPosts.length === 1 ? t.articleCountSingular : t.articleCountPlural}`}
               </p>
             </div>
           </div>
@@ -117,11 +147,11 @@ export default function BlogList() {
           <div className="max-w-4xl mx-auto">
             {filteredPosts.length === 0 ? (
               <div className="text-center py-16">
-                <h3 className="text-2xl font-semibold mb-4">No hay artículos disponibles</h3>
+                <h3 className="text-2xl font-semibold mb-4">{t.noArticlesAvailable}</h3>
                 <p className="text-muted-foreground mb-8">
                   {searchTerm || selectedCategory !== "all" ? 
-                    "Prueba con otros términos de búsqueda o cambia los filtros." :
-                    "Pronto compartiré más contenido aquí. ¡Mantente atento!"
+                    t.tryOtherSearch :
+                    t.comingSoon
                   }
                 </p>
                 {(searchTerm || selectedCategory !== "all") && (
@@ -133,7 +163,7 @@ export default function BlogList() {
                     }}
                     data-testid="clear-filters"
                   >
-                    Limpiar filtros
+                    {t.clearFilters}
                   </Button>
                 )}
               </div>
@@ -147,7 +177,7 @@ export default function BlogList() {
                         <div className="md:col-span-1">
                           <img
                             src={post.featuredImage}
-                            alt={`Imagen de: ${post.title}`}
+                            alt={`${t.imageAltPrefix} ${post.title}`}
                             className="w-full h-48 md:h-full object-cover"
                             data-testid={`post-image-${index}`}
                           />
@@ -194,13 +224,13 @@ export default function BlogList() {
                             ))}
                             {post.tags && post.tags.length > 3 && (
                               <Badge variant="outline" className="text-xs">
-                                +{post.tags.length - 3} más
+                                +{post.tags.length - 3} {t.tagsMore}
                               </Badge>
                             )}
                           </div>
                           <Link href={`/blog/${post.id}`}>
                             <Button variant="ghost" size="sm" data-testid={`read-more-${index}`}>
-                              Leer más
+                              {t.readMore}
                               <ArrowRight className="ml-2 h-4 w-4" />
                             </Button>
                           </Link>
@@ -222,11 +252,10 @@ export default function BlogList() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h3 className="text-2xl font-serif font-bold text-primary mb-4">
-              María González
+              {t.footerName}
             </h3>
             <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Autora bestseller especializada en romance, thriller y fantasía. 
-              Creando historias que tocan el corazón desde 2012.
+              {t.footerBio}
             </p>
             <div className="flex justify-center space-x-4">
               <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
@@ -244,7 +273,7 @@ export default function BlogList() {
             </div>
           </div>
           <div className="border-t border-border mt-8 pt-8 text-center text-muted-foreground">
-            <p>&copy; 2024 María González. Todos los derechos reservados.</p>
+            <p>{t.footerCopyright}</p>
           </div>
         </div>
       </footer>

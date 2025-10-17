@@ -8,11 +8,31 @@ import { Link } from "wouter";
 import Navigation from "@/components/navigation";
 import Newsletter from "@/components/newsletter";
 import { SEOHead, generateStructuredData } from "@/components/seo/seo-head";
+import { useUiText } from "@/contexts/ui-text-context";
 import type { BlogPost } from "@shared/schema";
 
 export default function BlogPostDetail() {
   const [match, params] = useRoute("/blog/:id");
   const postId = params?.id;
+
+  // Load all UI texts
+  const t = {
+    articleNotFoundTitle: useUiText("blog", "article_not_found_title", "Artículo no encontrado"),
+    articleNotFoundMessage: useUiText("blog", "article_not_found_message", "El artículo que buscas no existe o no está publicado."),
+    backToBlog: useUiText("blog", "back_to_blog", "Volver al blog"),
+    authorName: useUiText("blog", "author_name", "María González"),
+    readingTimeSuffix: useUiText("blog", "reading_time_suffix", "min de lectura"),
+    featuredImageAltPrefix: useUiText("blog", "featured_image_alt_prefix", "Imagen destacada de:"),
+    ogImageAltPrefix: useUiText("blog", "og_image_alt_prefix", "Imagen destacada de:"),
+    tagsLabel: useUiText("blog", "tags_label", "Etiquetas:"),
+    articleLikedQuestion: useUiText("blog", "article_liked_question", "¿Te ha gustado este artículo?"),
+    subscribeMessage: useUiText("blog", "subscribe_message", "Suscríbete a mi newsletter para recibir más contenido como este y actualizaciones sobre mis próximos libros."),
+    subscribeButton: useUiText("blog", "subscribe_button", "Suscribirse al Newsletter"),
+    moreArticlesButton: useUiText("blog", "more_articles_button", "Ver más artículos"),
+    footerName: useUiText("blog", "footer_name", "María González"),
+    footerBio: useUiText("blog", "footer_bio", "Autora bestseller especializada en romance, thriller y fantasía. Creando historias que tocan el corazón desde 2012."),
+    footerCopyright: useUiText("blog", "footer_copyright", "© 2024 María González. Todos los derechos reservados."),
+  };
 
   const { data: post, isLoading, error } = useQuery<BlogPost>({
     queryKey: [`/api/blog-posts/${postId}`],
@@ -36,14 +56,14 @@ export default function BlogPostDetail() {
         <Navigation />
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
-            <h1 className="text-4xl font-bold mb-4">Artículo no encontrado</h1>
+            <h1 className="text-4xl font-bold mb-4">{t.articleNotFoundTitle}</h1>
             <p className="text-muted-foreground mb-8">
-              El artículo que buscas no existe o no está publicado.
+              {t.articleNotFoundMessage}
             </p>
             <Link href="/blog">
               <Button>
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Volver al blog
+                {t.backToBlog}
               </Button>
             </Link>
           </div>
@@ -63,8 +83,8 @@ export default function BlogPostDetail() {
         keywords={post.tags || []}
         ogType="article"
         ogImage={post.featuredImage || undefined}
-        ogImageAlt={`Imagen destacada de: ${post.title}`}
-        articleAuthor="María González"
+        ogImageAlt={`${t.ogImageAltPrefix} ${post.title}`}
+        articleAuthor={t.authorName}
         articlePublishedTime={post.publishedAt || post.createdAt || new Date().toISOString()}
         articleModifiedTime={post.updatedAt || new Date().toISOString()}
         articleSection={post.category || undefined}
@@ -80,7 +100,7 @@ export default function BlogPostDetail() {
           <Link href="/blog">
             <Button variant="ghost" className="mb-8">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Volver al blog
+              {t.backToBlog}
             </Button>
           </Link>
         </div>
@@ -113,7 +133,7 @@ export default function BlogPostDetail() {
             <div className="flex flex-wrap items-center gap-6 text-muted-foreground mb-8">
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4" />
-                <span>María González</span>
+                <span>{t.authorName}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
@@ -127,7 +147,7 @@ export default function BlogPostDetail() {
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                <span>{readingTime} min de lectura</span>
+                <span>{readingTime} {t.readingTimeSuffix}</span>
               </div>
             </div>
 
@@ -136,7 +156,7 @@ export default function BlogPostDetail() {
               <div className="mb-12">
                 <img
                   src={post.featuredImage}
-                  alt={`Imagen destacada de: ${post.title}`}
+                  alt={`${t.featuredImageAltPrefix} ${post.title}`}
                   className="w-full h-64 lg:h-96 object-cover rounded-lg shadow-lg"
                   data-testid="post-featured-image"
                 />
@@ -164,7 +184,7 @@ export default function BlogPostDetail() {
               <div className="flex items-center gap-4 flex-wrap">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Tag className="h-4 w-4" />
-                  <span className="font-medium">Etiquetas:</span>
+                  <span className="font-medium">{t.tagsLabel}</span>
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   {post.tags.map((tag, index) => (
@@ -184,20 +204,20 @@ export default function BlogPostDetail() {
         <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="max-w-4xl mx-auto text-center">
             <h3 className="text-2xl font-serif font-bold mb-4 text-primary">
-              ¿Te ha gustado este artículo?
+              {t.articleLikedQuestion}
             </h3>
             <p className="text-muted-foreground mb-8">
-              Suscríbete a mi newsletter para recibir más contenido como este y actualizaciones sobre mis próximos libros.
+              {t.subscribeMessage}
             </p>
             <div className="flex justify-center gap-4">
               <Link href="#newsletter">
                 <Button size="lg">
-                  Suscribirse al Newsletter
+                  {t.subscribeButton}
                 </Button>
               </Link>
               <Link href="/blog">
                 <Button variant="outline" size="lg">
-                  Ver más artículos
+                  {t.moreArticlesButton}
                 </Button>
               </Link>
             </div>
@@ -212,11 +232,10 @@ export default function BlogPostDetail() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h3 className="text-2xl font-serif font-bold text-primary mb-4">
-              María González
+              {t.footerName}
             </h3>
             <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Autora bestseller especializada en romance, thriller y fantasía. 
-              Creando historias que tocan el corazón desde 2012.
+              {t.footerBio}
             </p>
             <div className="flex justify-center space-x-4">
               <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
@@ -234,7 +253,7 @@ export default function BlogPostDetail() {
             </div>
           </div>
           <div className="border-t border-border mt-8 pt-8 text-center text-muted-foreground">
-            <p>&copy; 2024 María González. Todos los derechos reservados.</p>
+            <p>{t.footerCopyright}</p>
           </div>
         </div>
       </footer>
