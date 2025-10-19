@@ -491,24 +491,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Try to send welcome email with free book
       try {
-        const settings = await storage.getSiteSettings();
-        const settingsMap = settings.reduce((acc, setting) => {
+        const siteSettings = await storage.getSiteSettings();
+        const settingsMap = siteSettings.reduce((acc, setting) => {
           acc[setting.key] = setting.value;
           return acc;
         }, {} as Record<string, string>);
 
-        // Check if email is configured
-        const emailApiKey = process.env.EMAIL_API_KEY;
-        const emailProvider = settingsMap.emailProvider || 'Resend';
+        const editorialSettings = await storage.getEditorialSettings();
         const freeBookFile = settingsMap.freeBookFile;
         const freeBookTitle = settingsMap.freeBookTitle || 'Libro de Regalo';
         const freeBookDescription = settingsMap.freeBookDescription || 'Disfruta de este libro exclusivo como regalo de bienvenida.';
-        const emailFromName = settingsMap.emailFromName || 'Newsletter';
-        const emailFromAddress = settingsMap.emailFromAddress || 'noreply@example.com';
 
-        if (emailApiKey && freeBookFile) {
+        if (editorialSettings && freeBookFile) {
           const { emailService } = await import('./email-service.js');
-          emailService.configure(emailProvider, emailApiKey);
+          
+          // Configure email service from editorial settings
+          emailService.configureFromSettings('newsletter', editorialSettings);
           
           // Construct full download URL
           const baseUrl = process.env.REPL_SLUG 
@@ -518,13 +516,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ? freeBookFile 
             : `${baseUrl}${freeBookFile}`;
 
+          const from = emailService.getDefaultFrom();
           await emailService.sendWelcomeEmail(
             validatedSubscriber.email,
             validatedSubscriber.name,
             freeBookTitle,
             freeBookDescription,
             downloadUrl,
-            { name: emailFromName, email: emailFromAddress }
+            from
           );
         }
       } catch (emailError) {

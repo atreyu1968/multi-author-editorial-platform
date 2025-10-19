@@ -247,6 +247,21 @@ export const editorialSettings = pgTable("editorial_settings", {
   // Currency Configuration
   currency: text("currency").notNull().default("USD"),
   currencySymbol: text("currency_symbol").notNull().default("$"),
+  // Email Configuration - Newsletter
+  emailNewsletterProvider: text("email_newsletter_provider"), // "Resend" | "SendGrid" | "Mailchimp" | "Brevo" | "Postmark" | "Mailgun"
+  emailNewsletterApiKey: text("email_newsletter_api_key"),
+  emailNewsletterFromName: text("email_newsletter_from_name"),
+  emailNewsletterFromEmail: text("email_newsletter_from_email"),
+  // Email Configuration - Digital Products
+  emailDigitalProvider: text("email_digital_provider"),
+  emailDigitalApiKey: text("email_digital_api_key"),
+  emailDigitalFromName: text("email_digital_from_name"),
+  emailDigitalFromEmail: text("email_digital_from_email"),
+  // Email Configuration - Invoices
+  emailInvoiceProvider: text("email_invoice_provider"),
+  emailInvoiceApiKey: text("email_invoice_api_key"),
+  emailInvoiceFromName: text("email_invoice_from_name"),
+  emailInvoiceFromEmail: text("email_invoice_from_email"),
 });
 
 // Merchandise Products - products linked to authors, books, or series

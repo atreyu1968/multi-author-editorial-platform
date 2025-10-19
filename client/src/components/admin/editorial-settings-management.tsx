@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
-import { Save } from "lucide-react";
+import { Save, Info, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { EditorialSettings } from "@shared/schema";
@@ -17,8 +18,66 @@ import { getCurrencySymbol } from "@/lib/format-currency";
 import { useEffect } from "react";
 import { useUiText } from "@/contexts/ui-text-context";
 
+interface EmailProviderInstructionsProps {
+  provider: string;
+  instructionsTitle: string;
+  instructionsLink: string;
+  providerSteps: Record<string, string[]>;
+}
+
+function EmailProviderInstructions({ provider, instructionsTitle, instructionsLink, providerSteps }: EmailProviderInstructionsProps) {
+  const instructions: Record<string, { url: string }> = {
+    "Resend": { url: "https://resend.com/api-keys" },
+    "SendGrid": { url: "https://app.sendgrid.com/settings/api_keys" },
+    "Mailchimp": { url: "https://mandrillapp.com/settings/index" },
+    "Brevo": { url: "https://app.brevo.com/settings/keys/api" },
+    "Postmark": { url: "https://account.postmarkapp.com/servers" },
+    "Mailgun": { url: "https://app.mailgun.com/app/account/security/api_keys" }
+  };
+
+  const config = instructions[provider];
+  const steps = providerSteps[provider];
+  
+  if (!config || !steps) return null;
+
+  return (
+    <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-900">
+      <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+      <AlertDescription>
+        <div className="space-y-3">
+          <p className="font-semibold text-blue-900 dark:text-blue-100">
+            {instructionsTitle.replace("{provider}", provider)}
+          </p>
+          <ol className="list-decimal list-inside space-y-1.5 text-sm text-blue-800 dark:text-blue-200">
+            {steps.map((step, index) => (
+              <li key={index}>{step}</li>
+            ))}
+          </ol>
+          <a 
+            href={config.url} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+          >
+            {instructionsLink.replace("{provider}", provider)} <ExternalLink className="h-3 w-3" />
+          </a>
+        </div>
+      </AlertDescription>
+    </Alert>
+  );
+}
+
 export default function EditorialSettingsManagement() {
   const { toast } = useToast();
+
+  const emailProviderSteps: Record<string, string[]> = {
+    "Resend": ["Ve a tu cuenta de Resend", "Genera una nueva API Key en Settings", "Copia la key y pégala aquí"],
+    "SendGrid": ["Accede a Settings > API Keys", "Crea una nueva API Key con permisos de envío", "Copia y pega la key aquí"],
+    "Mailchimp": ["Accede a tu cuenta de Mailchimp Transactional", "Ve a Settings > SMTP & API Info", "Genera y copia tu API key"],
+    "Brevo": ["Ve a Settings > SMTP & API", "Genera una nueva API key", "Copia la key aquí"],
+    "Postmark": ["Accede a tu servidor en Postmark", "Ve a API Tokens", "Genera un nuevo Server API Token"],
+    "Mailgun": ["Ve a Settings > API Keys", "Usa formato: TU_API_KEY:TU_DOMINIO", "Ejemplo: key-abc123:mg.tudominio.com"]
+  };
 
   const t = {
     loading: useUiText("admin.editorial_settings", "loading"),
@@ -31,6 +90,7 @@ export default function EditorialSettingsManagement() {
     tabFooter: useUiText("admin.editorial_settings", "tab_footer"),
     tabSeo: useUiText("admin.editorial_settings", "tab_seo"),
     tabPaypal: useUiText("admin.editorial_settings", "tab_paypal"),
+    tabEmail: useUiText("admin.editorial_settings", "tabEmail"),
     cardIdentityTitle: useUiText("admin.editorial_settings", "card_identity_title"),
     labelName: useUiText("admin.editorial_settings", "label_name"),
     placeholderName: useUiText("admin.editorial_settings", "placeholder_name"),
@@ -143,6 +203,23 @@ export default function EditorialSettingsManagement() {
     toastSuccessDescription: useUiText("admin.editorial_settings", "toast_success_description"),
     toastErrorTitle: useUiText("admin.editorial_settings", "toast_error_title"),
     toastErrorDescription: useUiText("admin.editorial_settings", "toast_error_description"),
+    cardEmailNewsletterTitle: useUiText("admin.editorial_settings", "card_email_newsletter_title"),
+    cardEmailDigitalTitle: useUiText("admin.editorial_settings", "card_email_digital_title"),
+    cardEmailInvoiceTitle: useUiText("admin.editorial_settings", "card_email_invoice_title"),
+    labelEmailProvider: useUiText("admin.editorial_settings", "label_email_provider"),
+    placeholderEmailProvider: useUiText("admin.editorial_settings", "placeholder_email_provider"),
+    descEmailProvider: useUiText("admin.editorial_settings", "desc_email_provider"),
+    labelEmailApiKey: useUiText("admin.editorial_settings", "label_email_api_key"),
+    placeholderEmailApiKey: useUiText("admin.editorial_settings", "placeholder_email_api_key"),
+    descEmailApiKey: useUiText("admin.editorial_settings", "desc_email_api_key"),
+    labelEmailFromName: useUiText("admin.editorial_settings", "label_email_from_name"),
+    placeholderEmailFromName: useUiText("admin.editorial_settings", "placeholder_email_from_name"),
+    descEmailFromName: useUiText("admin.editorial_settings", "desc_email_from_name"),
+    labelEmailFromEmail: useUiText("admin.editorial_settings", "label_email_from_email"),
+    placeholderEmailFromEmail: useUiText("admin.editorial_settings", "placeholder_email_from_email"),
+    descEmailFromEmail: useUiText("admin.editorial_settings", "desc_email_from_email"),
+    emailInstructionsTitle: useUiText("admin.editorial_settings", "email_instructions_title"),
+    emailInstructionsLink: useUiText("admin.editorial_settings", "email_instructions_link"),
   };
 
   const { data: settings, isLoading } = useQuery<EditorialSettings>({
@@ -190,6 +267,18 @@ export default function EditorialSettingsManagement() {
       paypalEnvironment: "sandbox",
       currency: "USD",
       currencySymbol: "$",
+      emailNewsletterProvider: "",
+      emailNewsletterApiKey: "",
+      emailNewsletterFromName: "",
+      emailNewsletterFromEmail: "",
+      emailDigitalProvider: "",
+      emailDigitalApiKey: "",
+      emailDigitalFromName: "",
+      emailDigitalFromEmail: "",
+      emailInvoiceProvider: "",
+      emailInvoiceApiKey: "",
+      emailInvoiceFromName: "",
+      emailInvoiceFromEmail: "",
     },
   });
 
@@ -234,6 +323,18 @@ export default function EditorialSettingsManagement() {
         paypalEnvironment: settings.paypalEnvironment || "sandbox",
         currency: settings.currency || "USD",
         currencySymbol: settings.currencySymbol || "$",
+        emailNewsletterProvider: settings.emailNewsletterProvider || "",
+        emailNewsletterApiKey: settings.emailNewsletterApiKey || "",
+        emailNewsletterFromName: settings.emailNewsletterFromName || "",
+        emailNewsletterFromEmail: settings.emailNewsletterFromEmail || "",
+        emailDigitalProvider: settings.emailDigitalProvider || "",
+        emailDigitalApiKey: settings.emailDigitalApiKey || "",
+        emailDigitalFromName: settings.emailDigitalFromName || "",
+        emailDigitalFromEmail: settings.emailDigitalFromEmail || "",
+        emailInvoiceProvider: settings.emailInvoiceProvider || "",
+        emailInvoiceApiKey: settings.emailInvoiceApiKey || "",
+        emailInvoiceFromName: settings.emailInvoiceFromName || "",
+        emailInvoiceFromEmail: settings.emailInvoiceFromEmail || "",
       });
     }
   }, [settings, form]);
@@ -281,7 +382,7 @@ export default function EditorialSettingsManagement() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <Tabs defaultValue="branding" className="w-full">
-            <TabsList className="grid w-full grid-cols-7 mb-6">
+            <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 mb-6">
               <TabsTrigger value="branding" data-testid="tab-branding">{t.tabBranding}</TabsTrigger>
               <TabsTrigger value="hero" data-testid="tab-hero">{t.tabHero}</TabsTrigger>
               <TabsTrigger value="features" data-testid="tab-features">{t.tabFeatures}</TabsTrigger>
@@ -289,6 +390,7 @@ export default function EditorialSettingsManagement() {
               <TabsTrigger value="footer" data-testid="tab-footer">{t.tabFooter}</TabsTrigger>
               <TabsTrigger value="seo" data-testid="tab-seo">{t.tabSeo}</TabsTrigger>
               <TabsTrigger value="paypal" data-testid="tab-paypal">{t.tabPaypal}</TabsTrigger>
+              <TabsTrigger value="email" data-testid="tab-email">{t.tabEmail}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="branding" className="space-y-6">
@@ -996,6 +1098,272 @@ export default function EditorialSettingsManagement() {
                         <FormDescription>
                           {t.descPaypalEnvironment}
                         </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="email" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t.cardEmailNewsletterTitle}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="emailNewsletterProvider"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t.labelEmailProvider}</FormLabel>
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-email-newsletter-provider">
+                              <SelectValue placeholder={t.placeholderEmailProvider} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Resend">Resend</SelectItem>
+                            <SelectItem value="SendGrid">SendGrid</SelectItem>
+                            <SelectItem value="Mailchimp">Mailchimp</SelectItem>
+                            <SelectItem value="Brevo">Brevo</SelectItem>
+                            <SelectItem value="Postmark">Postmark</SelectItem>
+                            <SelectItem value="Mailgun">Mailgun</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>{t.descEmailProvider}</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {form.watch("emailNewsletterProvider") && (
+                    <EmailProviderInstructions
+                      provider={form.watch("emailNewsletterProvider")}
+                      instructionsTitle={t.emailInstructionsTitle}
+                      instructionsLink={t.emailInstructionsLink}
+                      providerSteps={emailProviderSteps}
+                    />
+                  )}
+
+                  <FormField
+                    control={form.control}
+                    name="emailNewsletterApiKey"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t.labelEmailApiKey}</FormLabel>
+                        <FormControl>
+                          <Input {...field} type="password" placeholder={t.placeholderEmailApiKey} data-testid="input-email-newsletter-api-key" />
+                        </FormControl>
+                        <FormDescription>{t.descEmailApiKey}</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="emailNewsletterFromName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t.labelEmailFromName}</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder={t.placeholderEmailFromName} data-testid="input-email-newsletter-from-name" />
+                        </FormControl>
+                        <FormDescription>{t.descEmailFromName}</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="emailNewsletterFromEmail"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t.labelEmailFromEmail}</FormLabel>
+                        <FormControl>
+                          <Input {...field} type="email" placeholder={t.placeholderEmailFromEmail} data-testid="input-email-newsletter-from-email" />
+                        </FormControl>
+                        <FormDescription>{t.descEmailFromEmail}</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t.cardEmailDigitalTitle}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="emailDigitalProvider"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t.labelEmailProvider}</FormLabel>
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-email-digital-provider">
+                              <SelectValue placeholder={t.placeholderEmailProvider} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Resend">Resend</SelectItem>
+                            <SelectItem value="SendGrid">SendGrid</SelectItem>
+                            <SelectItem value="Mailchimp">Mailchimp</SelectItem>
+                            <SelectItem value="Brevo">Brevo</SelectItem>
+                            <SelectItem value="Postmark">Postmark</SelectItem>
+                            <SelectItem value="Mailgun">Mailgun</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>{t.descEmailProvider}</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {form.watch("emailDigitalProvider") && (
+                    <EmailProviderInstructions
+                      provider={form.watch("emailDigitalProvider")}
+                      instructionsTitle={t.emailInstructionsTitle}
+                      instructionsLink={t.emailInstructionsLink}
+                      providerSteps={emailProviderSteps}
+                    />
+                  )}
+
+                  <FormField
+                    control={form.control}
+                    name="emailDigitalApiKey"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t.labelEmailApiKey}</FormLabel>
+                        <FormControl>
+                          <Input {...field} type="password" placeholder={t.placeholderEmailApiKey} data-testid="input-email-digital-api-key" />
+                        </FormControl>
+                        <FormDescription>{t.descEmailApiKey}</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="emailDigitalFromName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t.labelEmailFromName}</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder={t.placeholderEmailFromName} data-testid="input-email-digital-from-name" />
+                        </FormControl>
+                        <FormDescription>{t.descEmailFromName}</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="emailDigitalFromEmail"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t.labelEmailFromEmail}</FormLabel>
+                        <FormControl>
+                          <Input {...field} type="email" placeholder={t.placeholderEmailFromEmail} data-testid="input-email-digital-from-email" />
+                        </FormControl>
+                        <FormDescription>{t.descEmailFromEmail}</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t.cardEmailInvoiceTitle}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="emailInvoiceProvider"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t.labelEmailProvider}</FormLabel>
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-email-invoice-provider">
+                              <SelectValue placeholder={t.placeholderEmailProvider} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Resend">Resend</SelectItem>
+                            <SelectItem value="SendGrid">SendGrid</SelectItem>
+                            <SelectItem value="Mailchimp">Mailchimp</SelectItem>
+                            <SelectItem value="Brevo">Brevo</SelectItem>
+                            <SelectItem value="Postmark">Postmark</SelectItem>
+                            <SelectItem value="Mailgun">Mailgun</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>{t.descEmailProvider}</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {form.watch("emailInvoiceProvider") && (
+                    <EmailProviderInstructions
+                      provider={form.watch("emailInvoiceProvider")}
+                      instructionsTitle={t.emailInstructionsTitle}
+                      instructionsLink={t.emailInstructionsLink}
+                      providerSteps={emailProviderSteps}
+                    />
+                  )}
+
+                  <FormField
+                    control={form.control}
+                    name="emailInvoiceApiKey"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t.labelEmailApiKey}</FormLabel>
+                        <FormControl>
+                          <Input {...field} type="password" placeholder={t.placeholderEmailApiKey} data-testid="input-email-invoice-api-key" />
+                        </FormControl>
+                        <FormDescription>{t.descEmailApiKey}</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="emailInvoiceFromName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t.labelEmailFromName}</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder={t.placeholderEmailFromName} data-testid="input-email-invoice-from-name" />
+                        </FormControl>
+                        <FormDescription>{t.descEmailFromName}</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="emailInvoiceFromEmail"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t.labelEmailFromEmail}</FormLabel>
+                        <FormControl>
+                          <Input {...field} type="email" placeholder={t.placeholderEmailFromEmail} data-testid="input-email-invoice-from-email" />
+                        </FormControl>
+                        <FormDescription>{t.descEmailFromEmail}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}

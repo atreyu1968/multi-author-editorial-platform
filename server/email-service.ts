@@ -215,11 +215,25 @@ class MailgunProvider implements EmailProvider {
   }
 }
 
+interface EmailConfig {
+  provider: string;
+  apiKey: string;
+  fromName: string;
+  fromEmail: string;
+}
+
 export class EmailService {
   private provider: EmailProvider | null = null;
+  private fromName: string = '';
+  private fromEmail: string = '';
 
-  configure(providerName: string, apiKey: string) {
-    switch (providerName.toLowerCase()) {
+  configure(config: EmailConfig) {
+    const { provider, apiKey, fromName, fromEmail } = config;
+    
+    this.fromName = fromName;
+    this.fromEmail = fromEmail;
+
+    switch (provider.toLowerCase()) {
       case 'resend':
         this.provider = new ResendProvider(apiKey);
         break;
@@ -239,8 +253,49 @@ export class EmailService {
         this.provider = new MailgunProvider(apiKey);
         break;
       default:
-        throw new Error(`Unsupported email provider: ${providerName}`);
+        throw new Error(`Unsupported email provider: ${provider}`);
     }
+  }
+
+  configureFromSettings(type: 'newsletter' | 'digital' | 'invoice', settings: any) {
+    let provider = '';
+    let apiKey = '';
+    let fromName = '';
+    let fromEmail = '';
+
+    switch (type) {
+      case 'newsletter':
+        provider = settings.emailNewsletterProvider || '';
+        apiKey = settings.emailNewsletterApiKey || '';
+        fromName = settings.emailNewsletterFromName || '';
+        fromEmail = settings.emailNewsletterFromEmail || '';
+        break;
+      case 'digital':
+        provider = settings.emailDigitalProvider || '';
+        apiKey = settings.emailDigitalApiKey || '';
+        fromName = settings.emailDigitalFromName || '';
+        fromEmail = settings.emailDigitalFromEmail || '';
+        break;
+      case 'invoice':
+        provider = settings.emailInvoiceProvider || '';
+        apiKey = settings.emailInvoiceApiKey || '';
+        fromName = settings.emailInvoiceFromName || '';
+        fromEmail = settings.emailInvoiceFromEmail || '';
+        break;
+    }
+
+    if (!provider || !apiKey || !fromName || !fromEmail) {
+      throw new Error(`Email configuration for ${type} is incomplete. Please configure it in editorial settings.`);
+    }
+
+    this.configure({ provider, apiKey, fromName, fromEmail });
+  }
+
+  getDefaultFrom(): { name: string; email: string } {
+    return {
+      name: this.fromName || 'Newsletter',
+      email: this.fromEmail || 'noreply@example.com',
+    };
   }
 
   async sendWelcomeEmail(
