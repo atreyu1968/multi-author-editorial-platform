@@ -45,6 +45,10 @@ function Router() {
 
   return (
     <Switch>
+      {/* Admin routes (no locale prefix needed) - MUST be first */}
+      <Route path="/auth" component={AuthPage} />
+      <ProtectedRoute path="/admin" component={Admin} />
+      
       {/* Locale-prefixed routes */}
       <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/" component={Home} />
       <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/autores" component={AuthorsListPage} />
@@ -112,7 +116,6 @@ function Router() {
       <Route path="/search">
         {() => <Redirect to={`/${locale}/search`} />}
       </Route>
-      <Route path="/auth" component={AuthPage} />
       <Route path="/blog">
         {() => <Redirect to={`/${locale}/blog`} />}
       </Route>
@@ -137,9 +140,6 @@ function Router() {
       <Route path="/order-confirmation/:orderId">
         {(params) => <Redirect to={`/${locale}/pedido/${params.orderId}`} />}
       </Route>
-      
-      {/* Admin routes (no locale prefix needed) */}
-      <ProtectedRoute path="/admin" component={Admin} />
       
       {/* 404 Not Found */}
       <Route component={NotFound} />
