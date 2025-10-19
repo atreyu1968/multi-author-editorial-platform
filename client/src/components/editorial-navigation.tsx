@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useUiText } from "@/contexts/ui-text-context";
 import { useQuery } from "@tanstack/react-query";
 import type { EditorialSettings } from "@shared/schema";
+import SearchBar from "@/components/search-bar";
 
 export default function EditorialNavigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -81,6 +82,9 @@ export default function EditorialNavigation() {
                 </Link>
               </>
             )}
+            <div className="w-64">
+              <SearchBar />
+            </div>
             <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90" data-testid="button-admin">
               <Link href="/admin">
                 <Settings className="h-4 w-4 mr-2" />
@@ -104,6 +108,9 @@ export default function EditorialNavigation() {
       {mobileMenuOpen && (
         <div className="md:hidden bg-card border-t border-border">
           <div className="px-4 py-2 space-y-2">
+            <div className="py-2">
+              <SearchBar />
+            </div>
             {isHomePage ? (
               <>
                 <button 

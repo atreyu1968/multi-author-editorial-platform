@@ -8,6 +8,7 @@ import type { Author, SiteSettings } from "@shared/schema";
 import { useUiText } from "@/contexts/ui-text-context";
 import { useCart } from "@/contexts/CartContext";
 import { LanguageSelector } from "@/components/language-selector";
+import SearchBar from "@/components/search-bar";
 
 interface NavigationProps {
   authorId?: string;
@@ -85,6 +86,9 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
             <Link href={`${basePath}#testimonios`} className="text-muted-foreground hover:text-primary transition-colors" data-testid="nav-testimonios">
               {navTestimonials}
             </Link>
+            <div className="w-64">
+              <SearchBar />
+            </div>
             <LanguageSelector />
             <Link href="/checkout" data-testid="link-cart">
               <Button variant="ghost" size="icon" className="relative">
@@ -123,6 +127,9 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
       {mobileMenuOpen && (
         <div className="md:hidden bg-card border-t border-border">
           <div className="px-4 py-2 space-y-2">
+            <div className="py-2">
+              <SearchBar />
+            </div>
             <Link href={`${basePath}#inicio`} className="block py-2 text-muted-foreground hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
               {navHome}
             </Link>
