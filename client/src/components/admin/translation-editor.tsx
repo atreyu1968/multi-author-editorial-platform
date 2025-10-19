@@ -38,7 +38,7 @@ export function TranslationEditor({ entityType, entityId, fields }: TranslationE
   const queryClient = useQueryClient();
   const [activeLocale, setActiveLocale] = useState("es-ES");
 
-  const { data: translations = [], isLoading } = useQuery({
+  const { data: translations = [], isLoading } = useQuery<any[]>({
     queryKey: [`/api/${entityType}/${entityId}/translations`],
     enabled: !!entityId,
   });
