@@ -49,6 +49,16 @@ export default function TranslationManagement() {
   const [importLocale, setImportLocale] = useState("es-ES");
 
   const locales = ["es-ES", "en-US", "ca-ES", "fr-FR", "it-IT", "de-DE", "pt-PT"];
+  
+  const localeNames: Record<string, string> = {
+    "es-ES": "Español",
+    "en-US": "English",
+    "ca-ES": "Català",
+    "fr-FR": "Français",
+    "it-IT": "Italiano",
+    "de-DE": "Deutsch",
+    "pt-PT": "Português"
+  };
 
   const { data: summary = [], isLoading: summaryLoading } = useQuery<LocaleSummary[]>({
     queryKey: ["/api/translations/summary"],
@@ -243,7 +253,7 @@ export default function TranslationManagement() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold tracking-tight" data-testid="text-translations-title">Gestión de Traducciones</h2>
-          <p className="text-muted-foreground">Administra ~1,350+ textos en 3 idiomas</p>
+          <p className="text-muted-foreground">Administra textos en 7 idiomas</p>
         </div>
         <Languages className="h-8 w-8 text-muted-foreground" />
       </div>
@@ -256,7 +266,7 @@ export default function TranslationManagement() {
             <Card key={stat.locale} data-testid={`card-coverage-${stat.locale}`}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  {stat.locale === "es-ES" ? "Español" : stat.locale === "en-US" ? "Inglés" : "Catalán"}
+                  {localeNames[stat.locale] || stat.locale}
                 </CardTitle>
                 {stat.coverage === 100 ? (
                   <CheckCircle2 className="h-4 w-4 text-green-500" />
@@ -322,7 +332,7 @@ export default function TranslationManagement() {
             items.length > 0 && (
               <Card key={locale} data-testid={`card-missing-${locale}`}>
                 <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>Faltantes en {locale === "en-US" ? "Inglés" : "Catalán"} ({items.length})</CardTitle>
+                  <CardTitle>Faltantes en {localeNames[locale] || locale} ({items.length})</CardTitle>
                   <Button
                     onClick={() => copyMutation.mutate({ sourceLocale: "es-ES", targetLocale: locale })}
                     disabled={copyMutation.isPending}
@@ -385,9 +395,11 @@ export default function TranslationManagement() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos los idiomas</SelectItem>
-                <SelectItem value="es-ES">Español (ES)</SelectItem>
-                <SelectItem value="en-US">Inglés (EN)</SelectItem>
-                <SelectItem value="ca-ES">Catalán (CA)</SelectItem>
+                {locales.map(locale => (
+                  <SelectItem key={locale} value={locale}>
+                    {localeNames[locale]} ({locale.split('-')[0].toUpperCase()})
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <div className="text-sm text-muted-foreground">
@@ -585,9 +597,11 @@ export default function TranslationManagement() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="es-ES">Español</SelectItem>
-                        <SelectItem value="en-US">Inglés</SelectItem>
-                        <SelectItem value="ca-ES">Catalán</SelectItem>
+                        {locales.map(locale => (
+                          <SelectItem key={locale} value={locale}>
+                            {localeNames[locale]}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
