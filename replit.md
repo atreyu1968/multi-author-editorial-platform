@@ -26,6 +26,13 @@ Preferred communication style: Simple, everyday language.
 - **Features**: Case-insensitive search, 20-result limit, active/published filtering, locale-aware navigation, responsive design for desktop and mobile
 - **Architect Review**: Approved - scalable for current use, recommend full-text search indexing for future growth beyond few thousand records
 
+### Author Visibility Filter (October 2025)
+- **Smart Author Filtering**: Authors without published books or active series no longer appear in public navigation menus
+- **New Endpoint**: Created `/api/authors-with-content` to efficiently filter authors with published content
+- **Performance Optimization**: Server-side filtering reduces client-side data transfer and computation
+- **Affected Components**: Home page featured authors section and authors list page
+- **Logic**: Authors displayed only if they have at least one published book OR an active series containing their books
+
 ### Navigation System Overhaul (October 2025)
 - **Fixed cross-page navigation**: Updated Navigation component to use intelligent basePath logic with Link components, enabling navigation from series/book pages back to author pages with correct anchor scrolling
 - **Fixed editorial navigation**: Implemented context-aware EditorialNavigation with route normalization to distinguish home page (scroll buttons) from sub-pages (navigation links)

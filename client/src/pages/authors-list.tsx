@@ -5,19 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import EditorialNavigation from "@/components/editorial-navigation";
 import { SEOHead } from "@/components/seo/seo-head";
-import type { Author, EditorialSettings } from "@shared/schema";
+import type { Author, EditorialSettings, Book } from "@shared/schema";
 
 export default function AuthorsListPage() {
   const [, setLocation] = useLocation();
-  const { data: authors = [], isLoading } = useQuery<Author[]>({
-    queryKey: ["/api/authors"],
+  const { data: activeAuthors = [], isLoading } = useQuery<Author[]>({
+    queryKey: ["/api/authors-with-content"],
   });
 
   const { data: settings } = useQuery<EditorialSettings>({
     queryKey: ["/api/editorial-settings"],
   });
-
-  const activeAuthors = authors.filter(author => author.isActive);
 
   if (isLoading) {
     return (

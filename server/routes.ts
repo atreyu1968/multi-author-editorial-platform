@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
+import type { Book } from "@shared/schema";
 import { 
   insertAuthorSchema,
   insertBookSeriesSchema,
@@ -66,6 +67,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(authors);
     } catch (error) {
       res.status(500).json({ message: "Failed to get authors" });
+    }
+  });
+
+  // Specific routes must be before parameterized routes
+  app.get("/api/authors-with-content", async (req, res) => {
+    try {
+      const authors = await storage.getAuthors();
+      const allBooks = await storage.getBooks();
+      const series = await storage.getBookSeries();
+      
+      // Filter only published books
+      const publishedBooks = allBooks.filter((book: Book) => book.isPublished);
+      
+      // Filter authors that are active AND have at least one published book or active series
+      const authorsWithContent = authors.filter(author => {
+        if (!author.isActive) return false;
+        
+        // Check if author has at least one published book
+        const hasPublishedBook = publishedBooks.some(
+          (book: Book) => book.authorId === author.id
+        );
+        
+        // Check if author has at least one active series with their books
+        const hasActiveSeries = series.some(s => {
+          if (!s.isActive) return false;
+          const seriesBooks = publishedBooks.filter((book: Book) => book.seriesId === s.id);
+          return seriesBooks.some((book: Book) => book.authorId === author.id);
+        });
+        
+        return hasPublishedBook || hasActiveSeries;
+      });
+      
+      res.json(authorsWithContent);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get authors with content" });
     }
   });
 

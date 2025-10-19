@@ -74,8 +74,8 @@ export default function Home() {
     buttonViewAllAuthors: useUiText("homepage", "button_view_all_authors", "Ver Todos los Autores"),
   };
   
-  const { data: authors = [], isLoading: authorsLoading } = useQuery<Author[]>({
-    queryKey: ["/api/authors"],
+  const { data: activeAuthors = [], isLoading: authorsLoading } = useQuery<Author[]>({
+    queryKey: ["/api/authors-with-content"],
   });
 
   const { data: settings, isLoading: settingsLoading } = useQuery<EditorialSettings>({
@@ -86,7 +86,6 @@ export default function Home() {
     queryKey: ["/api/books/latest"],
   });
 
-  const activeAuthors = authors.filter(author => author.isActive);
   const featuredAuthors = activeAuthors.slice(0, 4);
 
   const isLoading = authorsLoading || settingsLoading;
