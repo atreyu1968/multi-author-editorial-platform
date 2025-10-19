@@ -48,7 +48,7 @@ export default function TranslationManagement() {
   const [importData, setImportData] = useState("");
   const [importLocale, setImportLocale] = useState("es-ES");
 
-  const locales = ["es-ES", "en-US", "ca-ES"];
+  const locales = ["es-ES", "en-US", "ca-ES", "fr-FR", "it-IT", "de-DE", "pt-PT"];
 
   const { data: summary = [], isLoading: summaryLoading } = useQuery<LocaleSummary[]>({
     queryKey: ["/api/translations/summary"],
@@ -100,7 +100,7 @@ export default function TranslationManagement() {
     queryKey: ["/api/translations/missing"],
     queryFn: async () => {
       const results = [];
-      for (const locale of ["en-US", "ca-ES"]) {
+      for (const locale of ["en-US", "ca-ES", "fr-FR", "it-IT", "de-DE", "pt-PT"]) {
         const diff = await fetch(`/api/translations/diff?source=es-ES&target=${locale}`).then(r => r.json());
         results.push({
           locale,
