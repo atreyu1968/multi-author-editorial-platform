@@ -1,289 +1,287 @@
-# Multi-Author Editorial Management Platform
+# Plataforma de Gestión Editorial Multi-Autor
 
-A comprehensive full-stack web application designed to manage up to 30 authors within a single editorial platform. Each author gets customizable landing pages with personalized themes, blogs, book catalogs, and integrated e-commerce capabilities.
+Una aplicación web completa de pila completa diseñada para gestionar hasta 30 autores dentro de una única plataforma editorial. Cada autor obtiene páginas de destino personalizables con temas personalizados, blogs, catálogos de libros y capacidades de comercio electrónico integradas.
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Version](https://img.shields.io/badge/versión-1.0.0-blue.svg)
 ![Node](https://img.shields.io/badge/node-20.x-green.svg)
 ![PostgreSQL](https://img.shields.io/badge/postgresql-14%2B-blue.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Licencia](https://img.shields.io/badge/licencia-MIT-green.svg)
 
-## 🌟 Features
+## 🌟 Características
 
-### Multi-Author Management
-- **Centralized Admin Panel** - Manage all authors, books, series, and content from one place
-- **Custom Author Landing Pages** - Each author gets `/autor/[slug]` with personalized branding
-- **Individual Themes** - Customizable colors, logos, and favicons per author
-- **Multi-Author Series** - Support for book series with multiple contributing authors
+### Gestión Multi-Autor
+- **Panel de Administración Centralizado** - Gestiona todos los autores, libros, series y contenido desde un solo lugar
+- **Páginas de Autor Personalizadas** - Cada autor obtiene `/autor/[slug]` con branding personalizado
+- **Temas Individuales** - Colores, logotipos y favicons personalizables por autor
+- **Series Multi-Autor** - Soporte para series de libros con múltiples autores contribuyentes
 
-### E-Commerce
-- **Full Shopping Cart** - Session-based cart system
-- **PayPal Integration** - Secure payment processing
-- **Digital Products** - Automated delivery of EPUB, PDF, MOBI, AZW3 files
-- **Physical Products** - Inventory management and shipping
-- **Gift Books** - Automated gift book delivery system
-- **QR Codes** - Automatic QR code generation for promotions
+### Comercio Electrónico
+- **Carrito de Compras Completo** - Sistema de carrito basado en sesiones
+- **Integración PayPal** - Procesamiento de pagos seguro
+- **Productos Digitales** - Entrega automatizada de archivos EPUB, PDF, MOBI, AZW3
+- **Productos Físicos** - Gestión de inventario y envíos
+- **Libros de Regalo** - Sistema automatizado de entrega de libros de regalo
+- **Códigos QR** - Generación automática de códigos QR para promociones
 
-### Content Management
-- **Books** - Comprehensive book management with metadata, covers, and promotional materials
-- **Series** - Organize books into multi-author series/collections
-- **Blog System** - Individual blog for each author
-- **Testimonials** - Customer reviews and endorsements
-- **Newsletter** - Built-in newsletter subscription system
+### Gestión de Contenido
+- **Libros** - Gestión completa de libros con metadatos, portadas y material promocional
+- **Series** - Organiza libros en series/colecciones multi-autor
+- **Sistema de Blog** - Blog individual para cada autor
+- **Testimonios** - Reseñas y respaldos de clientes
+- **Newsletter** - Sistema de suscripción de boletín integrado
 
-### Internationalization (i18n)
-- **7 Languages** - Full support for:
-  - Spanish (es-ES)
-  - English (en-US)
-  - Catalan (ca-ES)
-  - French (fr-FR)
-  - Italian (it-IT)
-  - German (de-DE)
-  - Portuguese (pt-PT)
-- **10,205 UI Texts** - Complete interface translation
-- **Localized URLs** - Language-specific routes (e.g., `/libro`, `/book`, `/livre`)
-- **Content Translation** - Support for translating books, authors, series, and blog posts
-- **Multi-Currency** - Support for 23+ currencies with automatic conversion
+### Internacionalización (i18n)
+- **7 Idiomas** - Soporte completo para:
+  - Español (es-ES)
+  - Inglés (en-US)
+  - Catalán (ca-ES)
+  - Francés (fr-FR)
+  - Italiano (it-IT)
+  - Alemán (de-DE)
+  - Portugués (pt-PT)
+- **10,205 Textos de UI** - Traducción completa de la interfaz
+- **URLs Localizadas** - Rutas específicas por idioma (ej: `/libro`, `/book`, `/livre`)
+- **Traducción de Contenido** - Soporte para traducir libros, autores, series y posts de blog
+- **Multi-Moneda** - Soporte para más de 23 monedas con conversión automática
 
-### Search & Discovery
-- **Universal Search** - Search across authors, books, and series
-- **Localized Search Results** - Search pages in all 7 languages
-- **Keyboard Navigation** - Accessible search interface
+### Búsqueda y Descubrimiento
+- **Búsqueda Universal** - Busca entre autores, libros y series
+- **Resultados Localizados** - Páginas de búsqueda en los 7 idiomas
+- **Navegación por Teclado** - Interfaz de búsqueda accesible
 
-### Analytics
-- **Proprietary Analytics** - Built-in analytics dashboard
-- **Pageview Tracking** - Monitor visitor behavior
-- **Conversion Metrics** - Track newsletter signups, downloads, and purchases
-- **Top Content** - See most popular books and authors
+### Analíticas
+- **Analíticas Propietarias** - Panel de analíticas integrado
+- **Seguimiento de Visitas** - Monitorea el comportamiento de los visitantes
+- **Métricas de Conversión** - Rastrea suscripciones, descargas y compras
+- **Contenido Principal** - Ve los libros y autores más populares
 
-### Security
-- **Secure Authentication** - Session-based auth with httpOnly cookies
-- **Password Hashing** - Scrypt with salt
-- **Rate Limiting** - Prevent brute force attacks
-- **CSP Headers** - Content Security Policy via Helmet.js
-- **Secure Downloads** - Token-based digital file delivery with expiration
+### Seguridad
+- **Autenticación Segura** - Autenticación basada en sesiones con cookies httpOnly
+- **Hash de Contraseñas** - Scrypt con salt
+- **Limitación de Tasa** - Previene ataques de fuerza bruta
+- **Cabeceras CSP** - Política de Seguridad de Contenido vía Helmet.js
+- **Descargas Seguras** - Entrega de archivos digitales basada en tokens con expiración
 
-## 🚀 Quick Start
+## 🚀 Inicio Rápido
 
-### Prerequisites
+### Requisitos Previos
 
-- Ubuntu 20.04 LTS or higher
-- Root or sudo access
-- Internet connection
+- Ubuntu 20.04 LTS o superior
+- Acceso root o sudo
+- Conexión a Internet
 
-### Installation
+### Instalación
 
-1. **Clone the repository:**
+1. **Clonar el repositorio:**
    ```bash
-   git clone https://github.com/yourusername/editorial-platform.git
+   git clone https://github.com/tuusuario/editorial-platform.git
    cd editorial-platform
    ```
 
-2. **Run the installer:**
+2. **Ejecutar el instalador:**
    ```bash
    sudo bash install.sh
    ```
 
-3. **Follow the prompts** to configure:
-   - Installation language
-   - Database credentials
-   - Administrator account
-   - PayPal settings (optional)
-   - Domain and SSL (optional)
+3. **Seguir las indicaciones** para configurar:
+   - Idioma de instalación
+   - Credenciales de base de datos
+   - Cuenta de administrador
+   - Configuración de PayPal (opcional)
+   - Dominio y SSL (opcional)
 
-4. **Access your platform:**
-   - Open your browser to `http://your-server-ip:5000`
-   - Login with your admin credentials
+4. **Acceder a tu plataforma:**
+   - Abre tu navegador en `http://tu-ip-servidor:5000`
+   - Inicia sesión con tus credenciales de administrador
 
-For detailed installation instructions, see [INSTALLATION.md](INSTALLATION.md).
+Para instrucciones detalladas de instalación, consulta [INSTALLATION.md](INSTALLATION.md).
 
-## 📖 Documentation
+## 📖 Documentación
 
-- [Installation Guide](INSTALLATION.md) - Complete installation instructions
-- [API Documentation](#) - API endpoints reference (coming soon)
-- [User Guide](#) - End-user documentation (coming soon)
+- [Guía de Instalación](INSTALLATION.md) - Instrucciones completas de instalación
+- [Guía de Deployment](DEPLOYMENT.md) - Workflow completo de GitHub a producción
 
-## 🛠️ Technology Stack
+## 🛠️ Stack Tecnológico
 
 ### Backend
-- **Node.js 20** - Runtime environment
-- **Express.js** - Web framework
-- **TypeScript** - Type-safe development
-- **PostgreSQL** - Relational database
-- **Drizzle ORM** - Type-safe database queries
+- **Node.js 20** - Entorno de ejecución
+- **Express.js** - Framework web
+- **TypeScript** - Desarrollo con tipos seguros
+- **PostgreSQL** - Base de datos relacional
+- **Drizzle ORM** - Consultas de base de datos con tipos seguros
 
 ### Frontend
-- **React 18** - UI library
-- **Vite** - Build tool
-- **Tailwind CSS** - Utility-first CSS
-- **shadcn/ui** - Component library
-- **TanStack Query** - Server state management
-- **Wouter** - Lightweight routing
+- **React 18** - Librería de UI
+- **Vite** - Herramienta de construcción
+- **Tailwind CSS** - CSS de utilidades
+- **shadcn/ui** - Librería de componentes
+- **TanStack Query** - Gestión de estado del servidor
+- **Wouter** - Enrutamiento ligero
 
-### External Services
-- **PayPal** - Payment processing
-- **Neon Database** - Serverless PostgreSQL (optional)
-- **Object Storage** - File storage (optional)
+### Servicios Externos
+- **PayPal** - Procesamiento de pagos
+- **Neon Database** - PostgreSQL serverless (opcional)
+- **Object Storage** - Almacenamiento de archivos (opcional)
 
-## 📋 Configuration
+## 📋 Configuración
 
-### Environment Variables
+### Variables de Entorno
 
-Copy `.env.example` to `.env` and configure:
+Copia `.env.example` a `.env` y configura:
 
 ```env
-# Database
-DATABASE_URL=postgresql://user:password@localhost:5432/editorial_platform
+# Base de Datos
+DATABASE_URL=postgresql://usuario:contraseña@localhost:5432/editorial_platform
 
-# Session
-SESSION_SECRET=your-random-secret
+# Sesión
+SESSION_SECRET=tu-secreto-aleatorio
 
 # PayPal
-PAYPAL_CLIENT_ID=your-client-id
-PAYPAL_CLIENT_SECRET=your-client-secret
+PAYPAL_CLIENT_ID=tu-client-id
+PAYPAL_CLIENT_SECRET=tu-client-secret
 PAYPAL_MODE=sandbox
 
-# Locale
+# Idioma
 DEFAULT_LOCALE=es-ES
 ```
 
-See [.env.example](.env.example) for all available options.
+Consulta [.env.example](.env.example) para todas las opciones disponibles.
 
-## 🔧 Management
+## 🔧 Gestión
 
-### Service Commands
+### Comandos de Servicio
 
 ```bash
-# Start the service
+# Iniciar el servicio
 sudo systemctl start editorial-platform
 
-# Stop the service
+# Detener el servicio
 sudo systemctl stop editorial-platform
 
-# Restart the service
+# Reiniciar el servicio
 sudo systemctl restart editorial-platform
 
-# View logs
+# Ver logs
 sudo journalctl -u editorial-platform -f
 
-# Check status
+# Verificar estado
 sudo systemctl status editorial-platform
 ```
 
-### Database Management
+### Gestión de Base de Datos
 
 ```bash
-# Backup database
+# Backup de base de datos
 pg_dump -U editorial_user editorial_platform > backup.sql
 
-# Restore database
+# Restaurar base de datos
 psql -U editorial_user editorial_platform < backup.sql
 
-# Access database console
+# Acceder a la consola de base de datos
 psql -U editorial_user -d editorial_platform
 ```
 
-### Updates
+### Actualizaciones
 
 ```bash
-# Pull latest changes
+# Obtener últimos cambios
 git pull origin main
 
-# Install dependencies
+# Instalar dependencias
 npm install --production
 
-# Run migrations
+# Ejecutar migraciones
 npm run db:push
 
-# Restart service
+# Reiniciar servicio
 sudo systemctl restart editorial-platform
 ```
 
-## 🏗️ Project Structure
+## 🏗️ Estructura del Proyecto
 
 ```
 editorial-platform/
-├── client/                 # Frontend React application
+├── client/                 # Aplicación React frontend
 │   ├── src/
-│   │   ├── components/    # Reusable UI components
-│   │   ├── pages/         # Page components
-│   │   ├── contexts/      # React contexts
-│   │   ├── hooks/         # Custom React hooks
-│   │   └── lib/           # Utility functions
-├── server/                # Backend Express application
-│   ├── index.ts           # Server entry point
-│   ├── routes.ts          # API routes
-│   ├── storage.ts         # Storage interface
-│   ├── auth.ts            # Authentication logic
-│   └── paypal.ts          # PayPal integration
-├── shared/                # Shared code
-│   └── schema.ts          # Database schema (Drizzle)
-├── scripts/               # Installation scripts
+│   │   ├── components/    # Componentes UI reutilizables
+│   │   ├── pages/         # Componentes de página
+│   │   ├── contexts/      # Contextos de React
+│   │   ├── hooks/         # Hooks personalizados de React
+│   │   └── lib/           # Funciones de utilidad
+├── server/                # Aplicación Express backend
+│   ├── index.ts           # Punto de entrada del servidor
+│   ├── routes.ts          # Rutas de API
+│   ├── storage.ts         # Interfaz de almacenamiento
+│   ├── auth.ts            # Lógica de autenticación
+│   └── paypal.ts          # Integración de PayPal
+├── shared/                # Código compartido
+│   └── schema.ts          # Schema de base de datos (Drizzle)
+├── scripts/               # Scripts de instalación
 │   ├── setup-database.sh
 │   ├── setup-environment.sh
 │   ├── init-database.sh
 │   └── setup-admin.sh
-├── install.sh             # Main installer
-├── .env.example           # Environment variables template
-└── INSTALLATION.md        # Installation guide
+├── install.sh             # Instalador principal
+├── .env.example           # Template de variables de entorno
+└── INSTALLATION.md        # Guía de instalación
 ```
 
-## 🤝 Contributing
+## 🤝 Contribuir
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+¡Las contribuciones son bienvenidas! Por favor, siéntete libre de enviar un Pull Request.
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+1. Haz fork del repositorio
+2. Crea tu rama de característica (`git checkout -b feature/CaracteristicaIncreible`)
+3. Haz commit de tus cambios (`git commit -m 'Añadir alguna CaracteristicaIncreible'`)
+4. Haz push a la rama (`git push origin feature/CaracteristicaIncreible`)
+5. Abre un Pull Request
 
-## 📄 License
+## 📄 Licencia
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+Este proyecto está licenciado bajo la Licencia MIT - consulta el archivo LICENSE para más detalles.
 
-## 🐛 Troubleshooting
+## 🐛 Solución de Problemas
 
-### Application won't start
-- Check logs: `sudo journalctl -u editorial-platform -n 50`
-- Verify `.env` configuration
-- Ensure PostgreSQL is running: `sudo systemctl status postgresql`
+### La aplicación no inicia
+- Revisa los logs: `sudo journalctl -u editorial-platform -n 50`
+- Verifica la configuración de `.env`
+- Asegúrate de que PostgreSQL esté corriendo: `sudo systemctl status postgresql`
 
-### Database connection errors
-- Verify `DATABASE_URL` in `.env`
-- Test connection: `psql -U editorial_user -d editorial_platform`
-- Check PostgreSQL logs: `sudo tail -f /var/log/postgresql/postgresql-*-main.log`
+### Errores de conexión a la base de datos
+- Verifica `DATABASE_URL` en `.env`
+- Prueba la conexión: `psql -U editorial_user -d editorial_platform`
+- Revisa los logs de PostgreSQL: `sudo tail -f /var/log/postgresql/postgresql-*-main.log`
 
-### PayPal payment failures
-- Verify credentials in `.env`
-- Check `PAYPAL_MODE` matches your credentials (sandbox/production)
-- Review PayPal dashboard for errors
+### Fallos en pagos de PayPal
+- Verifica las credenciales en `.env`
+- Comprueba que `PAYPAL_MODE` coincida con tus credenciales (sandbox/production)
+- Revisa el panel de PayPal para errores
 
-For more troubleshooting tips, see [INSTALLATION.md](INSTALLATION.md#troubleshooting).
+Para más consejos de solución de problemas, consulta [INSTALLATION.md](INSTALLATION.md#troubleshooting).
 
-## 📞 Support
+## 📞 Soporte
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/editorial-platform/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/editorial-platform/discussions)
-- **Email**: support@yourcompany.com
+- **Issues**: [GitHub Issues](https://github.com/tuusuario/editorial-platform/issues)
+- **Discusiones**: [GitHub Discussions](https://github.com/tuusuario/editorial-platform/discussions)
 
-## 🎯 Roadmap
+## 🎯 Hoja de Ruta
 
-- [ ] Email notifications for orders
-- [ ] Advanced analytics dashboard
-- [ ] Merchandise product management UI
-- [ ] Author dashboard for self-service
-- [ ] Social media integrations
-- [ ] Advanced SEO tools
-- [ ] Mobile app
+- [ ] Notificaciones por email para pedidos
+- [ ] Panel de analíticas avanzado
+- [ ] UI de gestión de productos de merchandising
+- [ ] Panel de autor para autoservicio
+- [ ] Integraciones con redes sociales
+- [ ] Herramientas avanzadas de SEO
+- [ ] Aplicación móvil
 
-## ⭐ Acknowledgments
+## ⭐ Reconocimientos
 
-- Built with [Replit](https://replit.com)
-- UI components from [shadcn/ui](https://ui.shadcn.com)
-- Icons from [Lucide](https://lucide.dev)
+- Construido con [Replit](https://replit.com)
+- Componentes UI de [shadcn/ui](https://ui.shadcn.com)
+- Iconos de [Lucide](https://lucide.dev)
 
 ---
 
-Made with ❤️ for publishers and literary agencies
+Hecho con ❤️ para editoriales y agencias literarias
 
-**Star** this repository if you find it useful!
+**Dale una estrella** a este repositorio si te resulta útil!
