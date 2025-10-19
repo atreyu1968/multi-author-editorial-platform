@@ -8,6 +8,21 @@ This project is a full-stack web application designed to manage up to 30 authors
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+### Navigation System Overhaul (October 2025)
+- **Fixed cross-page navigation**: Updated Navigation component to use intelligent basePath logic with Link components, enabling navigation from series/book pages back to author pages with correct anchor scrolling
+- **Fixed editorial navigation**: Implemented context-aware EditorialNavigation with route normalization to distinguish home page (scroll buttons) from sub-pages (navigation links)
+- **Route normalization**: Added trailing slash handling to correctly identify home routes (/es-ES/ → /es-ES) across all 7 locales
+- **Section IDs**: Added missing IDs (#inicio, #standalone) to home page for proper scroll navigation
+- **Testing**: Comprehensive e2e tests verify navigation works correctly across all page types and locales
+- **Result**: Navigation now works seamlessly from any page (home, author, series, book) in both desktop and mobile views
+
+### Previous Updates
+- Completed 3 internationalization enhancements: dynamic content translation system (5 entity types), advanced multi-language SEO (localized URLs, hreflang tags, dynamic sitemaps), and regional currency conversion (8+ currencies with 24h cache)
+- Fixed book cover display: changed from square format to proper book aspect ratio (aspect-[2/3]) across all components
+- All changes production-ready: 0 LSP errors, clean logs, architect approved
+
 ## System Architecture
 
 ### Frontend
