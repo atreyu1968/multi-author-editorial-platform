@@ -104,7 +104,7 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
                 )}
               </Button>
             </Link>
-            <Link href="/admin">
+            <Link href="/auth">
               <Button className="bg-primary text-primary-foreground hover:bg-primary/90" data-testid="button-admin">
                 <Settings className="h-4 w-4 mr-2" />
                 {navAdmin}
@@ -163,7 +163,7 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
                 )}
               </div>
             </Link>
-            <Link href="/admin" className="block w-full text-left py-2 text-primary" onClick={() => setMobileMenuOpen(false)}>
+            <Link href="/auth" className="block w-full text-left py-2 text-primary" onClick={() => setMobileMenuOpen(false)}>
               <Settings className="h-4 w-4 mr-2 inline" />
               {navAdminPanel}
             </Link>
