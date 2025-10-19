@@ -1,6 +1,99 @@
+# Dependencies
 node_modules
+/.pnp
+.pnp.js
+
+# Production build
 dist
+/build
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+pnpm-debug.log*
+
+# OS files
 .DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# Server public files (generated)
 server/public
+
+# Vite config backups
 vite.config.ts.*
+
+# Compressed files
 *.tar.gz
+*.zip
+
+# Temporary files
+/tmp
+*.tmp
+*.bak
+*.cache
+.temp/
+
+# Database files
+*.sqlite
+*.sqlite3
+*.db
+
+# Uploads and storage
+uploads/
+public/uploads/
+attached_assets/
+.private/
+
+# SSL certificates
+*.pem
+*.key
+*.crt
+
+# Backup files
+*.backup
+*.old
+
+# Drizzle
+drizzle/
+
+# TypeScript
+*.tsbuildinfo
+
+# Testing
+/coverage
+*.test.js.snap
+
+# Replit specific (for development only)
+.replit
+replit.nix
+.config/
+.upm/
+.breakpoints
+replit.md
+
+# Documentation build
+docs/_build/
