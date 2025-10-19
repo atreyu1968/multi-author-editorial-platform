@@ -34,7 +34,17 @@ import {
   type CartItem,
   type InsertCartItem,
   type DownloadToken,
-  type InsertDownloadToken
+  type InsertDownloadToken,
+  type AuthorTranslation,
+  type InsertAuthorTranslation,
+  type BookTranslation,
+  type InsertBookTranslation,
+  type SeriesTranslation,
+  type InsertSeriesTranslation,
+  type TestimonialTranslation,
+  type InsertTestimonialTranslation,
+  type BlogPostTranslation,
+  type InsertBlogPostTranslation
 } from "@shared/schema";
 import { randomUUID, scrypt, randomBytes, scryptSync } from "crypto";
 import { promisify } from "util";
@@ -183,6 +193,27 @@ export interface IStorage {
   getDownloadToken(token: string): Promise<DownloadToken | undefined>;
   markTokenAsUsed(token: string): Promise<void>;
   getDownloadTokensByOrderId(orderId: string): Promise<DownloadToken[]>;
+
+  // Translation methods
+  // Author translations
+  getAuthorTranslations(authorId: string): Promise<AuthorTranslation[]>;
+  upsertAuthorTranslation(translation: InsertAuthorTranslation): Promise<AuthorTranslation>;
+  
+  // Book translations
+  getBookTranslations(bookId: string): Promise<BookTranslation[]>;
+  upsertBookTranslation(translation: InsertBookTranslation): Promise<BookTranslation>;
+  
+  // Series translations
+  getSeriesTranslations(seriesId: string): Promise<SeriesTranslation[]>;
+  upsertSeriesTranslation(translation: InsertSeriesTranslation): Promise<SeriesTranslation>;
+  
+  // Testimonial translations
+  getTestimonialTranslations(testimonialId: string): Promise<TestimonialTranslation[]>;
+  upsertTestimonialTranslation(translation: InsertTestimonialTranslation): Promise<TestimonialTranslation>;
+  
+  // Blog post translations
+  getBlogPostTranslations(blogPostId: string): Promise<BlogPostTranslation[]>;
+  upsertBlogPostTranslation(translation: InsertBlogPostTranslation): Promise<BlogPostTranslation>;
 
   // Session store for authentication
   sessionStore: session.Store;

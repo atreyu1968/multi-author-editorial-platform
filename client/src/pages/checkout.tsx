@@ -18,13 +18,15 @@ import { Loader2, ShoppingCart, Trash2, Plus, Minus, ArrowLeft } from "lucide-re
 import { Link, useLocation } from "wouter";
 import PayPalButton from "@/components/PayPalButton";
 import { SEOHead } from "@/components/seo/seo-head";
-import { formatCurrency } from "@/lib/format-currency";
+import { formatPriceWithConversionSync } from "@shared/currency-service";
 import { useUiText } from "@/contexts/ui-text-context";
+import { useLocale } from "@/contexts/locale-context";
 
 export default function Checkout() {
   const { items, isLoading: cartLoading, updateQuantity, removeFromCart, totalPrice, clearCart } = useCart();
   const { toast } = useToast();
   const { trackConversion } = useAnalytics();
+  const { locale, currency, exchangeRates } = useLocale();
   const [, navigate] = useLocation();
   const [customerData, setCustomerData] = useState<Customer | null>(null);
   const [orderCreated, setOrderCreated] = useState(false);
@@ -372,7 +374,12 @@ export default function Checkout() {
                         {item.book?.title || item.merchandise?.title}
                       </h3>
                       <p className="text-sm text-muted-foreground" data-testid={`text-product-price-${item.id}`}>
-                        {formatCurrency(price, settings?.currency || "USD", settings?.currencySymbol || "$")}
+                        {exchangeRates ? formatPriceWithConversionSync(
+                          Math.round(price * 100), // Convert to cents
+                          currency,
+                          locale,
+                          exchangeRates
+                        ) : '...'}
                       </p>
                       <div className="flex items-center gap-2 mt-2">
                         <Button
@@ -397,7 +404,12 @@ export default function Checkout() {
                         </Button>
                       </div>
                       <p className="text-sm font-semibold mt-2" data-testid={`text-subtotal-${item.id}`}>
-                        {t.labelItemSubtotal} {formatCurrency(subtotal, settings?.currency || "USD", settings?.currencySymbol || "$")}
+                        {t.labelItemSubtotal} {exchangeRates ? formatPriceWithConversionSync(
+                          Math.round(subtotal * 100), // Convert to cents
+                          currency,
+                          locale,
+                          exchangeRates
+                        ) : '...'}
                       </p>
                     </div>
                     <Button
@@ -415,17 +427,32 @@ export default function Checkout() {
               <div className="border-t pt-4 space-y-2">
                 <div className="flex justify-between">
                   <span data-testid="text-subtotal-label">{t.labelSubtotal}</span>
-                  <span data-testid="text-subtotal-value">{formatCurrency(subtotal, settings?.currency || "USD", settings?.currencySymbol || "$")}</span>
+                  <span data-testid="text-subtotal-value">{exchangeRates ? formatPriceWithConversionSync(
+                    Math.round(subtotal * 100), // Convert to cents
+                    currency,
+                    locale,
+                    exchangeRates
+                  ) : '...'}</span>
                 </div>
                 {tax > 0 && (
                   <div className="flex justify-between">
                     <span data-testid="text-tax-label">{t.labelTax}</span>
-                    <span data-testid="text-tax-value">{formatCurrency(tax, settings?.currency || "USD", settings?.currencySymbol || "$")}</span>
+                    <span data-testid="text-tax-value">{exchangeRates ? formatPriceWithConversionSync(
+                      Math.round(tax * 100), // Convert to cents
+                      currency,
+                      locale,
+                      exchangeRates
+                    ) : '...'}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-lg font-bold">
                   <span data-testid="text-total-label">{t.labelTotal}</span>
-                  <span data-testid="text-total-value">{formatCurrency(total, settings?.currency || "USD", settings?.currencySymbol || "$")}</span>
+                  <span data-testid="text-total-value">{exchangeRates ? formatPriceWithConversionSync(
+                    Math.round(total * 100), // Convert to cents
+                    currency,
+                    locale,
+                    exchangeRates
+                  ) : '...'}</span>
                 </div>
               </div>
             </CardContent>

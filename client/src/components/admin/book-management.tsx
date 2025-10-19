@@ -326,6 +326,56 @@ export default function BookManagement() {
     seoNovelPrefix: useUiText("admin.books", "seo_novel_prefix", " - Novela "),
     seoAutoTitlePrefix: useUiText("admin.books", "seo_auto_title_prefix", "Deja vacío para usar automáticamente: \""),
     seoCharCountSuffix: useUiText("admin.books", "seo_char_count_suffix", "/160 caracteres. Deja vacío para usar la descripción del libro."),
+    // Missing UI Texts
+    placeholderImageUrl: useUiText("admin.books", "placeholder_image_url", "https://... o /objects/..."),
+    labelAdditionalStores: useUiText("admin.books", "label_additional_stores", "Librerías Adicionales"),
+    placeholderSeries: useUiText("admin.books", "placeholder_series", "Seleccionar serie"),
+    labelSeriesOrder: useUiText("admin.books", "label_series_order", "Orden en la Serie"),
+    placeholderSeriesOrder: useUiText("admin.books", "placeholder_series_order", "1"),
+    labelEnableDirectSale: useUiText("admin.books", "label_enable_direct_sale", "Habilitar venta directa"),
+    labelSalePrice: useUiText("admin.books", "label_sale_price", "Precio de Venta"),
+    labelStock: useUiText("admin.books", "label_stock", "Stock Disponible"),
+    labelSellPhysical: useUiText("admin.books", "label_sell_physical", "Vender formato físico"),
+    labelSellDigital: useUiText("admin.books", "label_sell_digital", "Vender formato digital"),
+    labelIsDigital: useUiText("admin.books", "label_is_digital", "Es producto digital"),
+    labelFileEpub: useUiText("admin.books", "label_file_epub", "Archivo EPUB"),
+    placeholderFileUrl: useUiText("admin.books", "placeholder_file_url", "URL del archivo"),
+    labelFilePdf: useUiText("admin.books", "label_file_pdf", "Archivo PDF"),
+    labelFileMobi: useUiText("admin.books", "label_file_mobi", "Archivo MOBI"),
+    labelFileAzw3: useUiText("admin.books", "label_file_azw3", "Archivo AZW3"),
+    labelBackgroundImageUrl: useUiText("admin.books", "label_background_image_url", "URL de Imagen de Fondo"),
+    labelBackgroundColor: useUiText("admin.books", "label_background_color", "Color de Fondo"),
+    placeholderBackgroundColor: useUiText("admin.books", "placeholder_background_color", "#RRGGBB"),
+    labelHeroImage: useUiText("admin.books", "label_hero_image", "Imagen Hero"),
+    labelSlogan: useUiText("admin.books", "label_slogan", "Tagline"),
+    placeholderSlogan: useUiText("admin.books", "placeholder_slogan", "Una frase impactante que describa el libro"),
+    labelExtendedSynopsis: useUiText("admin.books", "label_extended_synopsis", "Sinopsis Extendida"),
+    placeholderExtendedSynopsis: useUiText("admin.books", "placeholder_extended_synopsis", "Escribe una sinopsis atractiva y detallada..."),
+    labelCta: useUiText("admin.books", "label_cta", "Texto del Botón CTA"),
+    placeholderCta: useUiText("admin.books", "placeholder_cta", "Ej: Consigue tu copia ahora"),
+    labelFeatures: useUiText("admin.books", "label_features", "Características Destacadas"),
+    placeholderFeatures: useUiText("admin.books", "placeholder_features", "Ej: Más de 500 páginas de aventuras épicas"),
+    labelQuotes: useUiText("admin.books", "label_quotes", "Citas Memorables"),
+    placeholderQuotes: useUiText("admin.books", "placeholder_quotes", "Escribe una cita impactante del libro..."),
+    labelGallery: useUiText("admin.books", "label_gallery", "Galería de Imágenes"),
+    placeholderGallery: useUiText("admin.books", "placeholder_gallery", "URL de la imagen"),
+    labelAwards: useUiText("admin.books", "label_awards", "Premios y Reconocimientos"),
+    placeholderAwards: useUiText("admin.books", "placeholder_awards", "Ej: Ganador del Premio XYZ 2023"),
+    labelConceptMap: useUiText("admin.books", "label_concept_map", "Mapa Conceptual"),
+    placeholderConceptMap: useUiText("admin.books", "placeholder_concept_map", "URL del mapa conceptual"),
+    labelFamilyTree: useUiText("admin.books", "label_family_tree", "Árbol Genealógico"),
+    placeholderFamilyTree: useUiText("admin.books", "placeholder_family_tree", "URL del árbol genealógico"),
+    labelBooktrailer: useUiText("admin.books", "label_booktrailer", "Booktrailer (YouTube)"),
+    placeholderBooktrailer: useUiText("admin.books", "placeholder_booktrailer", "URL de embed de YouTube"),
+    labelShowBooktrailer: useUiText("admin.books", "label_show_booktrailer", "Mostrar booktrailer"),
+    labelSpotifyPlaylist: useUiText("admin.books", "label_spotify_playlist", "Playlist de Spotify"),
+    placeholderSpotifyPlaylist: useUiText("admin.books", "placeholder_spotify_playlist", "URL de embed de Spotify"),
+    labelPressNotes: useUiText("admin.books", "label_press_notes", "Notas de Prensa"),
+    placeholderPressNotes: useUiText("admin.books", "placeholder_press_notes", 'Ej: "Una obra maestra" - El Periódico'),
+    labelShowPress: useUiText("admin.books", "label_show_press", "Mostrar notas de prensa"),
+    labelGraphicMaterial: useUiText("admin.books", "label_graphic_material", "Material Gráfico Adicional"),
+    placeholderGraphicMaterial: useUiText("admin.books", "placeholder_graphic_material", "URL de imagen o video promocional"),
+    labelShowGraphic: useUiText("admin.books", "label_show_graphic", "Mostrar material gráfico"),
   };
 
   const form = useForm<BookFormData>({
@@ -2294,6 +2344,7 @@ export default function BookManagement() {
                     </div>
                   )}
                 </TabsContent>
+
               </Tabs>
 
               <div className="flex justify-end gap-3 pt-6 border-t">

@@ -10,13 +10,16 @@ import Navigation from "@/components/navigation";
 import Newsletter from "@/components/newsletter";
 import { SEOHead, generateStructuredData } from "@/components/seo/seo-head";
 import { buildBackgroundStyle } from "@/lib/utils";
-import { formatCurrency } from "@/lib/format-currency";
+import { formatPriceWithConversionSync } from "@shared/currency-service";
 import type { Book, EditorialSettings, Author } from "@shared/schema";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { useUiText } from "@/contexts/ui-text-context";
+import { useLocale } from "@/contexts/locale-context";
+import { getAllLocalizedUrls } from "@/lib/localized-routes";
 import { SiInstagram, SiX, SiFacebook, SiAmazon } from "react-icons/si";
+import { getTranslatedField } from "@shared/utils";
 
 // Helper functions for embedding
 function getYouTubeEmbedUrl(url: string): string {
@@ -54,6 +57,7 @@ export default function BookLanding() {
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const { addToCart } = useCart();
   const { toast } = useToast();
+  const { locale, currency, exchangeRates } = useLocale();
   
   // Load all UI texts
   const t = {
@@ -131,6 +135,11 @@ export default function BookLanding() {
     enabled: !!book?.authorId,
   });
 
+  const { data: bookTranslations = [] } = useQuery<any[]>({
+    queryKey: [`/api/books/${bookId}/translations`],
+    enabled: !!bookId,
+  });
+
   const handleAddToCart = async () => {
     if (!bookId) return;
     
@@ -185,20 +194,32 @@ export default function BookLanding() {
     );
   }
 
+  const userLocale = navigator.language || 'es-ES';
+  
+  const translatedTitle = getTranslatedField(bookTranslations, 'title', userLocale, book?.title || '');
+  const translatedDescription = getTranslatedField(bookTranslations, 'description', userLocale, book?.description || '');
+  const translatedSeoTitle = getTranslatedField(bookTranslations, 'seoTitle', userLocale, book?.seoTitle || '');
+  const translatedSeoDescription = getTranslatedField(bookTranslations, 'seoDescription', userLocale, book?.seoDescription || '');
+  
   const isPartOfSeries = book.seriesId && series;
   const heroImage = book.landingHeroImage || book.coverImage;
-  const tagline = book.landingTagline || book.description;
-  const synopsis = book.landingSynopsis || book.description;
+  const tagline = book.landingTagline || translatedDescription;
+  const synopsis = book.landingSynopsis || translatedDescription;
+
+  // Generate hreflang alternates for all languages
+  const alternates = bookId ? getAllLocalizedUrls('book', { id: bookId }) : [];
 
   return (
     <div className="bg-background text-foreground font-sans" style={buildBackgroundStyle({ imageUrl: book?.backgroundImageUrl, color: book?.backgroundColor })}>
       <SEOHead
-        title={book.seoTitle || `${book.title}${book.genre ? ` - ${t.seoTitleNovela} ${book.genre}` : ''}`}
-        description={book.seoDescription || synopsis || `${t.seoDescPrefix} "${book.title}", ${t.seoDescFascinante}${book.genre ? ` ${t.seoDescDeGenero} ${book.genre.toLowerCase()}` : ''} ${t.seoDescSuffix}`}
-        keywords={book.seoKeywords ? book.seoKeywords.split(',').map(k => k.trim()) : [book.title, book.genre || '', t.seoTitleNovela.toLowerCase(), t.libro.toLowerCase()].filter(Boolean)}
+        title={translatedSeoTitle || `${translatedTitle}${book.genre ? ` - ${t.seoTitleNovela} ${book.genre}` : ''}`}
+        description={translatedSeoDescription || synopsis || `${t.seoDescPrefix} "${translatedTitle}", ${t.seoDescFascinante}${book.genre ? ` ${t.seoDescDeGenero} ${book.genre.toLowerCase()}` : ''} ${t.seoDescSuffix}`}
+        keywords={book.seoKeywords ? book.seoKeywords.split(',').map(k => k.trim()) : [translatedTitle, book.genre || '', t.seoTitleNovela.toLowerCase(), t.libro.toLowerCase()].filter(Boolean)}
+        alternates={alternates}
         ogType="book"
+        ogLocale={locale.replace('-', '_')}
         ogImage={heroImage || undefined}
-        ogImageAlt={`${t.seoImageAltPortada} ${book.title}`}
+        ogImageAlt={`${t.seoImageAltPortada} ${translatedTitle}`}
         structuredData={generateStructuredData.book(book)}
       />
       
@@ -273,7 +294,7 @@ export default function BookLanding() {
                   )}
                   
                   <h1 className="text-5xl lg:text-6xl font-serif font-bold mb-6 text-primary" data-testid="book-title">
-                    {book.title}
+                    {translatedTitle}
                   </h1>
                   
                   {tagline && (
@@ -283,13 +304,14 @@ export default function BookLanding() {
                   )}
                 </div>
 
-                {book.directSaleEnabled && book.directSalePrice !== null && book.directSalePrice !== undefined && (
+                {book.directSaleEnabled && book.directSalePrice !== null && book.directSalePrice !== undefined && exchangeRates && (
                   <div className="mb-6" data-testid={`text-price-${bookId}`}>
                     <div className="text-4xl font-bold text-primary">
-                      {formatCurrency(
-                        book.directSalePrice, 
-                        settings?.currency || "USD", 
-                        settings?.currencySymbol || "$"
+                      {formatPriceWithConversionSync(
+                        Math.round(book.directSalePrice * 100), // Convert to cents
+                        currency,
+                        locale,
+                        exchangeRates
                       )}
                     </div>
                     {book.isDigitalProduct && book.digitalFiles && (

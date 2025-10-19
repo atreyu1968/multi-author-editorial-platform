@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { SiteSettings } from '@shared/schema';
+import { getCurrencyForLocale, getExchangeRates, type ExchangeRates } from '@shared/currency-service';
 
 export type Locale = 'es-ES' | 'en-US' | 'ca-ES' | 'fr-FR' | 'it-IT' | 'de-DE' | 'pt-PT';
 
@@ -8,11 +9,17 @@ interface LocaleContextType {
   locale: Locale;
   setLocale: (locale: Locale) => void;
   availableLocales: { code: Locale; name: string; flag: string }[];
+  currency: string;
+  setCurrency: (currency: string) => void;
+  exchangeRates: ExchangeRates | null;
+  isLoadingRates: boolean;
+  refreshRates: () => Promise<void>;
 }
 
 const LocaleContext = createContext<LocaleContextType | undefined>(undefined);
 
 const LOCALE_STORAGE_KEY = 'app-locale';
+const CURRENCY_STORAGE_KEY = 'app-currency';
 const FALLBACK_LOCALE: Locale = 'es-ES';
 
 export const AVAILABLE_LOCALES = [
@@ -72,13 +79,51 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     return FALLBACK_LOCALE;
   });
   
+  const [currency, setCurrencyState] = useState<string>(() => {
+    // Try to get from localStorage, otherwise use locale-based default
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(CURRENCY_STORAGE_KEY);
+      if (stored) return stored;
+    }
+    return getCurrencyForLocale(FALLBACK_LOCALE);
+  });
+  
+  const [exchangeRates, setExchangeRates] = useState<ExchangeRates | null>(null);
+  const [isLoadingRates, setIsLoadingRates] = useState(false);
   const [initialized, setInitialized] = useState(false);
+
+  // Load exchange rates on mount
+  useEffect(() => {
+    const loadRates = async () => {
+      setIsLoadingRates(true);
+      try {
+        const rates = await getExchangeRates();
+        setExchangeRates(rates);
+      } catch (error) {
+        console.error('Failed to load exchange rates:', error);
+      } finally {
+        setIsLoadingRates(false);
+      }
+    };
+    loadRates();
+  }, []);
 
   // Update locale when settings are loaded (only once on mount)
   useEffect(() => {
     if (!initialized && settings) {
       const initialLocale = determineInitialLocale(settings);
       setLocaleState(initialLocale);
+      
+      // Auto-set currency based on locale if not manually overridden
+      const storedCurrency = typeof window !== 'undefined' 
+        ? localStorage.getItem(CURRENCY_STORAGE_KEY)
+        : null;
+      
+      if (!storedCurrency) {
+        const autoCurrency = getCurrencyForLocale(initialLocale);
+        setCurrencyState(autoCurrency);
+      }
+      
       setInitialized(true);
     }
   }, [settings, initialized]);
@@ -87,6 +132,31 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     setLocaleState(newLocale);
     localStorage.setItem(LOCALE_STORAGE_KEY, newLocale);
     document.documentElement.lang = newLocale.split('-')[0];
+    
+    // Auto-update currency when locale changes (unless manually overridden)
+    const storedCurrency = localStorage.getItem(CURRENCY_STORAGE_KEY);
+    if (!storedCurrency) {
+      const autoCurrency = getCurrencyForLocale(newLocale);
+      setCurrencyState(autoCurrency);
+    }
+  };
+
+  const setCurrency = (newCurrency: string) => {
+    setCurrencyState(newCurrency);
+    localStorage.setItem(CURRENCY_STORAGE_KEY, newCurrency);
+  };
+
+  const refreshRates = async () => {
+    setIsLoadingRates(true);
+    try {
+      const rates = await getExchangeRates(false); // Force refresh
+      setExchangeRates(rates);
+    } catch (error) {
+      console.error('Failed to refresh exchange rates:', error);
+      throw error;
+    } finally {
+      setIsLoadingRates(false);
+    }
   };
 
   useEffect(() => {
@@ -94,7 +164,16 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   }, [locale]);
 
   return (
-    <LocaleContext.Provider value={{ locale, setLocale, availableLocales: AVAILABLE_LOCALES }}>
+    <LocaleContext.Provider value={{ 
+      locale, 
+      setLocale, 
+      availableLocales: AVAILABLE_LOCALES,
+      currency,
+      setCurrency,
+      exchangeRates,
+      isLoadingRates,
+      refreshRates,
+    }}>
       {children}
     </LocaleContext.Provider>
   );

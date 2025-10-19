@@ -17,7 +17,12 @@ import {
   insertCustomerSchema,
   insertOrderSchema,
   insertMerchandiseProductSchema,
-  insertCartItemSchema
+  insertCartItemSchema,
+  insertAuthorTranslationSchema,
+  insertBookTranslationSchema,
+  insertSeriesTranslationSchema,
+  insertTestimonialTranslationSchema,
+  insertBlogPostTranslationSchema
 } from "@shared/schema";
 import { z } from "zod";
 // Referenced from blueprint:javascript_object_storage
@@ -1614,6 +1619,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Translation routes
+  // Author translations
+  app.get("/api/authors/:id/translations", async (req, res) => {
+    try {
+      const translations = await storage.getAuthorTranslations(req.params.id);
+      res.json(translations);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get author translations" });
+    }
+  });
+
+  app.post("/api/authors/:id/translations", requireAuth, async (req, res) => {
+    try {
+      const validatedTranslation = insertAuthorTranslationSchema.parse(req.body);
+      const translation = await storage.upsertAuthorTranslation(validatedTranslation);
+      res.json(translation);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid translation data" });
+    }
+  });
+
+  // Book translations
+  app.get("/api/books/:id/translations", async (req, res) => {
+    try {
+      const translations = await storage.getBookTranslations(req.params.id);
+      res.json(translations);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get book translations" });
+    }
+  });
+
+  app.post("/api/books/:id/translations", requireAuth, async (req, res) => {
+    try {
+      const validatedTranslation = insertBookTranslationSchema.parse(req.body);
+      const translation = await storage.upsertBookTranslation(validatedTranslation);
+      res.json(translation);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid translation data" });
+    }
+  });
+
+  // Series translations
+  app.get("/api/series/:id/translations", async (req, res) => {
+    try {
+      const translations = await storage.getSeriesTranslations(req.params.id);
+      res.json(translations);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get series translations" });
+    }
+  });
+
+  app.post("/api/series/:id/translations", requireAuth, async (req, res) => {
+    try {
+      const validatedTranslation = insertSeriesTranslationSchema.parse(req.body);
+      const translation = await storage.upsertSeriesTranslation(validatedTranslation);
+      res.json(translation);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid translation data" });
+    }
+  });
+
+  // Testimonial translations
+  app.get("/api/testimonials/:id/translations", async (req, res) => {
+    try {
+      const translations = await storage.getTestimonialTranslations(req.params.id);
+      res.json(translations);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get testimonial translations" });
+    }
+  });
+
+  app.post("/api/testimonials/:id/translations", requireAuth, async (req, res) => {
+    try {
+      const validatedTranslation = insertTestimonialTranslationSchema.parse(req.body);
+      const translation = await storage.upsertTestimonialTranslation(validatedTranslation);
+      res.json(translation);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid translation data" });
+    }
+  });
+
+  // Blog post translations
+  app.get("/api/blog-posts/:id/translations", async (req, res) => {
+    try {
+      const translations = await storage.getBlogPostTranslations(req.params.id);
+      res.json(translations);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get blog post translations" });
+    }
+  });
+
+  app.post("/api/blog-posts/:id/translations", requireAuth, async (req, res) => {
+    try {
+      const validatedTranslation = insertBlogPostTranslationSchema.parse(req.body);
+      const translation = await storage.upsertBlogPostTranslation(validatedTranslation);
+      res.json(translation);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid translation data" });
+    }
+  });
+
   // PayPal routes - Referenced from blueprint:javascript_paypal
   app.get("/paypal/setup", async (req, res) => {
     await loadPaypalDefault(req, res);
@@ -1626,6 +1732,257 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/paypal/order/:orderID/capture", async (req, res) => {
     await capturePaypalOrder(req, res);
+  });
+
+  // SEO Routes: Sitemaps and Robots.txt
+  const LOCALES = ['es-ES', 'en-US', 'ca-ES', 'fr-FR', 'it-IT', 'de-DE', 'pt-PT'];
+  const BASE_URL = process.env.REPL_SLUG 
+    ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
+    : 'http://localhost:5000';
+
+  // Sitemap Index - Points to all locale-specific sitemaps
+  app.get("/sitemap.xml", async (req, res) => {
+    try {
+      const sitemaps = LOCALES.map(locale => {
+        const localeCode = locale.toLowerCase();
+        return `  <sitemap>
+    <loc>${BASE_URL}/sitemap-${localeCode}.xml</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+  </sitemap>`;
+      }).join('\n');
+
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${sitemaps}
+</sitemapindex>`;
+
+      res.header('Content-Type', 'application/xml');
+      res.send(xml);
+    } catch (error) {
+      res.status(500).send('Error generating sitemap index');
+    }
+  });
+
+  // Locale-specific sitemap
+  app.get("/sitemap-:locale.xml", async (req, res) => {
+    try {
+      const localeParam = req.params.locale.toLowerCase();
+      const locale = LOCALES.find(l => l.toLowerCase() === localeParam);
+      
+      if (!locale) {
+        return res.status(404).send('Locale not found');
+      }
+
+      // Get all content
+      const [authors, books, series, blogPosts] = await Promise.all([
+        storage.getAuthors(),
+        storage.getBooks(),
+        storage.getBookSeries(),
+        storage.getBlogPosts()
+      ]);
+
+      const activeAuthors = authors.filter(a => a.isActive);
+      const publishedBooks = books.filter(b => b.isPublished);
+      const activeSeries = series.filter(s => s.isActive !== false);
+      const publishedPosts = blogPosts.filter(p => p.isPublished);
+
+      // Helper to generate alternate links
+      const generateAlternates = (path: string) => {
+        return LOCALES.map(l => {
+          const hreflang = l.toLowerCase();
+          return `    <xhtml:link rel="alternate" hreflang="${hreflang}" href="${BASE_URL}/${l}${path}" />`;
+        }).join('\n');
+      };
+
+      // Generate URL entries
+      const urls: string[] = [];
+
+      // Homepage
+      urls.push(`  <url>
+    <loc>${BASE_URL}/${locale}/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+${generateAlternates('/')}
+  </url>`);
+
+      // Authors list
+      urls.push(`  <url>
+    <loc>${BASE_URL}/${locale}/autores</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+${generateAlternates('/autores')}
+  </url>`);
+
+      // Individual authors
+      activeAuthors.forEach(author => {
+        urls.push(`  <url>
+    <loc>${BASE_URL}/${locale}/autor/${author.slug}</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+${generateAlternates(`/autor/${author.slug}`)}
+  </url>`);
+      });
+
+      // Books
+      publishedBooks.forEach(book => {
+        urls.push(`  <url>
+    <loc>${BASE_URL}/${locale}/libro/${book.id}</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+${generateAlternates(`/libro/${book.id}`)}
+  </url>`);
+      });
+
+      // Series
+      activeSeries.forEach(s => {
+        urls.push(`  <url>
+    <loc>${BASE_URL}/${locale}/serie/${s.id}</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+${generateAlternates(`/serie/${s.id}`)}
+  </url>`);
+      });
+
+      // Blog
+      urls.push(`  <url>
+    <loc>${BASE_URL}/${locale}/blog</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+${generateAlternates('/blog')}
+  </url>`);
+
+      // Blog posts
+      publishedPosts.forEach(post => {
+        const lastmod = post.updatedAt || post.createdAt || new Date().toISOString();
+        urls.push(`  <url>
+    <loc>${BASE_URL}/${locale}/blog/${post.id}</loc>
+    <lastmod>${new Date(lastmod).toISOString().split('T')[0]}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+${generateAlternates(`/blog/${post.id}`)}
+  </url>`);
+      });
+
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+${urls.join('\n')}
+</urlset>`;
+
+      res.header('Content-Type', 'application/xml');
+      res.send(xml);
+    } catch (error) {
+      console.error('Error generating sitemap:', error);
+      res.status(500).send('Error generating sitemap');
+    }
+  });
+
+  // Robots.txt
+  app.get("/robots.txt", async (req, res) => {
+    try {
+      const sitemapRefs = LOCALES.map(locale => {
+        const localeCode = locale.toLowerCase();
+        return `Sitemap: ${BASE_URL}/sitemap-${localeCode}.xml`;
+      }).join('\n');
+
+      const robotsTxt = `# Robots.txt for Multi-language SEO
+User-agent: *
+Allow: /
+
+# Sitemaps
+Sitemap: ${BASE_URL}/sitemap.xml
+${sitemapRefs}`;
+
+      res.header('Content-Type', 'text/plain');
+      res.send(robotsTxt);
+    } catch (error) {
+      res.status(500).send('Error generating robots.txt');
+    }
+  });
+
+  // Currency API endpoints
+  app.get("/api/currency/rates", async (req, res) => {
+    try {
+      // Fetch current exchange rates from Frankfurter API
+      const response = await fetch('https://api.frankfurter.app/latest?from=EUR');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch exchange rates');
+      }
+      
+      const data = await response.json();
+      
+      // Ensure EUR is in the rates
+      const rates = {
+        EUR: 1.0,
+        ...data.rates,
+      };
+      
+      res.json({
+        base: 'EUR',
+        date: data.date,
+        rates,
+      });
+    } catch (error) {
+      console.error('Error fetching exchange rates:', error);
+      // Return fallback rates
+      res.json({
+        base: 'EUR',
+        date: new Date().toISOString().split('T')[0],
+        rates: {
+          EUR: 1.0,
+          USD: 1.10,
+          GBP: 0.85,
+          JPY: 165.0,
+          CNY: 7.85,
+          KRW: 1450.0,
+          BRL: 5.50,
+          MXN: 18.50,
+          ARS: 350.0,
+          CAD: 1.48,
+          AUD: 1.65,
+          CHF: 0.95,
+        },
+      });
+    }
+  });
+
+  app.get("/api/currency/convert", async (req, res) => {
+    try {
+      const { from = 'EUR', to = 'USD', amount = 100 } = req.query;
+      
+      // Validate inputs
+      const amountNum = parseInt(amount as string, 10);
+      if (isNaN(amountNum) || amountNum < 0) {
+        res.status(400).json({ message: 'Invalid amount' });
+        return;
+      }
+      
+      // Fetch current rates
+      const response = await fetch('https://api.frankfurter.app/latest?from=' + from);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch exchange rates');
+      }
+      
+      const data = await response.json();
+      const rate = data.rates[to as string] || 1.0;
+      
+      // Convert using integer math (amount is in cents)
+      const rateAsInt = Math.round(rate * 10000);
+      const convertedAmount = Math.round((amountNum * rateAsInt) / 10000);
+      
+      res.json({
+        from,
+        to,
+        amount: amountNum,
+        convertedAmount,
+        rate,
+      });
+    } catch (error) {
+      console.error('Error converting currency:', error);
+      res.status(500).json({ message: 'Failed to convert currency' });
+    }
   });
 
   const httpServer = createServer(app);

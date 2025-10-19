@@ -20,6 +20,11 @@ import {
   merchandiseProducts,
   cartItems,
   downloadTokens,
+  authorTranslations,
+  bookTranslations,
+  seriesTranslations,
+  testimonialTranslations,
+  blogPostTranslations,
   type Author,
   type InsertAuthor,
   type BookSeries,
@@ -55,7 +60,17 @@ import {
   type CartItem,
   type InsertCartItem,
   type DownloadToken,
-  type InsertDownloadToken
+  type InsertDownloadToken,
+  type AuthorTranslation,
+  type InsertAuthorTranslation,
+  type BookTranslation,
+  type InsertBookTranslation,
+  type SeriesTranslation,
+  type InsertSeriesTranslation,
+  type TestimonialTranslation,
+  type InsertTestimonialTranslation,
+  type BlogPostTranslation,
+  type InsertBlogPostTranslation
 } from "@shared/schema";
 import { IStorage, CartItemWithDetails } from "./storage";
 import session from "express-session";
@@ -1061,5 +1076,106 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(downloadTokens)
       .where(eq(downloadTokens.orderId, orderId));
+  }
+
+  // Translation methods
+  // Author translations
+  async getAuthorTranslations(authorId: string): Promise<AuthorTranslation[]> {
+    return await db
+      .select()
+      .from(authorTranslations)
+      .where(eq(authorTranslations.authorId, authorId));
+  }
+
+  async upsertAuthorTranslation(translation: InsertAuthorTranslation): Promise<AuthorTranslation> {
+    const [result] = await db
+      .insert(authorTranslations)
+      .values(translation)
+      .onConflictDoUpdate({
+        target: [authorTranslations.authorId, authorTranslations.locale],
+        set: translation
+      })
+      .returning();
+    return result;
+  }
+
+  // Book translations
+  async getBookTranslations(bookId: string): Promise<BookTranslation[]> {
+    return await db
+      .select()
+      .from(bookTranslations)
+      .where(eq(bookTranslations.bookId, bookId));
+  }
+
+  async upsertBookTranslation(translation: InsertBookTranslation): Promise<BookTranslation> {
+    const [result] = await db
+      .insert(bookTranslations)
+      .values(translation)
+      .onConflictDoUpdate({
+        target: [bookTranslations.bookId, bookTranslations.locale],
+        set: translation
+      })
+      .returning();
+    return result;
+  }
+
+  // Series translations
+  async getSeriesTranslations(seriesId: string): Promise<SeriesTranslation[]> {
+    return await db
+      .select()
+      .from(seriesTranslations)
+      .where(eq(seriesTranslations.seriesId, seriesId));
+  }
+
+  async upsertSeriesTranslation(translation: InsertSeriesTranslation): Promise<SeriesTranslation> {
+    const [result] = await db
+      .insert(seriesTranslations)
+      .values(translation)
+      .onConflictDoUpdate({
+        target: [seriesTranslations.seriesId, seriesTranslations.locale],
+        set: translation
+      })
+      .returning();
+    return result;
+  }
+
+  // Testimonial translations
+  async getTestimonialTranslations(testimonialId: string): Promise<TestimonialTranslation[]> {
+    return await db
+      .select()
+      .from(testimonialTranslations)
+      .where(eq(testimonialTranslations.testimonialId, testimonialId));
+  }
+
+  async upsertTestimonialTranslation(translation: InsertTestimonialTranslation): Promise<TestimonialTranslation> {
+    const [result] = await db
+      .insert(testimonialTranslations)
+      .values(translation)
+      .onConflictDoUpdate({
+        target: [testimonialTranslations.testimonialId, testimonialTranslations.locale],
+        set: translation
+      })
+      .returning();
+    return result;
+  }
+
+  // Blog post translations
+  async getBlogPostTranslations(blogPostId: string): Promise<BlogPostTranslation[]> {
+    return await db
+      .select()
+      .from(blogPostTranslations)
+      .where(eq(blogPostTranslations.blogPostId, blogPostId));
+  }
+
+  async upsertBlogPostTranslation(translation: InsertBlogPostTranslation): Promise<BlogPostTranslation> {
+    const [result] = await db
+      .insert(blogPostTranslations)
+      .values(translation)
+      .onConflictDoUpdate({
+        target: [blogPostTranslations.blogPostId, blogPostTranslations.locale],
+        set: translation
+      })
+      .returning();
+    return result;
   }
 }

@@ -1,15 +1,16 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
-import { LocaleProvider } from "@/contexts/locale-context";
+import { LocaleProvider, useLocale, type Locale } from "@/contexts/locale-context";
 import { UiTextProvider } from "@/contexts/ui-text-context";
 import { DynamicTheme } from "@/components/dynamic-theme";
 import { AnalyticsProvider } from "@/components/analytics-provider";
 import { CartProvider } from "@/contexts/CartContext";
+import { getLocaleFromPath } from "@/lib/localized-routes";
 import Home from "@/pages/home";
 import Admin from "@/pages/admin";
 import AuthPage from "@/pages/auth-page";
@@ -22,22 +23,110 @@ import AuthorsListPage from "@/pages/authors-list";
 import Checkout from "@/pages/checkout";
 import OrderConfirmation from "@/pages/order-confirmation";
 import NotFound from "@/pages/not-found";
+import { useEffect } from "react";
+
+function LocaleSync() {
+  const [location] = useLocation();
+  const { setLocale } = useLocale();
+
+  useEffect(() => {
+    const localeFromPath = getLocaleFromPath(location);
+    if (localeFromPath) {
+      setLocale(localeFromPath);
+    }
+  }, [location, setLocale]);
+
+  return null;
+}
 
 function Router() {
+  const { locale } = useLocale();
+
   return (
     <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/autores" component={AuthorsListPage} />
+      {/* Locale-prefixed routes */}
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/" component={Home} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/autores" component={AuthorsListPage} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/authors" component={AuthorsListPage} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/autors" component={AuthorsListPage} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/auteurs" component={AuthorsListPage} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/autori" component={AuthorsListPage} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/autoren" component={AuthorsListPage} />
+      
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/blog" component={BlogList} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/bloc" component={BlogList} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/blogue" component={BlogList} />
+      
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/blog/:id" component={BlogPost} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/bloc/:id" component={BlogPost} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/blogue/:id" component={BlogPost} />
+      
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/libro/:id" component={BookLanding} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/book/:id" component={BookLanding} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/llibre/:id" component={BookLanding} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/livre/:id" component={BookLanding} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/buch/:id" component={BookLanding} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/livro/:id" component={BookLanding} />
+      
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/serie/:id" component={SeriesLanding} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/series/:id" component={SeriesLanding} />
+      
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/autor/:slug" component={AuthorPage} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/author/:slug" component={AuthorPage} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/auteur/:slug" component={AuthorPage} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/autore/:slug" component={AuthorPage} />
+      
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/checkout" component={Checkout} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/pagament" component={Checkout} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/paiement" component={Checkout} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/pagamento" component={Checkout} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/kasse" component={Checkout} />
+      
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/pedido/:orderId" component={OrderConfirmation} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/order/:orderId" component={OrderConfirmation} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/comanda/:orderId" component={OrderConfirmation} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/commande/:orderId" component={OrderConfirmation} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/ordine/:orderId" component={OrderConfirmation} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/bestellung/:orderId" component={OrderConfirmation} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/encomenda/:orderId" component={OrderConfirmation} />
+      
+      {/* Backward compatibility: non-prefixed routes redirect to locale-prefixed */}
+      <Route path="/">
+        {() => <Redirect to={`/${locale}/`} />}
+      </Route>
+      <Route path="/autores">
+        {() => <Redirect to={`/${locale}/autores`} />}
+      </Route>
       <Route path="/auth" component={AuthPage} />
-      <Route path="/blog" component={BlogList} />
-      <Route path="/blog/:id" component={BlogPost} />
-      <Route path="/libro/:id" component={BookLanding} />
-      <Route path="/serie/:id" component={SeriesLanding} />
-      <Route path="/autor/:slug" component={AuthorPage} />
-      <Route path="/checkout" component={Checkout} />
-      <Route path="/pedido/:orderId" component={OrderConfirmation} />
-      <Route path="/order-confirmation/:orderId" component={OrderConfirmation} />
+      <Route path="/blog">
+        {() => <Redirect to={`/${locale}/blog`} />}
+      </Route>
+      <Route path="/blog/:id">
+        {(params) => <Redirect to={`/${locale}/blog/${params.id}`} />}
+      </Route>
+      <Route path="/libro/:id">
+        {(params) => <Redirect to={`/${locale}/libro/${params.id}`} />}
+      </Route>
+      <Route path="/serie/:id">
+        {(params) => <Redirect to={`/${locale}/serie/${params.id}`} />}
+      </Route>
+      <Route path="/autor/:slug">
+        {(params) => <Redirect to={`/${locale}/autor/${params.slug}`} />}
+      </Route>
+      <Route path="/checkout">
+        {() => <Redirect to={`/${locale}/checkout`} />}
+      </Route>
+      <Route path="/pedido/:orderId">
+        {(params) => <Redirect to={`/${locale}/pedido/${params.orderId}`} />}
+      </Route>
+      <Route path="/order-confirmation/:orderId">
+        {(params) => <Redirect to={`/${locale}/pedido/${params.orderId}`} />}
+      </Route>
+      
+      {/* Admin routes (no locale prefix needed) */}
       <ProtectedRoute path="/admin" component={Admin} />
+      
+      {/* 404 Not Found */}
       <Route component={NotFound} />
     </Switch>
   );
@@ -54,6 +143,7 @@ function App() {
                 <CartProvider>
                   <TooltipProvider>
                     <Toaster />
+                    <LocaleSync />
                     <Router />
                   </TooltipProvider>
                 </CartProvider>

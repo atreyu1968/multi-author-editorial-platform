@@ -14,9 +14,12 @@ import type { Author, BookSeries, Book, Testimonial } from "@shared/schema";
 import { useState } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { useUiText } from "@/contexts/ui-text-context";
+import { useLocale } from "@/contexts/locale-context";
+import { getAllLocalizedUrls } from "@/lib/localized-routes";
 
 export default function AuthorPage() {
   const { slug } = useParams<{ slug: string }>();
+  const { locale } = useLocale();
   
   const { data: author, isLoading: authorLoading, error: authorError } = useQuery<Author>({
     queryKey: [`/api/authors/by-slug/${slug}`],
@@ -130,6 +133,9 @@ export default function AuthorPage() {
   const activeSeries = (seriesWithBooks.data || []).filter((s: { series: BookSeries; books: Book[] }) => s.series.isActive !== false);
   const publishedStandaloneBooks = standaloneBooks.filter(b => b.isPublished);
 
+  // Generate hreflang alternates for all languages
+  const alternates = slug ? getAllLocalizedUrls('author', { slug }) : [];
+
   return (
     <DynamicTheme authorId={author.id}>
       <div className="bg-background text-foreground font-sans" style={buildBackgroundStyle({ imageUrl: author?.backgroundImageUrl, color: author?.backgroundColor })}>
@@ -137,7 +143,9 @@ export default function AuthorPage() {
           title={author.seoTitle || `${author.name} - ${t.seoSuffixAutor}`}
           description={author.seoDescription || author.bioParagraph1.substring(0, 160)}
           keywords={author.seoKeywords ? author.seoKeywords.split(',').map(k => k.trim()) : [t.seoKeywordAutor, t.seoKeywordEscritor, t.seoKeywordLibros, author.name]}
+          alternates={alternates}
           ogType="website"
+          ogLocale={locale.replace('-', '_')}
           ogImage={author.photo || undefined}
           structuredData={generateStructuredData.author({
             name: author.name,

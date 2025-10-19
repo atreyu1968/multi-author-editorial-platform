@@ -9,11 +9,14 @@ import Navigation from "@/components/navigation";
 import Newsletter from "@/components/newsletter";
 import { SEOHead, generateStructuredData } from "@/components/seo/seo-head";
 import { useUiText } from "@/contexts/ui-text-context";
+import { useLocale } from "@/contexts/locale-context";
+import { getAllLocalizedUrls } from "@/lib/localized-routes";
 import type { BlogPost } from "@shared/schema";
 
 export default function BlogPostDetail() {
   const [match, params] = useRoute("/blog/:id");
   const postId = params?.id;
+  const { locale } = useLocale();
 
   // Load all UI texts
   const t = {
@@ -75,13 +78,18 @@ export default function BlogPostDetail() {
   const publishedDate = post.publishedAt ? new Date(post.publishedAt) : new Date(post.createdAt || new Date());
   const readingTime = Math.ceil(post.content.length / 1000); // Rough estimate: 1000 chars per minute
 
+  // Generate hreflang alternates for all languages
+  const alternates = postId ? getAllLocalizedUrls('blogPost', { id: postId }) : [];
+
   return (
     <div className="bg-background text-foreground font-sans">
       <SEOHead
         title={post.title}
         description={post.excerpt}
         keywords={post.tags || []}
+        alternates={alternates}
         ogType="article"
+        ogLocale={locale.replace('-', '_')}
         ogImage={post.featuredImage || undefined}
         ogImageAlt={`${t.ogImageAltPrefix} ${post.title}`}
         articleAuthor={t.authorName}

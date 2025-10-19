@@ -1,4 +1,11 @@
 import { useEffect } from "react";
+import { localeToHreflang } from "@/lib/localized-routes";
+import type { Locale } from "@/contexts/locale-context";
+
+export interface AlternateLink {
+  locale: Locale;
+  url: string;
+}
 
 export interface SEOProps {
   title?: string;
@@ -6,9 +13,11 @@ export interface SEOProps {
   keywords?: string[];
   author?: string;
   canonicalUrl?: string;
+  alternates?: AlternateLink[];
   ogType?: "website" | "article" | "book";
   ogImage?: string;
   ogImageAlt?: string;
+  ogLocale?: string;
   articleAuthor?: string;
   articlePublishedTime?: string;
   articleModifiedTime?: string;
@@ -46,9 +55,11 @@ export function SEOHead({
   keywords = [],
   author,
   canonicalUrl,
+  alternates = [],
   ogType = "website",
   ogImage,
   ogImageAlt,
+  ogLocale,
   articleAuthor,
   articlePublishedTime,
   articleModifiedTime,
@@ -86,6 +97,10 @@ export function SEOHead({
     const existingCanonical = document.querySelector('link[rel="canonical"]');
     if (existingCanonical) existingCanonical.remove();
 
+    // Remove existing hreflang links
+    const existingHreflang = document.querySelectorAll('link[rel="alternate"][hreflang]');
+    existingHreflang.forEach(link => link.remove());
+
     // Remove existing favicon
     const existingFavicon = document.querySelector('link[rel="icon"][data-seo="true"]');
     if (existingFavicon) existingFavicon.remove();
@@ -111,6 +126,7 @@ export function SEOHead({
       { property: "og:image:alt", content: ogImageAlt || `${title || seoConfig.siteName} - Imagen destacada` },
       { property: "og:image:width", content: "1200" },
       { property: "og:image:height", content: "630" },
+      { property: "og:locale", content: ogLocale || "es_ES" },
       
       // Twitter Card tags
       { name: "twitter:card", content: "summary_large_image" },
@@ -145,6 +161,18 @@ export function SEOHead({
       });
     }
 
+    // Add og:locale:alternate tags for each alternate language
+    if (alternates.length > 0) {
+      alternates.forEach(({ locale }) => {
+        if (locale !== ogLocale?.replace('_', '-')) {
+          metaTags.push({ 
+            property: "og:locale:alternate", 
+            content: locale.replace('-', '_')
+          });
+        }
+      });
+    }
+
     // Create and append meta elements
     metaTags.forEach(({ name, property, content }) => {
       const meta = document.createElement("meta");
@@ -160,6 +188,27 @@ export function SEOHead({
     canonical.setAttribute("rel", "canonical");
     canonical.setAttribute("href", currentUrl);
     document.head.appendChild(canonical);
+
+    // Add hreflang alternate links
+    if (alternates.length > 0) {
+      alternates.forEach(({ locale, url }) => {
+        const hreflang = document.createElement("link");
+        hreflang.setAttribute("rel", "alternate");
+        hreflang.setAttribute("hreflang", localeToHreflang(locale));
+        hreflang.setAttribute("href", url);
+        document.head.appendChild(hreflang);
+      });
+
+      // Add x-default hreflang (usually pointing to default language)
+      const defaultAlternate = alternates.find(alt => alt.locale === 'es-ES') || alternates[0];
+      if (defaultAlternate) {
+        const xDefault = document.createElement("link");
+        xDefault.setAttribute("rel", "alternate");
+        xDefault.setAttribute("hreflang", "x-default");
+        xDefault.setAttribute("href", defaultAlternate.url);
+        document.head.appendChild(xDefault);
+      }
+    }
 
     // Add favicon if provided
     if (faviconUrl) {
@@ -187,6 +236,9 @@ export function SEOHead({
       
       const canonicalLink = document.querySelector('link[rel="canonical"]');
       if (canonicalLink) canonicalLink.remove();
+
+      const hreflangLinks = document.querySelectorAll('link[rel="alternate"][hreflang]');
+      hreflangLinks.forEach(link => link.remove());
       
       const faviconLink = document.querySelector('link[rel="icon"][data-seo="true"]');
       if (faviconLink) faviconLink.remove();
@@ -200,9 +252,11 @@ export function SEOHead({
     metaKeywords,
     metaAuthor,
     currentUrl,
+    alternates,
     ogType,
     metaOgImage,
     ogImageAlt,
+    ogLocale,
     articleAuthor,
     articlePublishedTime,
     articleModifiedTime,

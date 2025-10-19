@@ -9,13 +9,15 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
-import { formatCurrency } from "@/lib/format-currency";
+import { formatPriceWithConversionSync } from "@shared/currency-service";
 import { useUiText } from "@/contexts/ui-text-context";
+import { useLocale } from "@/contexts/locale-context";
 import type { Order, Customer, Book, EditorialSettings } from "@shared/schema";
 
 export default function OrderConfirmation() {
   const { orderId } = useParams();
   const { user } = useAuth();
+  const { locale, currency, exchangeRates } = useLocale();
 
   const t = {
     orderNotFoundTitle: useUiText("checkout", "order_not_found_title", "Pedido no encontrado"),
@@ -267,12 +269,22 @@ export default function OrderConfirmation() {
                           {t.labelQuantityValue}{item.quantity}
                         </p>
                         <p className="text-sm text-muted-foreground" data-testid={`text-item-price-${index}`}>
-                          {t.labelUnitPrice}{formatCurrency(item.price || 0, settings?.currency || "USD", settings?.currencySymbol || "$")}
+                          {t.labelUnitPrice}{exchangeRates ? formatPriceWithConversionSync(
+                            Math.round((item.price || 0) * 100),
+                            currency,
+                            locale,
+                            exchangeRates
+                          ) : '...'}
                         </p>
                       </div>
                       <div className="text-right">
                         <p className="font-semibold" data-testid={`text-item-subtotal-${index}`}>
-                          {formatCurrency((item.price || 0) * item.quantity, settings?.currency || "USD", settings?.currencySymbol || "$")}
+                          {exchangeRates ? formatPriceWithConversionSync(
+                            Math.round(((item.price || 0) * item.quantity) * 100),
+                            currency,
+                            locale,
+                            exchangeRates
+                          ) : '...'}
                         </p>
                       </div>
                     </div>
@@ -318,7 +330,12 @@ export default function OrderConfirmation() {
 
           <div className="flex justify-between items-center text-lg font-bold" data-testid="section-total">
             <span data-testid="label-total">{t.labelOrderTotal}</span>
-            <span data-testid="text-total">{formatCurrency(order.totalAmount, settings?.currency || "USD", settings?.currencySymbol || "$")}</span>
+            <span data-testid="text-total">{exchangeRates ? formatPriceWithConversionSync(
+              Math.round(order.totalAmount * 100),
+              currency,
+              locale,
+              exchangeRates
+            ) : '...'}</span>
           </div>
 
           <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4" data-testid="section-next-steps">

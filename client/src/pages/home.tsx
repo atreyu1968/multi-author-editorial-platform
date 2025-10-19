@@ -8,6 +8,8 @@ import { SEOHead, generateStructuredData } from "@/components/seo/seo-head";
 import { buildBackgroundStyle } from "@/lib/utils";
 import { LatestBooksCarousel } from "@/components/latest-books-carousel";
 import { useUiText } from "@/contexts/ui-text-context";
+import { useLocale } from "@/contexts/locale-context";
+import { getAllLocalizedUrls } from "@/lib/localized-routes";
 import type { Author, EditorialSettings, Book } from "@shared/schema";
 
 // Icon mapping for dynamic feature icons
@@ -25,6 +27,10 @@ const iconMap: Record<string, any> = {
 
 export default function Home() {
   const [, setLocation] = useLocation();
+  const { locale } = useLocale();
+  
+  // Generate hreflang alternates for all languages
+  const alternates = getAllLocalizedUrls('home');
   
   // Load all UI texts
   const t = {
@@ -98,7 +104,9 @@ export default function Home() {
         title={settings?.seoTitle || `${settings?.name || t.seoTitleEditorial} - ${t.seoTitleSuffix}`}
         description={settings?.seoDescription || `${t.seoDescPrefix} ${settings?.name || t.seoTitleEditorial}. ${t.seoDescSuffix}`}
         keywords={settings?.seoKeywords?.split(',').map(k => k.trim()) || [t.seoKeywordEditorial, t.seoKeywordLibros, t.seoKeywordAutores, t.seoKeywordLiteratura]}
+        alternates={alternates}
         ogType="website"
+        ogLocale={locale.replace('-', '_')}
         structuredData={generateStructuredData.website()}
         faviconUrl={settings?.faviconUrl || undefined}
       />

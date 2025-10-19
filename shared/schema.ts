@@ -369,6 +369,70 @@ export const analyticsDailyMetrics = pgTable("analytics_daily_metrics", {
   uniqueDateEntity: unique("analytics_daily_metrics_date_entity").on(table.date, table.entityType, table.entityId),
 }));
 
+// Translation Tables
+export const authorTranslations = pgTable("author_translations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  authorId: varchar("author_id").notNull().references(() => authors.id, { onDelete: "cascade" }),
+  locale: varchar("locale").notNull(),
+  name: varchar("name"),
+  biography: text("biography"),
+  seoTitle: varchar("seo_title"),
+  seoDescription: text("seo_description"),
+}, (table) => ({
+  uniqueAuthorLocale: unique("author_translations_author_locale").on(table.authorId, table.locale),
+}));
+
+export const bookTranslations = pgTable("book_translations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  bookId: varchar("book_id").notNull().references(() => books.id, { onDelete: "cascade" }),
+  locale: varchar("locale").notNull(),
+  title: varchar("title"),
+  description: text("description"),
+  seoTitle: varchar("seo_title"),
+  seoDescription: text("seo_description"),
+  conceptMapText: text("concept_map_text"),
+  familyTreeText: text("family_tree_text"),
+  pressNotesText: text("press_notes_text"),
+}, (table) => ({
+  uniqueBookLocale: unique("book_translations_book_locale").on(table.bookId, table.locale),
+}));
+
+export const seriesTranslations = pgTable("series_translations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  seriesId: varchar("series_id").notNull().references(() => bookSeries.id, { onDelete: "cascade" }),
+  locale: varchar("locale").notNull(),
+  name: varchar("name"),
+  description: text("description"),
+  seoTitle: varchar("seo_title"),
+  seoDescription: text("seo_description"),
+}, (table) => ({
+  uniqueSeriesLocale: unique("series_translations_series_locale").on(table.seriesId, table.locale),
+}));
+
+export const testimonialTranslations = pgTable("testimonial_translations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  testimonialId: varchar("testimonial_id").notNull().references(() => testimonials.id, { onDelete: "cascade" }),
+  locale: varchar("locale").notNull(),
+  text: text("text"),
+  authorName: varchar("author_name"),
+  authorCredentials: varchar("author_credentials"),
+}, (table) => ({
+  uniqueTestimonialLocale: unique("testimonial_translations_testimonial_locale").on(table.testimonialId, table.locale),
+}));
+
+export const blogPostTranslations = pgTable("blog_post_translations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  blogPostId: varchar("blog_post_id").notNull().references(() => blogPosts.id, { onDelete: "cascade" }),
+  locale: varchar("locale").notNull(),
+  title: varchar("title"),
+  excerpt: text("excerpt"),
+  content: text("content"),
+  seoTitle: varchar("seo_title"),
+  seoDescription: text("seo_description"),
+}, (table) => ({
+  uniqueBlogPostLocale: unique("blog_post_translations_blog_post_locale").on(table.blogPostId, table.locale),
+}));
+
 export const insertAuthorSchema = createInsertSchema(authors).omit({
   id: true,
 }).extend({
@@ -551,6 +615,26 @@ export const insertDownloadTokenSchema = createInsertSchema(downloadTokens).omit
   createdAt: true,
 });
 
+export const insertAuthorTranslationSchema = createInsertSchema(authorTranslations).omit({
+  id: true,
+});
+
+export const insertBookTranslationSchema = createInsertSchema(bookTranslations).omit({
+  id: true,
+});
+
+export const insertSeriesTranslationSchema = createInsertSchema(seriesTranslations).omit({
+  id: true,
+});
+
+export const insertTestimonialTranslationSchema = createInsertSchema(testimonialTranslations).omit({
+  id: true,
+});
+
+export const insertBlogPostTranslationSchema = createInsertSchema(blogPostTranslations).omit({
+  id: true,
+});
+
 export type AnalyticsSession = typeof analyticsSessions.$inferSelect;
 export type InsertAnalyticsSession = z.infer<typeof insertAnalyticsSessionSchema>;
 
@@ -562,3 +646,18 @@ export type InsertAnalyticsDailyMetrics = z.infer<typeof insertAnalyticsDailyMet
 
 export type DownloadToken = typeof downloadTokens.$inferSelect;
 export type InsertDownloadToken = z.infer<typeof insertDownloadTokenSchema>;
+
+export type AuthorTranslation = typeof authorTranslations.$inferSelect;
+export type InsertAuthorTranslation = z.infer<typeof insertAuthorTranslationSchema>;
+
+export type BookTranslation = typeof bookTranslations.$inferSelect;
+export type InsertBookTranslation = z.infer<typeof insertBookTranslationSchema>;
+
+export type SeriesTranslation = typeof seriesTranslations.$inferSelect;
+export type InsertSeriesTranslation = z.infer<typeof insertSeriesTranslationSchema>;
+
+export type TestimonialTranslation = typeof testimonialTranslations.$inferSelect;
+export type InsertTestimonialTranslation = z.infer<typeof insertTestimonialTranslationSchema>;
+
+export type BlogPostTranslation = typeof blogPostTranslations.$inferSelect;
+export type InsertBlogPostTranslation = z.infer<typeof insertBlogPostTranslationSchema>;
