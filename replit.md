@@ -26,6 +26,12 @@ Preferred communication style: Simple, everyday language.
 - **Features**: Case-insensitive search, 20-result limit, active/published filtering, locale-aware navigation, responsive design for desktop and mobile
 - **Architect Review**: Approved - scalable for current use, recommend full-text search indexing for future growth beyond few thousand records
 
+### Content Translation Improvements (October 2025)
+- **Spanish Base Content**: All translation endpoints now automatically include Spanish (es-ES) content as base reference
+- **Improved UX**: Administrators can now see the original content when managing translations
+- **Affected Entities**: Authors, books, series, testimonials, and blog posts
+- **Implementation**: Modified GET endpoints to include original entity content in es-ES locale when no translation exists
+
 ### Author Visibility Filter (October 2025)
 - **Smart Author Filtering**: Authors without published books or active series no longer appear in public navigation menus
 - **New Endpoint**: Created `/api/authors-with-content` to efficiently filter authors with published content

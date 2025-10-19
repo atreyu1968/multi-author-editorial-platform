@@ -1721,8 +1721,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Author translations
   app.get("/api/authors/:id/translations", async (req, res) => {
     try {
+      const author = await storage.getAuthorById(req.params.id);
+      if (!author) {
+        res.status(404).json({ message: "Author not found" });
+        return;
+      }
+      
       const translations = await storage.getAuthorTranslations(req.params.id);
-      res.json(translations);
+      
+      // Always include Spanish (es-ES) as base with original content
+      const spanishBase = {
+        id: `${req.params.id}-es-ES-base`,
+        authorId: req.params.id,
+        locale: "es-ES",
+        name: author.name,
+        biography: [author.bioParagraph1, author.bioParagraph2, author.bioParagraph3]
+          .filter(Boolean)
+          .join('\n\n'),
+        seoTitle: author.seoTitle,
+        seoDescription: author.seoDescription
+      };
+      
+      // Check if es-ES translation exists, if not add the base
+      const hasSpanishTranslation = translations.some(t => t.locale === 'es-ES');
+      const allTranslations = hasSpanishTranslation 
+        ? translations 
+        : [spanishBase, ...translations];
+      
+      res.json(allTranslations);
     } catch (error) {
       res.status(500).json({ message: "Failed to get author translations" });
     }
@@ -1741,8 +1767,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Book translations
   app.get("/api/books/:id/translations", async (req, res) => {
     try {
+      const book = await storage.getBookById(req.params.id);
+      if (!book) {
+        res.status(404).json({ message: "Book not found" });
+        return;
+      }
+      
       const translations = await storage.getBookTranslations(req.params.id);
-      res.json(translations);
+      
+      // Always include Spanish (es-ES) as base with original content
+      const spanishBase = {
+        id: `${req.params.id}-es-ES-base`,
+        bookId: req.params.id,
+        locale: "es-ES",
+        title: book.title,
+        description: book.description,
+        seoTitle: book.seoTitle,
+        seoDescription: book.seoDescription,
+        conceptMapText: null,
+        familyTreeText: null,
+        pressNotesText: null
+      };
+      
+      // Check if es-ES translation exists, if not add the base
+      const hasSpanishTranslation = translations.some(t => t.locale === 'es-ES');
+      const allTranslations = hasSpanishTranslation 
+        ? translations 
+        : [spanishBase, ...translations];
+      
+      res.json(allTranslations);
     } catch (error) {
       res.status(500).json({ message: "Failed to get book translations" });
     }
@@ -1761,8 +1814,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Series translations
   app.get("/api/series/:id/translations", async (req, res) => {
     try {
+      const series = await storage.getBookSeriesById(req.params.id);
+      if (!series) {
+        res.status(404).json({ message: "Series not found" });
+        return;
+      }
+      
       const translations = await storage.getSeriesTranslations(req.params.id);
-      res.json(translations);
+      
+      // Always include Spanish (es-ES) as base with original content
+      const spanishBase = {
+        id: `${req.params.id}-es-ES-base`,
+        seriesId: req.params.id,
+        locale: "es-ES",
+        name: series.title,
+        description: series.description,
+        seoTitle: null,
+        seoDescription: null
+      };
+      
+      // Check if es-ES translation exists, if not add the base
+      const hasSpanishTranslation = translations.some(t => t.locale === 'es-ES');
+      const allTranslations = hasSpanishTranslation 
+        ? translations 
+        : [spanishBase, ...translations];
+      
+      res.json(allTranslations);
     } catch (error) {
       res.status(500).json({ message: "Failed to get series translations" });
     }
@@ -1781,8 +1858,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Testimonial translations
   app.get("/api/testimonials/:id/translations", async (req, res) => {
     try {
+      const testimonial = await storage.getTestimonialById(req.params.id);
+      if (!testimonial) {
+        res.status(404).json({ message: "Testimonial not found" });
+        return;
+      }
+      
       const translations = await storage.getTestimonialTranslations(req.params.id);
-      res.json(translations);
+      
+      // Always include Spanish (es-ES) as base with original content
+      const spanishBase = {
+        id: `${req.params.id}-es-ES-base`,
+        testimonialId: req.params.id,
+        locale: "es-ES",
+        text: testimonial.content,
+        authorName: testimonial.authorName,
+        authorCredentials: testimonial.authorType
+      };
+      
+      // Check if es-ES translation exists, if not add the base
+      const hasSpanishTranslation = translations.some(t => t.locale === 'es-ES');
+      const allTranslations = hasSpanishTranslation 
+        ? translations 
+        : [spanishBase, ...translations];
+      
+      res.json(allTranslations);
     } catch (error) {
       res.status(500).json({ message: "Failed to get testimonial translations" });
     }
@@ -1801,8 +1901,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Blog post translations
   app.get("/api/blog-posts/:id/translations", async (req, res) => {
     try {
+      const blogPost = await storage.getBlogPostById(req.params.id);
+      if (!blogPost) {
+        res.status(404).json({ message: "Blog post not found" });
+        return;
+      }
+      
       const translations = await storage.getBlogPostTranslations(req.params.id);
-      res.json(translations);
+      
+      // Always include Spanish (es-ES) as base with original content
+      const spanishBase = {
+        id: `${req.params.id}-es-ES-base`,
+        blogPostId: req.params.id,
+        locale: "es-ES",
+        title: blogPost.title,
+        excerpt: blogPost.excerpt,
+        content: blogPost.content,
+        seoTitle: null,
+        seoDescription: null
+      };
+      
+      // Check if es-ES translation exists, if not add the base
+      const hasSpanishTranslation = translations.some(t => t.locale === 'es-ES');
+      const allTranslations = hasSpanishTranslation 
+        ? translations 
+        : [spanishBase, ...translations];
+      
+      res.json(allTranslations);
     } catch (error) {
       res.status(500).json({ message: "Failed to get blog post translations" });
     }
