@@ -42,12 +42,15 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
   const navAdminPanel = useUiText("navigation", "admin_panel", "Panel Admin");
   const commonLoading = useUiText("common", "loading", "Cargando...");
 
+  // Build base path for navigation links
+  const basePath = author?.slug ? `/autor/${author.slug}` : "/";
+
   return (
     <nav className="bg-card/80 backdrop-blur-md border-b border-border sticky top-0 z-50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link href="/">
+            <Link href={basePath}>
               {authorId && (
                 <>
                   {logoUrl ? (
@@ -67,21 +70,21 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
             </Link>
           </div>
           <div className="hidden md:flex items-center space-x-8">
-            <a href="#inicio" className="text-muted-foreground hover:text-primary transition-colors" data-testid="nav-inicio">
+            <Link href={`${basePath}#inicio`} className="text-muted-foreground hover:text-primary transition-colors" data-testid="nav-inicio">
               {navHome}
-            </a>
-            <a href="#series" className="text-muted-foreground hover:text-primary transition-colors" data-testid="nav-series">
+            </Link>
+            <Link href={`${basePath}#series`} className="text-muted-foreground hover:text-primary transition-colors" data-testid="nav-series">
               {navSeries}
-            </a>
-            <a href="#standalone" className="text-muted-foreground hover:text-primary transition-colors" data-testid="nav-standalone">
+            </Link>
+            <Link href={`${basePath}#standalone`} className="text-muted-foreground hover:text-primary transition-colors" data-testid="nav-standalone">
               {navBooks}
-            </a>
-            <a href="#biografia" className="text-muted-foreground hover:text-primary transition-colors" data-testid="nav-biografia">
+            </Link>
+            <Link href={`${basePath}#biografia`} className="text-muted-foreground hover:text-primary transition-colors" data-testid="nav-biografia">
               {navBio}
-            </a>
-            <a href="#testimonios" className="text-muted-foreground hover:text-primary transition-colors" data-testid="nav-testimonios">
+            </Link>
+            <Link href={`${basePath}#testimonios`} className="text-muted-foreground hover:text-primary transition-colors" data-testid="nav-testimonios">
               {navTestimonials}
-            </a>
+            </Link>
             <LanguageSelector />
             <Link href="/checkout" data-testid="link-cart">
               <Button variant="ghost" size="icon" className="relative">
@@ -120,21 +123,21 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
       {mobileMenuOpen && (
         <div className="md:hidden bg-card border-t border-border">
           <div className="px-4 py-2 space-y-2">
-            <a href="#inicio" className="block py-2 text-muted-foreground hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+            <Link href={`${basePath}#inicio`} className="block py-2 text-muted-foreground hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
               {navHome}
-            </a>
-            <a href="#series" className="block py-2 text-muted-foreground hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+            </Link>
+            <Link href={`${basePath}#series`} className="block py-2 text-muted-foreground hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
               {navSeries}
-            </a>
-            <a href="#standalone" className="block py-2 text-muted-foreground hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+            </Link>
+            <Link href={`${basePath}#standalone`} className="block py-2 text-muted-foreground hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
               {navBooks}
-            </a>
-            <a href="#biografia" className="block py-2 text-muted-foreground hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+            </Link>
+            <Link href={`${basePath}#biografia`} className="block py-2 text-muted-foreground hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
               {navBio}
-            </a>
-            <a href="#testimonios" className="block py-2 text-muted-foreground hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+            </Link>
+            <Link href={`${basePath}#testimonios`} className="block py-2 text-muted-foreground hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
               {navTestimonials}
-            </a>
+            </Link>
             <div className="py-2">
               <LanguageSelector />
             </div>
