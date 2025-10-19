@@ -1,3 +1,5 @@
+import nodemailer from 'nodemailer';
+
 interface EmailOptions {
   to: string;
   subject: string;
@@ -215,6 +217,43 @@ class MailgunProvider implements EmailProvider {
   }
 }
 
+class GmailProvider implements EmailProvider {
+  private transporter: any;
+
+  constructor(apiKey: string) {
+    // apiKey format: "email@gmail.com:app-password"
+    const parts = apiKey.split(':');
+    if (parts.length < 2 || !parts[1]) {
+      throw new Error('Gmail requires credentials in format "email@gmail.com:app-password"');
+    }
+    const email = parts[0];
+    const password = parts[1];
+
+    this.transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: email,
+        pass: password,
+      },
+    });
+  }
+
+  async send(options: EmailOptions): Promise<void> {
+    try {
+      await this.transporter.sendMail({
+        from: options.from 
+          ? `${options.from.name} <${options.from.email}>`
+          : 'noreply@example.com',
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+      });
+    } catch (error: any) {
+      throw new Error(`Gmail SMTP error: ${error.message}`);
+    }
+  }
+}
+
 interface EmailConfig {
   provider: string;
   apiKey: string;
@@ -251,6 +290,9 @@ export class EmailService {
         break;
       case 'mailgun':
         this.provider = new MailgunProvider(apiKey);
+        break;
+      case 'gmail':
+        this.provider = new GmailProvider(apiKey);
         break;
       default:
         throw new Error(`Unsupported email provider: ${provider}`);

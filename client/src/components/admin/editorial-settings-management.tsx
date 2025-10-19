@@ -34,7 +34,8 @@ function EmailProviderInstructions({ provider, instructionsTitle, instructionsLi
     "Mailchimp": { url: "https://mandrillapp.com/settings/index" },
     "Brevo": { url: "https://app.brevo.com/settings/keys/api" },
     "Postmark": { url: "https://account.postmarkapp.com/servers" },
-    "Mailgun": { url: "https://app.mailgun.com/app/account/security/api_keys" }
+    "Mailgun": { url: "https://app.mailgun.com/app/account/security/api_keys" },
+    "Gmail": { url: "https://myaccount.google.com/apppasswords" }
   };
 
   const config = instructions[provider];
@@ -78,7 +79,8 @@ export default function EditorialSettingsManagement() {
     "Mailchimp": ["Accede a tu cuenta de Mailchimp Transactional", "Ve a Settings > SMTP & API Info", "Genera y copia tu API key"],
     "Brevo": ["Ve a Settings > SMTP & API", "Genera una nueva API key", "Copia la key aquí"],
     "Postmark": ["Accede a tu servidor en Postmark", "Ve a API Tokens", "Genera un nuevo Server API Token"],
-    "Mailgun": ["Ve a Settings > API Keys", "Usa formato: TU_API_KEY:TU_DOMINIO", "Ejemplo: key-abc123:mg.tudominio.com"]
+    "Mailgun": ["Ve a Settings > API Keys", "Usa formato: TU_API_KEY:TU_DOMINIO", "Ejemplo: key-abc123:mg.tudominio.com"],
+    "Gmail": ["1. Habilita la verificación en dos pasos en tu cuenta de Gmail", "2. Ve a Configuración de Google → Seguridad → Contraseñas de aplicaciones", "3. Genera una nueva contraseña de aplicación para 'Correo'", "4. En API Key, introduce: tu-email@gmail.com:contraseña-aplicacion", "5. Ejemplo: juanperez@gmail.com:abcd efgh ijkl mnop"]
   };
 
   const t = {
@@ -1228,6 +1230,7 @@ export default function EditorialSettingsManagement() {
                             <SelectItem value="Brevo">Brevo</SelectItem>
                             <SelectItem value="Postmark">Postmark</SelectItem>
                             <SelectItem value="Mailgun">Mailgun</SelectItem>
+                            <SelectItem value="Gmail">Gmail</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormDescription>{t.descEmailProvider}</FormDescription>
@@ -1316,6 +1319,7 @@ export default function EditorialSettingsManagement() {
                             <SelectItem value="Brevo">Brevo</SelectItem>
                             <SelectItem value="Postmark">Postmark</SelectItem>
                             <SelectItem value="Mailgun">Mailgun</SelectItem>
+                            <SelectItem value="Gmail">Gmail</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormDescription>{t.descEmailProvider}</FormDescription>
@@ -1404,6 +1408,7 @@ export default function EditorialSettingsManagement() {
                             <SelectItem value="Brevo">Brevo</SelectItem>
                             <SelectItem value="Postmark">Postmark</SelectItem>
                             <SelectItem value="Mailgun">Mailgun</SelectItem>
+                            <SelectItem value="Gmail">Gmail</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormDescription>{t.descEmailProvider}</FormDescription>
