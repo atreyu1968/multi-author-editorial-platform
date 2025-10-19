@@ -749,7 +749,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/translations/summary", requireAuth, async (req, res) => {
     try {
       const matrix = await storage.getLocaleMatrix();
-      const locales = ['es-ES', 'en-US', 'ca-ES'];
+      const locales = ['es-ES', 'en-US', 'ca-ES', 'fr-FR', 'it-IT', 'de-DE', 'pt-PT'];
       
       const summary = locales.map(locale => {
         const total = matrix.length;

@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { SiteSettings, Newsletter } from "@shared/schema";
@@ -17,6 +18,7 @@ import { ObjectUploader } from "@/components/ObjectUploader";
 import type { UploadResult } from "@uppy/core";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useUiText } from "@/contexts/ui-text-context";
+import { AVAILABLE_LOCALES, type Locale } from "@/contexts/locale-context";
 
 interface SettingsFormData {
   heroTitle: string;
@@ -40,6 +42,8 @@ interface SettingsFormData {
   accentColor: string;
   backgroundColor: string;
   textColor: string;
+  defaultLocale: string;
+  autoDetectLocale: boolean;
 }
 
 interface EmailProviderInstructionsProps {
@@ -258,6 +262,14 @@ export default function SettingsManagement() {
     providerMailgunStep5: useUiText("admin.settings", "provider_mailgun_step_5"),
     providerMailgunStep6: useUiText("admin.settings", "provider_mailgun_step_6"),
     providerMailgunStep7: useUiText("admin.settings", "provider_mailgun_step_7"),
+    tabLanguage: useUiText("admin.settings", "tab_language"),
+    cardLanguageTitle: useUiText("admin.settings", "card_language_title"),
+    labelDefaultLocale: useUiText("admin.settings", "label_default_locale"),
+    descDefaultLocale: useUiText("admin.settings", "desc_default_locale"),
+    labelAutoDetect: useUiText("admin.settings", "label_auto_detect"),
+    descAutoDetect: useUiText("admin.settings", "desc_auto_detect"),
+    buttonSaveLanguagePending: useUiText("admin.settings", "button_save_language_pending"),
+    buttonSaveLanguage: useUiText("admin.settings", "button_save_language"),
   };
 
   const { data: settings = [] } = useQuery<SiteSettings[]>({
@@ -292,7 +304,9 @@ export default function SettingsManagement() {
       secondaryColor: "#8b5cf6",
       accentColor: "#f59e0b",
       backgroundColor: "#ffffff",
-      textColor: "#1f2937"
+      textColor: "#1f2937",
+      defaultLocale: "es-ES",
+      autoDetectLocale: true
     },
   });
 
@@ -325,7 +339,9 @@ export default function SettingsManagement() {
         secondaryColor: settingsMap.secondaryColor || "#8b5cf6",
         accentColor: settingsMap.accentColor || "#f59e0b",
         backgroundColor: settingsMap.backgroundColor || "#ffffff",
-        textColor: settingsMap.textColor || "#1f2937"
+        textColor: settingsMap.textColor || "#1f2937",
+        defaultLocale: settings[0]?.defaultLocale || "es-ES",
+        autoDetectLocale: settings[0]?.autoDetectLocale ?? true
       });
     }
   }, [settings]);
@@ -338,8 +354,8 @@ export default function SettingsManagement() {
       const results = await Promise.allSettled(
         filteredData.map(async ([key, value]) => {
           try {
-            const stringValue = value != null ? String(value) : '';
-            const response = await apiRequest("PUT", `/api/settings/${key}`, { value: stringValue, authorId: selectedAuthorId });
+            const apiValue = (key === 'autoDetectLocale') ? value : (value != null ? String(value) : '');
+            const response = await apiRequest("PUT", `/api/settings/${key}`, { value: apiValue, authorId: selectedAuthorId });
             const result = await response.json();
             return { key, status: 'success', data: result };
           } catch (error: any) {
@@ -399,6 +415,10 @@ export default function SettingsManagement() {
     'instagramUrl', 'twitterUrl', 'facebookUrl', 'amazonUrl'
   ]);
 
+  const updateLanguageMutation = createUpdateMutation([
+    'defaultLocale', 'autoDetectLocale'
+  ]);
+
   const onSubmit = (data: SettingsFormData) => {
     updateGeneralSettingsMutation.mutate(data);
   };
@@ -413,6 +433,10 @@ export default function SettingsManagement() {
 
   const onSubmitSocial = (data: SettingsFormData) => {
     updateSocialMutation.mutate(data);
+  };
+
+  const onSubmitLanguage = (data: SettingsFormData) => {
+    updateLanguageMutation.mutate(data);
   };
 
   // Helper functions for file upload
@@ -508,10 +532,11 @@ export default function SettingsManagement() {
       <h3 className="text-3xl font-bold text-primary mb-6">{t.pageTitleMain}</h3>
       
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="general" data-testid="tab-general">{t.tabGeneral}</TabsTrigger>
           <TabsTrigger value="appearance" data-testid="tab-appearance">{t.tabAppearance}</TabsTrigger>
           <TabsTrigger value="social" data-testid="tab-social">{t.tabSocial}</TabsTrigger>
+          <TabsTrigger value="language" data-testid="tab-language">{t.tabLanguage}</TabsTrigger>
           <TabsTrigger value="newsletter" data-testid="tab-newsletter">{t.tabNewsletter}</TabsTrigger>
           <TabsTrigger value="stats" data-testid="tab-stats">{t.tabStats}</TabsTrigger>
         </TabsList>
@@ -936,6 +961,79 @@ export default function SettingsManagement() {
                   >
                     <Save className="h-4 w-4 mr-2" />
                     {updateSocialMutation.isPending ? t.buttonSaveGeneralPending : t.buttonSaveSocial}
+                  </Button>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="language">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t.cardLanguageTitle}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmitLanguage)} className="space-y-4" data-testid="language-settings-form">
+                  <FormField
+                    control={form.control}
+                    name="defaultLocale"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t.labelDefaultLocale}</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-default-locale">
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {AVAILABLE_LOCALES.map((locale) => (
+                              <SelectItem key={locale.code} value={locale.code}>
+                                {locale.flag} {locale.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          {t.descDefaultLocale}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="autoDetectLocale"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-base">{t.labelAutoDetect}</FormLabel>
+                          <FormDescription>
+                            {t.descAutoDetect}
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            data-testid="switch-auto-detect"
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button 
+                    type="submit" 
+                    disabled={updateLanguageMutation.isPending}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90"
+                    data-testid="button-save-language"
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {updateLanguageMutation.isPending ? t.buttonSaveLanguagePending : t.buttonSaveLanguage}
                   </Button>
                 </form>
               </Form>

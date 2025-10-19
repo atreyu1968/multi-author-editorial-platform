@@ -158,6 +158,9 @@ export const siteSettings = pgTable("site_settings", {
   authorId: varchar("author_id").notNull(),
   key: text("key").notNull(),
   value: text("value").notNull(),
+  // Locale configuration fields
+  defaultLocale: varchar("default_locale"), // e.g., "fr-FR", "de-DE", "pt-PT"
+  autoDetectLocale: boolean("auto_detect_locale").default(true),
 }, (table) => ({
   uniqueAuthorKey: unique("site_settings_author_key").on(table.authorId, table.key),
 }));
@@ -444,6 +447,9 @@ export const insertCustomerSchema = createInsertSchema(customers).omit({
 
 export const insertSiteSettingsSchema = createInsertSchema(siteSettings).omit({
   id: true,
+}).extend({
+  defaultLocale: z.string().nullable().optional(),
+  autoDetectLocale: z.boolean().optional(),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({
