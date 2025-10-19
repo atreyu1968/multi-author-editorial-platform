@@ -352,6 +352,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Search routes
+  app.get("/api/search/authors", async (req, res) => {
+    try {
+      const query = req.query.q as string;
+      if (!query || query.trim() === '') {
+        res.json([]);
+        return;
+      }
+      const results = await storage.searchAuthors(query.trim());
+      res.json(results);
+    } catch (error) {
+      res.status(500).json({ message: "Search failed" });
+    }
+  });
+
+  app.get("/api/search/series", async (req, res) => {
+    try {
+      const query = req.query.q as string;
+      if (!query || query.trim() === '') {
+        res.json([]);
+        return;
+      }
+      const results = await storage.searchSeries(query.trim());
+      res.json(results);
+    } catch (error) {
+      res.status(500).json({ message: "Search failed" });
+    }
+  });
+
+  app.get("/api/search/books", async (req, res) => {
+    try {
+      const query = req.query.q as string;
+      if (!query || query.trim() === '') {
+        res.json([]);
+        return;
+      }
+      const results = await storage.searchBooks(query.trim());
+      res.json(results);
+    } catch (error) {
+      res.status(500).json({ message: "Search failed" });
+    }
+  });
+
+  // Global search endpoint that returns all types
+  app.get("/api/search", async (req, res) => {
+    try {
+      const query = req.query.q as string;
+      if (!query || query.trim() === '') {
+        res.json({ authors: [], series: [], books: [] });
+        return;
+      }
+      const trimmedQuery = query.trim();
+      const [authors, series, books] = await Promise.all([
+        storage.searchAuthors(trimmedQuery),
+        storage.searchSeries(trimmedQuery),
+        storage.searchBooks(trimmedQuery)
+      ]);
+      res.json({ authors, series, books });
+    } catch (error) {
+      res.status(500).json({ message: "Search failed" });
+    }
+  });
+
   // Testimonial routes (admin-only endpoint for all testimonials)
   app.get("/api/testimonials", requireAuth, async (req, res) => {
     try {

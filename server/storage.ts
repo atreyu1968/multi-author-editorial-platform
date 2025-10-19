@@ -215,6 +215,11 @@ export interface IStorage {
   getBlogPostTranslations(blogPostId: string): Promise<BlogPostTranslation[]>;
   upsertBlogPostTranslation(translation: InsertBlogPostTranslation): Promise<BlogPostTranslation>;
 
+  // Search methods
+  searchAuthors(query: string): Promise<Author[]>;
+  searchSeries(query: string): Promise<BookSeries[]>;
+  searchBooks(query: string): Promise<Book[]>;
+
   // Session store for authentication
   sessionStore: session.Store;
 }
@@ -1499,6 +1504,37 @@ export class MemStorage implements IStorage {
       .filter(([_, item]) => item.sessionId === sessionId)
       .map(([id, _]) => id);
     itemsToDelete.forEach(id => this.cartItems.delete(id));
+  }
+
+  // Search methods
+  async searchAuthors(query: string): Promise<Author[]> {
+    const lowerQuery = query.toLowerCase();
+    return Array.from(this.authors.values())
+      .filter(author => 
+        author.isActive && 
+        author.name.toLowerCase().includes(lowerQuery)
+      )
+      .slice(0, 20);
+  }
+
+  async searchSeries(query: string): Promise<BookSeries[]> {
+    const lowerQuery = query.toLowerCase();
+    return Array.from(this.bookSeries.values())
+      .filter(series => 
+        series.isActive && 
+        series.title.toLowerCase().includes(lowerQuery)
+      )
+      .slice(0, 20);
+  }
+
+  async searchBooks(query: string): Promise<Book[]> {
+    const lowerQuery = query.toLowerCase();
+    return Array.from(this.books.values())
+      .filter(book => 
+        book.isPublished && 
+        book.title.toLowerCase().includes(lowerQuery)
+      )
+      .slice(0, 20);
   }
 }
 

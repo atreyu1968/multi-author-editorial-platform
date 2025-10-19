@@ -1,6 +1,6 @@
 // Reference: blueprint:javascript_database integration
 import { db } from "./db";
-import { eq, and, isNull, sql, desc } from "drizzle-orm";
+import { eq, and, isNull, sql, desc, ilike } from "drizzle-orm";
 import {
   authors,
   bookSeries,
@@ -1177,5 +1177,39 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return result;
+  }
+
+  // Search methods
+  async searchAuthors(query: string): Promise<Author[]> {
+    return await db
+      .select()
+      .from(authors)
+      .where(and(
+        eq(authors.isActive, true),
+        ilike(authors.name, `%${query}%`)
+      ))
+      .limit(20);
+  }
+
+  async searchSeries(query: string): Promise<BookSeries[]> {
+    return await db
+      .select()
+      .from(bookSeries)
+      .where(and(
+        eq(bookSeries.isActive, true),
+        ilike(bookSeries.title, `%${query}%`)
+      ))
+      .limit(20);
+  }
+
+  async searchBooks(query: string): Promise<Book[]> {
+    return await db
+      .select()
+      .from(books)
+      .where(and(
+        eq(books.isPublished, true),
+        ilike(books.title, `%${query}%`)
+      ))
+      .limit(20);
   }
 }
