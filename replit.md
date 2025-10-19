@@ -10,6 +10,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### Universal Search System (October 2025)
+- **Search Infrastructure**: Implemented comprehensive search across authors, series, and books with 4 API endpoints (global + per-entity)
+- **SearchBar Component**: Debounced universal search (300ms) with keyboard navigation, grouped dropdown results, and multi-language support integrated into all navigation components
+- **Search Results Page**: Full-page search with filter tabs (All/Authors/Series/Books), localized routes for all 7 languages (/buscar, /search, /cercar, /rechercher, /cerca, /suchen, /procurar)
+- **UI Translations**: Added 98 new UI texts across 7 languages in "search" namespace
+- **Features**: Case-insensitive search, 20-result limit, active/published filtering, locale-aware navigation, responsive design for desktop and mobile
+- **Architect Review**: Approved - scalable for current use, recommend full-text search indexing for future growth beyond few thousand records
+
 ### Navigation System Overhaul (October 2025)
 - **Fixed cross-page navigation**: Updated Navigation component to use intelligent basePath logic with Link components, enabling navigation from series/book pages back to author pages with correct anchor scrolling
 - **Fixed editorial navigation**: Implemented context-aware EditorialNavigation with route normalization to distinguish home page (scroll buttons) from sub-pages (navigation links)
@@ -31,11 +39,13 @@ Preferred communication style: Simple, everyday language.
 - **Forms**: React Hook Form with Zod for validation.
 - **Theming**: Dynamic theming per author (colors, logo, favicon) via CSS variables, and customizable background images/colors for various pages.
 - **UI Text Customization**: All visible UI text can be edited via the admin panel, supporting multi-locale.
+- **Universal Search**: SearchBar component integrated in all navigation (desktop/mobile) with debounced search, keyboard navigation, and comprehensive results page with filters.
 
 ### Backend
 - **Technology Stack**: Express.js with TypeScript, RESTful API.
 - **Database Interaction**: Drizzle ORM for PostgreSQL, Zod schemas for shared validation.
 - **Middleware**: For request logging and error handling.
+- **Search API**: Case-insensitive search endpoints (GET /api/search, /api/search/authors, /api/search/series, /api/search/books) with 20-result limits and active/published filtering.
 
 ### Data Storage
 - **Primary Database**: PostgreSQL via Drizzle ORM and Neon Database.
@@ -67,7 +77,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Internationalization System (7 Languages)
 - **Supported Languages**: Spanish (es-ES), English (en-US), Catalan (ca-ES), French (fr-FR), Italian (it-IT), German (de-DE), Portuguese (pt-PT).
-- **UI Text Translation**: Complete translation of 10,107 UI texts across all 7 languages, managed via admin panel with namespace organization (public, admin.books, admin.authors, etc.).
+- **UI Text Translation**: Complete translation of 10,205 UI texts across all 7 languages (including 98 search-related texts), managed via admin panel with namespace organization (public, admin.books, admin.authors, search, etc.).
 - **Market-Based Default Locale**: Admins configure default language and auto-detection based on target market, with priority chain (localStorage → browser detection → admin default → fallback).
 - **Dynamic Content Translation System**: 
   - Dedicated translation tables for authors, books, series, testimonials, and blog posts.
