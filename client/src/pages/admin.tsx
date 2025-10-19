@@ -92,6 +92,28 @@ function AdminContent() {
     );
   }
 
+  // If no authors exist, redirect to author creation
+  if (!isLoading && authors.length === 0) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="bg-primary text-primary-foreground p-6 flex justify-between items-center">
+          <h1 className="text-2xl font-bold">{t.panelTitle}</h1>
+          <Link href="/" className="text-primary-foreground hover:text-accent transition-colors">
+            <ArrowLeft className="h-6 w-6" />
+          </Link>
+        </div>
+        <div className="flex items-center justify-center min-h-[calc(100vh-88px)]">
+          <div className="text-center space-y-4">
+            <Users className="h-16 w-16 mx-auto text-muted-foreground" />
+            <h2 className="text-2xl font-bold">{t.noAuthorsAvailable}</h2>
+            <p className="text-muted-foreground">Crea tu primer autor para comenzar</p>
+            <AuthorManagement />
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
   if (!isLoading && !selectedAuthorId) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">

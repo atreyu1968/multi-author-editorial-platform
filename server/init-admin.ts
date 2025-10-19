@@ -1,8 +1,7 @@
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
 import { db } from "./db";
-import { users } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { users, authors } from "@shared/schema";
 
 const scryptAsync = promisify(scrypt);
 
@@ -13,7 +12,7 @@ async function hashPassword(password: string) {
 }
 
 /**
- * Initialize default admin user if none exists
+ * Initialize default admin user and author if none exists
  * This runs automatically on server startup
  */
 export async function initializeAdminUser() {
@@ -37,15 +36,47 @@ export async function initializeAdminUser() {
       password: passwordHash,
     });
     
-    console.log("=".repeat(70));
-    console.log("✅ DEFAULT ADMIN USER CREATED");
-    console.log("=".repeat(70));
-    console.log(`Username: ${defaultUsername}`);
-    console.log(`Password: ${defaultPassword}`);
-    console.log("");
-    console.log("⚠️  IMPORTANT: Please change this password immediately!");
-    console.log("   Go to /admin and update your credentials.");
-    console.log("=".repeat(70));
+    // Check if any author exists
+    const existingAuthors = await db.select().from(authors).limit(1);
+    
+    if (existingAuthors.length === 0) {
+      // Create default author
+      await db.insert(authors).values({
+        name: "Autor Ejemplo",
+        slug: "autor-ejemplo",
+        email: "autor@example.com",
+        heroTitle: "Bienvenido a Mi Página de Autor",
+        heroSubtitle: "Descubre mis obras y mi trayectoria literaria",
+        bioParagraph1: "Este es un autor de ejemplo. Edita esta información desde el panel de administración.",
+        bioParagraph2: "Puedes personalizar completamente esta biografía con tu propia historia y logros.",
+        bioParagraph3: "No olvides actualizar todos los campos desde el panel de administración.",
+        isActive: true,
+      });
+      
+      console.log("=".repeat(70));
+      console.log("✅ DEFAULT ADMIN USER AND AUTHOR CREATED");
+      console.log("=".repeat(70));
+      console.log(`Admin Username: ${defaultUsername}`);
+      console.log(`Admin Password: ${defaultPassword}`);
+      console.log("");
+      console.log(`Default Author: Autor Ejemplo`);
+      console.log(`Author Slug: autor-ejemplo`);
+      console.log("");
+      console.log("⚠️  IMPORTANT: Please change these defaults immediately!");
+      console.log("   1. Go to /admin and update your admin credentials");
+      console.log("   2. Edit or delete the default author");
+      console.log("=".repeat(70));
+    } else {
+      console.log("=".repeat(70));
+      console.log("✅ DEFAULT ADMIN USER CREATED");
+      console.log("=".repeat(70));
+      console.log(`Username: ${defaultUsername}`);
+      console.log(`Password: ${defaultPassword}`);
+      console.log("");
+      console.log("⚠️  IMPORTANT: Please change this password immediately!");
+      console.log("   Go to /admin and update your credentials.");
+      console.log("=".repeat(70));
+    }
     
   } catch (error) {
     console.error("❌ Error initializing admin user:", error);

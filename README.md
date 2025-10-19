@@ -92,7 +92,10 @@ Una aplicación web completa de pila completa diseñada para gestionar hasta 30 
 
 4. **Acceder a tu plataforma:**
    - Abre tu navegador en `http://tu-ip-servidor:5000`
-   - Inicia sesión con tus credenciales de administrador
+   - La primera vez que inicies la aplicación, se crearán automáticamente:
+     - Usuario admin: `admin` / `admin123`
+     - Autor de ejemplo: "Autor Ejemplo"
+   - Inicia sesión en `/admin` y **cambia la contraseña inmediatamente**
 
 Para instrucciones detalladas de instalación, consulta [INSTALLATION.md](INSTALLATION.md).
 
