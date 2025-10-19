@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
-import { Save, Info, ExternalLink } from "lucide-react";
+import { Save, Info, ExternalLink, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,6 +17,8 @@ import { insertEditorialSettingsSchema } from "@shared/schema";
 import { getCurrencySymbol } from "@/lib/format-currency";
 import { useEffect } from "react";
 import { useUiText } from "@/contexts/ui-text-context";
+import { ObjectUploader } from "@/components/ObjectUploader";
+import type { UploadResult } from "@uppy/core";
 
 interface EmailProviderInstructionsProps {
   provider: string;
@@ -364,6 +366,41 @@ export default function EditorialSettingsManagement() {
     updateMutation.mutate(data);
   };
 
+  // Helper functions for file upload
+  const handleGetUploadParameters = async () => {
+    const response = await apiRequest("POST", "/api/objects/upload", {});
+    const data = await response.json();
+    return {
+      method: "PUT" as const,
+      url: data.uploadURL,
+    };
+  };
+
+  const handleFileUploadComplete = async (fieldName: string, result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+    if (result.successful && result.successful.length > 0) {
+      const uploadedFile = result.successful[0];
+      const fileURL = uploadedFile.uploadURL;
+      
+      try {
+        const response = await apiRequest("POST", "/api/images/upload", { imageURL: fileURL });
+        const data = await response.json();
+        
+        form.setValue(fieldName as any, data.objectPath);
+        
+        toast({
+          title: "Imagen subida",
+          description: "La imagen se ha subido correctamente",
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "No se pudo subir la imagen",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   if (isLoading) {
     return <div className="text-center py-12">{t.loading}</div>;
   }
@@ -416,6 +453,24 @@ export default function EditorialSettingsManagement() {
                     )}
                   />
 
+                  {form.watch("logoUrl") && (
+                    <div className="border rounded-lg p-4 bg-muted/50">
+                      <img 
+                        src={form.watch("logoUrl")} 
+                        alt="Logo preview" 
+                        className="h-12 object-contain"
+                      />
+                    </div>
+                  )}
+                  <ObjectUploader
+                    onGetUploadParameters={handleGetUploadParameters}
+                    onComplete={(result) => handleFileUploadComplete("logoUrl", result)}
+                    allowedFileTypes={["image/png", "image/jpeg", "image/svg+xml"]}
+                    maxFileSize={2 * 1024 * 1024}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Subir Logo
+                  </ObjectUploader>
                   <FormField
                     control={form.control}
                     name="logoUrl"
@@ -433,6 +488,25 @@ export default function EditorialSettingsManagement() {
                     )}
                   />
 
+                  {form.watch("faviconUrl") && (
+                    <div className="border rounded-lg p-4 bg-muted/50 flex items-center gap-4">
+                      <img 
+                        src={form.watch("faviconUrl")} 
+                        alt="Favicon preview" 
+                        className="w-8 h-8 object-contain"
+                      />
+                      <span className="text-sm text-muted-foreground">Vista previa del favicon</span>
+                    </div>
+                  )}
+                  <ObjectUploader
+                    onGetUploadParameters={handleGetUploadParameters}
+                    onComplete={(result) => handleFileUploadComplete("faviconUrl", result)}
+                    allowedFileTypes={["image/png", "image/x-icon", "image/vnd.microsoft.icon"]}
+                    maxFileSize={100 * 1024}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Subir Favicon
+                  </ObjectUploader>
                   <FormField
                     control={form.control}
                     name="faviconUrl"
