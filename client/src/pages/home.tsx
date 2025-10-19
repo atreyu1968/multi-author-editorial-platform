@@ -127,7 +127,7 @@ export default function Home() {
               <Button 
                 className="bg-accent text-accent-foreground px-8 py-4 text-lg font-semibold hover:bg-accent/90 transition-all transform hover:scale-105 shadow-xl"
                 data-testid="button-explore-authors"
-                onClick={() => setLocation('/autores')}
+                onClick={() => setLocation(`/${locale}/autores`)}
               >
                 <Users className="h-5 w-5 mr-2" />
                 {settings?.heroPrimaryButtonText || t.heroPrimaryButtonDefault}
@@ -285,7 +285,7 @@ export default function Home() {
                         variant="outline"
                         className="w-full transition-all"
                         data-testid={`button-view-featured-${author.id}`}
-                        onClick={() => setLocation(`/autor/${author.slug}`)}
+                        onClick={() => setLocation(`/${locale}/autor/${author.slug}`)}
                       >
                         {t.buttonViewProfile}
                         <ArrowRight className="h-4 w-4 ml-2" />
@@ -300,7 +300,7 @@ export default function Home() {
                   <Button 
                     className="bg-primary text-primary-foreground hover:bg-primary/90 px-8 py-4 text-lg font-semibold transition-all transform hover:scale-105"
                     data-testid="button-view-all-authors"
-                    onClick={() => setLocation('/autores')}
+                    onClick={() => setLocation(`/${locale}/autores`)}
                   >
                     {t.buttonViewAllAuthors}
                     <ArrowRight className="h-5 w-5 ml-2" />
