@@ -3,6 +3,7 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import session from "express-session";
+import rateLimit from "express-rate-limit";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
@@ -35,6 +36,12 @@ export function setupAuth(app: Express) {
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 1000 * 60 * 60 * 24 // 24 hours
+    }
   };
 
   app.set("trust proxy", 1);
@@ -59,12 +66,21 @@ export function setupAuth(app: Express) {
     done(null, user);
   });
 
+  // Rate limiter for login endpoint
+  const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // 5 attempts per window
+    message: 'Too many login attempts, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
   // Registration disabled for security - admin accounts created server-side
   app.post("/api/register", async (req, res, next) => {
     return res.status(403).json({ message: "Registration is disabled. Contact administrator." });
   });
 
-  app.post("/api/login", passport.authenticate("local"), (req, res) => {
+  app.post("/api/login", loginLimiter, passport.authenticate("local"), (req, res) => {
     res.status(200).json(req.user);
   });
 
