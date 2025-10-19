@@ -16,6 +16,7 @@ NC='\033[0m'
 
 print_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 print_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
+print_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 print_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 main() {
@@ -69,9 +70,10 @@ main() {
     # Create admin user using Node.js with pg client
     print_info "Creating administrator user..."
     
-    # Create a temporary Node.js script
-    cat > /tmp/create-admin.js <<'EOFJS'
+    # Create a temporary Node.js script (using CommonJS to avoid ESM issues)
+    cat > /tmp/create-admin.cjs <<'EOFJS'
 const crypto = require('crypto');
+const { URL } = require('url');
 
 async function createAdmin() {
     const username = process.env.ADMIN_USERNAME;
@@ -94,7 +96,7 @@ async function createAdmin() {
         host: url.hostname,
         port: url.port || 5432,
         user: url.username,
-        password: url.password,
+        password: decodeURIComponent(url.password),
         database: url.pathname.slice(1), // Remove leading slash
     };
     
@@ -104,7 +106,8 @@ async function createAdmin() {
         pg = require('pg');
     } catch (err) {
         console.error('pg module not found. Installing...');
-        require('child_process').execSync('npm install --no-save pg', { stdio: 'inherit' });
+        const { execSync } = require('child_process');
+        execSync('npm install --no-save pg', { stdio: 'inherit' });
         pg = require('pg');
     }
     
@@ -113,6 +116,7 @@ async function createAdmin() {
     
     try {
         await client.connect();
+        console.log('Connected to database successfully');
         
         // Check if admin user already exists
         const checkResult = await client.query(
@@ -154,9 +158,9 @@ EOFJS
     export ADMIN_USERNAME="$ADMIN_USERNAME"
     export ADMIN_PASSWORD="$ADMIN_PASSWORD"
     
-    if node /tmp/create-admin.js; then
+    if node /tmp/create-admin.cjs; then
         # Clean up
-        rm -f /tmp/create-admin.js
+        rm -f /tmp/create-admin.cjs
         unset ADMIN_PASSWORD
         
         print_success "Administrator user created successfully"
@@ -168,7 +172,7 @@ EOFJS
         print_warning "Please save these credentials in a secure location!"
     else
         print_error "Failed to create administrator user"
-        rm -f /tmp/create-admin.js
+        rm -f /tmp/create-admin.cjs
         unset ADMIN_PASSWORD
         exit 1
     fi
