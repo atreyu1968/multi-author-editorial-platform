@@ -226,8 +226,8 @@ class GmailProvider implements EmailProvider {
     if (parts.length < 2 || !parts[1]) {
       throw new Error('Gmail requires credentials in format "email@gmail.com:app-password"');
     }
-    const email = parts[0];
-    const password = parts[1];
+    const email = parts[0].trim();
+    const password = parts[1].replace(/\s+/g, ''); // Remove all whitespace from app password
 
     this.transporter = nodemailer.createTransport({
       service: 'gmail',

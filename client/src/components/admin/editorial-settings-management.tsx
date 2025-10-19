@@ -80,7 +80,7 @@ export default function EditorialSettingsManagement() {
     "Brevo": ["Ve a Settings > SMTP & API", "Genera una nueva API key", "Copia la key aquí"],
     "Postmark": ["Accede a tu servidor en Postmark", "Ve a API Tokens", "Genera un nuevo Server API Token"],
     "Mailgun": ["Ve a Settings > API Keys", "Usa formato: TU_API_KEY:TU_DOMINIO", "Ejemplo: key-abc123:mg.tudominio.com"],
-    "Gmail": ["1. Habilita la verificación en dos pasos en tu cuenta de Gmail", "2. Ve a Configuración de Google → Seguridad → Contraseñas de aplicaciones", "3. Genera una nueva contraseña de aplicación para 'Correo'", "4. En API Key, introduce: tu-email@gmail.com:contraseña-aplicacion", "5. Ejemplo: juanperez@gmail.com:abcd efgh ijkl mnop"]
+    "Gmail": ["1. Habilita la verificación en dos pasos en tu cuenta de Gmail", "2. Ve a Configuración de Google → Seguridad → Contraseñas de aplicaciones", "3. Genera una nueva contraseña de aplicación para 'Correo'", "4. En API Key, introduce: tu-email@gmail.com:contraseña-aplicacion", "5. Ejemplo: juanperez@gmail.com:abcdefghijklmnop (elimina espacios de la contraseña)"]
   };
 
   const t = {
