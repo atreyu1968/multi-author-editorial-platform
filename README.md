@@ -74,8 +74,8 @@ Una aplicación web completa de pila completa diseñada para gestionar hasta 30 
 
 1. **Clonar el repositorio:**
    ```bash
-   git clone https://github.com/tuusuario/editorial-platform.git
-   cd editorial-platform
+   git clone https://github.com/atreyu1968/multi-author-editorial-platform.git
+   cd multi-author-editorial-platform
    ```
 
 2. **Ejecutar el instalador:**
@@ -261,8 +261,8 @@ Para más consejos de solución de problemas, consulta [INSTALLATION.md](INSTALL
 
 ## 📞 Soporte
 
-- **Issues**: [GitHub Issues](https://github.com/tuusuario/editorial-platform/issues)
-- **Discusiones**: [GitHub Discussions](https://github.com/tuusuario/editorial-platform/discussions)
+- **Issues**: [GitHub Issues](https://github.com/atreyu1968/multi-author-editorial-platform/issues)
+- **Discusiones**: [GitHub Discussions](https://github.com/atreyu1968/multi-author-editorial-platform/discussions)
 
 ## 🎯 Hoja de Ruta
 

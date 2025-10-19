@@ -43,8 +43,8 @@ The installation script will automatically install:
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/editorial-platform.git
-cd editorial-platform
+git clone https://github.com/atreyu1968/multi-author-editorial-platform.git
+cd multi-author-editorial-platform
 ```
 
 ### 2. Run the Installation Script
@@ -112,8 +112,8 @@ sudo apt-get install -y nodejs
 ### 3. Clone Repository
 
 ```bash
-git clone https://github.com/yourusername/editorial-platform.git
-cd editorial-platform
+git clone https://github.com/atreyu1968/multi-author-editorial-platform.git
+cd multi-author-editorial-platform
 ```
 
 ### 4. Install Dependencies
@@ -457,7 +457,7 @@ sudo systemctl restart editorial-platform
 ## Support
 
 For issues and questions:
-- Check the [GitHub Issues](https://github.com/yourusername/editorial-platform/issues)
+- Check the [GitHub Issues](https://github.com/atreyu1968/multi-author-editorial-platform/issues)
 - Review the documentation
 - Contact support
 
