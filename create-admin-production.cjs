@@ -110,6 +110,9 @@ async function createAdmin() {
       user: url.username,
       password: decodeURIComponent(url.password),
       database: url.pathname.slice(1),
+      ssl: {
+        rejectUnauthorized: false
+      }
     };
     
     // Use pg module
