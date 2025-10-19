@@ -105,13 +105,14 @@ export default function BookSeries() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     {seriesBooks.slice(0, 4).map((book) => (
-                      <img 
-                        key={book.id}
-                        src={book.coverImage || "https://images.unsplash.com/photo-1516414447565-b14be0adf13e?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=450"} 
-                        alt={`Portada del libro ${book.title}`}
-                        className="w-full h-64 object-cover rounded-lg shadow-lg" 
-                        data-testid={`series-book-cover-${book.id}`}
-                      />
+                      <div key={book.id} className="relative aspect-[2/3] rounded-lg shadow-lg overflow-hidden">
+                        <img 
+                          src={book.coverImage || "https://images.unsplash.com/photo-1516414447565-b14be0adf13e?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=450"} 
+                          alt={`Portada del libro ${book.title}`}
+                          className="w-full h-full object-cover" 
+                          data-testid={`series-book-cover-${book.id}`}
+                        />
+                      </div>
                     ))}
                   </div>
                 </div>

@@ -320,13 +320,14 @@ export default function AuthorPage() {
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         {publishedBooks.slice(0, 4).map((book: Book) => (
-                          <img 
-                            key={book.id}
-                            src={book.coverImage || "https://images.unsplash.com/photo-1516414447565-b14be0adf13e?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=450"} 
-                            alt={`${t.altBookCoverPrefix} ${book.title}`}
-                            className="w-full h-64 object-cover rounded-lg shadow-lg" 
-                            data-testid={`series-book-cover-${book.id}`}
-                          />
+                          <div key={book.id} className="relative aspect-[2/3] rounded-lg shadow-lg overflow-hidden">
+                            <img 
+                              src={book.coverImage || "https://images.unsplash.com/photo-1516414447565-b14be0adf13e?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=450"} 
+                              alt={`${t.altBookCoverPrefix} ${book.title}`}
+                              className="w-full h-full object-cover" 
+                              data-testid={`series-book-cover-${book.id}`}
+                            />
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -352,11 +353,13 @@ export default function AuthorPage() {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {publishedStandaloneBooks.map((book) => (
                 <Card key={book.id} className="book-card bg-card rounded-xl shadow-lg border border-border overflow-hidden" data-testid={`standalone-book-${book.id}`}>
-                  <img 
-                    src={book.coverImage || "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=600"} 
-                    alt={`${t.altBookCoverPrefix} ${book.title}`}
-                    className="w-full h-80 object-cover" 
-                  />
+                  <div className="relative aspect-[2/3] bg-gradient-to-br from-primary/20 to-accent/20">
+                    <img 
+                      src={book.coverImage || "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=600"} 
+                      alt={`${t.altBookCoverPrefix} ${book.title}`}
+                        className="w-full h-full object-cover" 
+                    />
+                  </div>
                   <div className="p-6">
                     <h3 className="text-2xl font-serif font-bold text-primary mb-3">
                       {book.title}

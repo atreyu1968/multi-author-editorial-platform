@@ -241,15 +241,15 @@ export default function SeriesLanding() {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
               {sortedBooks.map((book, index) => (
                 <Card key={book.id} className="overflow-hidden hover:shadow-xl transition-shadow group">
-                  <div className="relative">
+                  <div className="relative aspect-[2/3] bg-gradient-to-br from-primary/20 to-accent/20 overflow-hidden">
                     {book.coverImage && (
                       <img
                         src={book.coverImage}
                         alt={`Portada de ${book.title}`}
-                        className="w-full h-80 object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     )}
-                    <div className="absolute top-4 left-4">
+                    <div className="absolute top-4 left-4 z-10">
                       <Badge className="text-lg px-4 py-2">
                         Libro {book.orderInSeries || index + 1}
                       </Badge>
