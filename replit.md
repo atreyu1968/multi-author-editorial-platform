@@ -50,6 +50,28 @@ Preferred communication style: Simple, everyday language.
 - **Order Integration**: Tokens generated automatically upon order completion for digital products.
 - **Admin Management**: Upload digital files, configure direct sales (price, stock).
 
+### Internationalization System (7 Languages)
+- **Supported Languages**: Spanish (es-ES), English (en-US), Catalan (ca-ES), French (fr-FR), Italian (it-IT), German (de-DE), Portuguese (pt-PT).
+- **UI Text Translation**: Complete translation of 10,107 UI texts across all 7 languages, managed via admin panel with namespace organization (public, admin.books, admin.authors, etc.).
+- **Market-Based Default Locale**: Admins configure default language and auto-detection based on target market, with priority chain (localStorage → browser detection → admin default → fallback).
+- **Dynamic Content Translation System**: 
+  - Dedicated translation tables for authors, books, series, testimonials, and blog posts.
+  - Locale-scoped fallback logic (user preference → default locale → source language).
+  - API endpoints (GET/POST) for each entity translation with Zod validation.
+  - Helper utility `getTranslatedField()` for seamless content retrieval.
+- **SEO Multi-language Infrastructure**:
+  - Locale-prefixed URLs (/:locale/libro/:id, /:locale/autor/:slug).
+  - Centralized SEOHead component with hreflang tags for all 7 languages.
+  - OG metadata localization (og:locale, og:locale:alternate).
+  - Dynamic sitemaps per locale (/sitemap-:locale.xml) with proper hreflang alternates.
+  - Robots.txt with references to all localized sitemaps.
+- **Regional Currency System**:
+  - Automatic currency selection based on user's locale (EUR for European locales, USD for en-US).
+  - Real-time exchange rate fetching from Frankfurter API with 24-hour cache and fallback rates.
+  - Precise currency conversion using integer mathematics (avoiding floating-point errors).
+  - Locale-aware price formatting with Intl.NumberFormat (automatic decimal handling for zero-decimal currencies like JPY/KRW).
+  - API endpoints for currency rates and conversion (/api/currency/rates, /api/currency/convert).
+
 ## External Dependencies
 
 ### Database Services
