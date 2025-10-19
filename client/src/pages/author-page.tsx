@@ -341,7 +341,7 @@ export default function AuthorPage() {
 
       {/* Standalone Books Section */}
       {publishedStandaloneBooks.length > 0 && (
-        <section id="books" className="py-20 bg-muted/30" data-testid="section-standalone">
+        <section id="standalone" className="py-20 bg-muted/30" data-testid="section-standalone">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary mb-6">{t.standaloneTitle}</h2>
