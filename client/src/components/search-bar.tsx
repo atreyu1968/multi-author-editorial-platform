@@ -31,6 +31,7 @@ export default function SearchBar() {
   const searchBooks = useUiText("search", "search_books", "Libros");
   const searchNoResults = useUiText("search", "search_no_results", "No se encontraron resultados");
   const searchSearching = useUiText("search", "search_searching", "Buscando...");
+  const viewAllResults = useUiText("search", "view_all_results", "Ver todos los resultados");
 
   // Debounce search query
   useEffect(() => {
@@ -297,6 +298,24 @@ export default function SearchBar() {
                       );
                     })}
                   </div>
+                </div>
+              )}
+              
+              {/* View All Results Link */}
+              {hasResults && (
+                <div className="border-t border-border mt-2 p-3">
+                  <button
+                    onClick={() => {
+                      const searchPath = getLocalizedPath('search', locale);
+                      setLocation(`${searchPath}?q=${encodeURIComponent(debouncedQuery)}`);
+                      setIsOpen(false);
+                      setSearchQuery("");
+                    }}
+                    className="w-full text-center text-sm text-primary hover:text-primary/80 font-medium transition-colors"
+                    data-testid="link-view-all-results"
+                  >
+                    {viewAllResults} →
+                  </button>
                 </div>
               )}
             </div>

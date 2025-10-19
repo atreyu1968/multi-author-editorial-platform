@@ -20,6 +20,7 @@ import BookLanding from "@/pages/book-landing";
 import SeriesLanding from "@/pages/series-landing";
 import AuthorPage from "@/pages/author-page";
 import AuthorsListPage from "@/pages/authors-list";
+import SearchResultsPage from "@/pages/search-results";
 import Checkout from "@/pages/checkout";
 import OrderConfirmation from "@/pages/order-confirmation";
 import NotFound from "@/pages/not-found";
@@ -52,6 +53,14 @@ function Router() {
       <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/auteurs" component={AuthorsListPage} />
       <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/autori" component={AuthorsListPage} />
       <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/autoren" component={AuthorsListPage} />
+      
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/buscar" component={SearchResultsPage} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/search" component={SearchResultsPage} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/cercar" component={SearchResultsPage} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/rechercher" component={SearchResultsPage} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/cerca" component={SearchResultsPage} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/suchen" component={SearchResultsPage} />
+      <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/procurar" component={SearchResultsPage} />
       
       <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/blog" component={BlogList} />
       <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/bloc" component={BlogList} />
@@ -96,6 +105,12 @@ function Router() {
       </Route>
       <Route path="/autores">
         {() => <Redirect to={`/${locale}/autores`} />}
+      </Route>
+      <Route path="/buscar">
+        {() => <Redirect to={`/${locale}/buscar`} />}
+      </Route>
+      <Route path="/search">
+        {() => <Redirect to={`/${locale}/search`} />}
       </Route>
       <Route path="/auth" component={AuthPage} />
       <Route path="/blog">

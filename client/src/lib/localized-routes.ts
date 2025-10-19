@@ -88,6 +88,15 @@ export const ROUTE_PATTERNS: Record<string, Record<Locale, string>> = {
     'de-DE': '/bestellung',
     'pt-PT': '/encomenda',
   },
+  search: {
+    'es-ES': '/buscar',
+    'en-US': '/search',
+    'ca-ES': '/cercar',
+    'fr-FR': '/rechercher',
+    'it-IT': '/cerca',
+    'de-DE': '/suchen',
+    'pt-PT': '/procurar',
+  },
 };
 
 /**
