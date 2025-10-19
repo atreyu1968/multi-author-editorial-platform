@@ -565,6 +565,29 @@ export default function EditorialSettingsManagement() {
                   <CardTitle>{t.cardBackgroundTitle}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {form.watch("backgroundImageUrl") && (
+                    <div className="border rounded-lg p-4 bg-muted/50">
+                      <img 
+                        src={form.watch("backgroundImageUrl")} 
+                        alt="Vista previa de imagen de fondo" 
+                        className="w-full max-h-48 object-cover rounded"
+                      />
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <ObjectUploader
+                      onGetUploadParameters={handleGetUploadParameters}
+                      onComplete={(result) => handleFileUploadComplete("backgroundImageUrl", result)}
+                      allowedFileTypes={["image/jpeg", "image/png", "image/webp"]}
+                      maxFileSize={5 * 1024 * 1024}
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Subir Imagen de Fondo
+                    </ObjectUploader>
+                    <p className="text-xs text-muted-foreground">
+                      Formatos: JPEG, PNG, WebP • Tamaño máximo: 5 MB
+                    </p>
+                  </div>
                   <FormField
                     control={form.control}
                     name="backgroundImageUrl"

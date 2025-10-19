@@ -850,6 +850,32 @@ export default function BookManagement() {
     }
   };
 
+  // Helper function for background image upload
+  const handleBgImageUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+    if (result.successful && result.successful.length > 0) {
+      const uploadedFile = result.successful[0];
+      const fileURL = uploadedFile.uploadURL;
+      
+      try {
+        const response = await apiRequest("POST", "/api/images/upload", { imageURL: fileURL });
+        const data = await response.json();
+        
+        form.setValue("backgroundImageUrl", data.objectPath);
+        
+        toast({
+          title: "Imagen de fondo subida",
+          description: "La imagen de fondo se ha subido correctamente",
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "No se pudo subir la imagen de fondo",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   const handleAddStoreLink = () => {
     if (!newStoreName.trim() || !newStoreUrl.trim()) {
       toast({
@@ -1746,12 +1772,36 @@ export default function BookManagement() {
                       <h3 className="text-lg font-semibold">{t.sectionBackgroundTitle}</h3>
                       <p className="text-sm text-muted-foreground">{t.sectionBackgroundDescription}</p>
                       
+                      {form.watch("backgroundImageUrl") && (
+                        <div className="border rounded-lg p-4 bg-muted/50">
+                          <img 
+                            src={form.watch("backgroundImageUrl") || ""} 
+                            alt="Vista previa de imagen de fondo" 
+                            className="w-full max-h-48 object-cover rounded"
+                          />
+                        </div>
+                      )}
+                      <div className="space-y-2">
+                        <ObjectUploader
+                          onGetUploadParameters={handleGetUploadParameters}
+                          onComplete={handleBgImageUploadComplete}
+                          allowedFileTypes={["image/jpeg", "image/png", "image/webp"]}
+                          maxFileSize={5 * 1024 * 1024}
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          Subir Imagen de Fondo
+                        </ObjectUploader>
+                        <p className="text-xs text-muted-foreground">
+                          Formatos: JPEG, PNG, WebP • Tamaño máximo: 5 MB
+                        </p>
+                      </div>
+
                       <FormField
                         control={form.control}
                         name="backgroundImageUrl"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>{t.labelBackgroundImageUrl}</FormLabel>
+                            <FormLabel>{t.labelBgImage}</FormLabel>
                             <FormControl>
                               <Input {...field} value={field.value || ""} placeholder={t.placeholderBgImage} data-testid="input-book-bg-image" />
                             </FormControl>
