@@ -31,6 +31,7 @@ function AdminContent() {
   const t = {
     loadingAuthors: useUiText("admin.shell", "loading_authors", "Cargando autores..."),
     noAuthorsAvailable: useUiText("admin.shell", "no_authors_available", "No hay autores disponibles"),
+    createFirstAuthor: useUiText("admin.shell", "create_first_author", "Crea tu primer autor para comenzar"),
     panelTitle: useUiText("admin.shell", "panel_title", "Panel de Administración"),
     selectAuthorPlaceholder: useUiText("admin.shell", "select_author_placeholder", "Seleccionar autor"),
     sectionSelectedAuthor: useUiText("admin.shell", "section_selected_author", "Autor Seleccionado"),
@@ -108,7 +109,7 @@ function AdminContent() {
           <div className="text-center space-y-4">
             <Users className="h-16 w-16 mx-auto text-muted-foreground" />
             <h2 className="text-2xl font-bold">{t.noAuthorsAvailable}</h2>
-            <p className="text-muted-foreground">Crea tu primer autor para comenzar</p>
+            <p className="text-muted-foreground">{t.createFirstAuthor}</p>
             <AuthorManagement />
           </div>
         </div>

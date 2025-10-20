@@ -5,10 +5,29 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { UiText } from "@shared/schema";
+import { useUiText } from "@/contexts/ui-text-context";
 
 export default function SimpleUiTexts() {
   const [selectedNamespace, setSelectedNamespace] = useState<string>("all");
   const [selectedLocale, setSelectedLocale] = useState<string>("es-ES");
+
+  const t = {
+    loading: useUiText("admin.ui_texts", "loading", "Cargando textos..."),
+    errorTitle: useUiText("admin.ui_texts", "error_title", "Error"),
+    pageTitle: useUiText("admin.ui_texts", "page_title", "Textos de la Interfaz"),
+    totalTextsLabel: useUiText("admin.ui_texts", "total_texts_label", "textos en total"),
+    namespacesLabel: useUiText("admin.ui_texts", "namespaces_label", "namespaces"),
+    labelNamespace: useUiText("admin.ui_texts", "label_namespace", "Namespace"),
+    allNamespaces: useUiText("admin.ui_texts", "all_namespaces", "Todos los namespaces"),
+    labelLanguage: useUiText("admin.ui_texts", "label_language", "Idioma"),
+    textsCount: useUiText("admin.ui_texts", "texts_count", "textos"),
+    textsIn: useUiText("admin.ui_texts", "texts_in", "en"),
+    tableHeaderNamespace: useUiText("admin.ui_texts", "table_header_namespace", "Namespace"),
+    tableHeaderKey: useUiText("admin.ui_texts", "table_header_key", "Clave"),
+    tableHeaderValue: useUiText("admin.ui_texts", "table_header_value", "Valor"),
+    emptyState: useUiText("admin.ui_texts", "empty_state", "No hay textos para mostrar"),
+    statsTitle: useUiText("admin.ui_texts", "stats_title", "Estadísticas por Namespace"),
+  };
 
   const { data: uiTexts = [], isLoading, error } = useQuery<UiText[]>({
     queryKey: ["/api/ui-texts"],
@@ -49,7 +68,7 @@ export default function SimpleUiTexts() {
   if (isLoading) {
     return (
       <div className="p-6">
-        <div className="text-center py-8">Cargando textos...</div>
+        <div className="text-center py-8">{t.loading}</div>
       </div>
     );
   }
@@ -58,7 +77,7 @@ export default function SimpleUiTexts() {
     return (
       <div className="p-6">
         <div className="text-center py-8 text-destructive">
-          Error: {error instanceof Error ? error.message : "Error desconocido"}
+          {t.errorTitle}: {error instanceof Error ? error.message : t.errorTitle}
         </div>
       </div>
     );
@@ -68,22 +87,22 @@ export default function SimpleUiTexts() {
     <div className="p-6 space-y-6">
       <div>
         <h2 className="text-3xl font-bold tracking-tight" data-testid="text-ui-texts-title">
-          Textos de la Interfaz
+          {t.pageTitle}
         </h2>
         <p className="text-muted-foreground">
-          {uiTexts.length} textos en total • {namespaces.length} namespaces
+          {uiTexts.length} {t.totalTextsLabel} • {namespaces.length} {t.namespacesLabel}
         </p>
       </div>
 
       <div className="flex gap-4">
         <div className="flex-1">
-          <label className="text-sm font-medium">Namespace</label>
+          <label className="text-sm font-medium">{t.labelNamespace}</label>
           <Select value={selectedNamespace} onValueChange={setSelectedNamespace}>
             <SelectTrigger data-testid="select-namespace">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos los namespaces ({namespaces.length})</SelectItem>
+              <SelectItem value="all">{t.allNamespaces} ({namespaces.length})</SelectItem>
               {namespaces.map((ns) => (
                 <SelectItem key={ns} value={ns}>
                   {ns}
@@ -94,7 +113,7 @@ export default function SimpleUiTexts() {
         </div>
 
         <div className="flex-1">
-          <label className="text-sm font-medium">Idioma</label>
+          <label className="text-sm font-medium">{t.labelLanguage}</label>
           <Select value={selectedLocale} onValueChange={setSelectedLocale}>
             <SelectTrigger data-testid="select-locale">
               <SelectValue />
@@ -113,8 +132,8 @@ export default function SimpleUiTexts() {
       <Card>
         <CardHeader>
           <CardTitle>
-            {filteredTexts.length} textos
-            {selectedNamespace !== "all" && ` en ${selectedNamespace}`}
+            {filteredTexts.length} {t.textsCount}
+            {selectedNamespace !== "all" && ` ${t.textsIn} ${selectedNamespace}`}
             {` (${localeNames[selectedLocale]})`}
           </CardTitle>
         </CardHeader>
@@ -123,16 +142,16 @@ export default function SimpleUiTexts() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[200px]">Namespace</TableHead>
-                  <TableHead className="w-[250px]">Clave</TableHead>
-                  <TableHead>Valor</TableHead>
+                  <TableHead className="w-[200px]">{t.tableHeaderNamespace}</TableHead>
+                  <TableHead className="w-[250px]">{t.tableHeaderKey}</TableHead>
+                  <TableHead>{t.tableHeaderValue}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredTexts.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={3} className="text-center text-muted-foreground">
-                      No hay textos para mostrar
+                      {t.emptyState}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -152,7 +171,7 @@ export default function SimpleUiTexts() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Estadísticas por Namespace</CardTitle>
+          <CardTitle>{t.statsTitle}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2 max-h-[300px] overflow-y-auto">
@@ -161,7 +180,7 @@ export default function SimpleUiTexts() {
               return (
                 <div key={ns} className="flex justify-between items-center text-sm">
                   <span className="font-mono">{ns}</span>
-                  <span className="text-muted-foreground">{count} textos</span>
+                  <span className="text-muted-foreground">{count} {t.textsCount}</span>
                 </div>
               );
             })}
