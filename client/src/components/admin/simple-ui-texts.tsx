@@ -10,8 +10,18 @@ export default function SimpleUiTexts() {
   const [selectedNamespace, setSelectedNamespace] = useState<string>("all");
   const [selectedLocale, setSelectedLocale] = useState<string>("es-ES");
 
-  const { data: uiTexts = [], isLoading } = useQuery<UiText[]>({
+  const { data: uiTexts = [], isLoading, error } = useQuery<UiText[]>({
     queryKey: ["/api/ui-texts"],
+    queryFn: async () => {
+      console.log("Fetching UI texts...");
+      const response = await fetch("/api/ui-texts");
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      const data = await response.json();
+      console.log(`Fetched ${data.length} UI texts`);
+      return data;
+    },
   });
 
   // Extract unique namespaces
@@ -40,6 +50,16 @@ export default function SimpleUiTexts() {
     return (
       <div className="p-6">
         <div className="text-center py-8">Cargando textos...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="text-center py-8 text-destructive">
+          Error: {error instanceof Error ? error.message : "Error desconocido"}
+        </div>
       </div>
     );
   }
