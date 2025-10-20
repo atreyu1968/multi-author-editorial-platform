@@ -26,6 +26,12 @@ Preferred communication style: Simple, everyday language.
 - **Features**: Case-insensitive search, 20-result limit, active/published filtering, locale-aware navigation, responsive design for desktop and mobile
 - **Architect Review**: Approved - scalable for current use, recommend full-text search indexing for future growth beyond few thousand records
 
+### Book Landing Page Route Fix (October 2025)
+- **Fixed Book Pages**: Book landing pages now work correctly with all 7 language routes
+- **Problem**: useRoute pattern didn't match localized URLs (/:locale/libro/:id)
+- **Solution**: Updated BookLanding component to match all localized routes (libro, book, llibre, livre, buch, livro)
+- **Impact**: Books are now accessible in production with proper locale-prefixed URLs
+
 ### Dynamic SEO Titles (October 2025)
 - **Fixed Hardcoded Titles**: Removed hardcoded "María González" from all page titles
 - **Dynamic Editorial Name**: Page titles now use editorial name from database settings ("Atreyu Ediciones")

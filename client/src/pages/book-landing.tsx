@@ -52,8 +52,16 @@ function getSpotifyEmbedUrl(url: string): string {
 }
 
 export default function BookLanding() {
-  const [match, params] = useRoute("/libro/:id");
-  const bookId = params?.id;
+  // Match all localized book routes
+  const [matchLibro, paramsLibro] = useRoute("/:locale/libro/:id"); // es-ES, it-IT
+  const [matchBook, paramsBook] = useRoute("/:locale/book/:id"); // en-US
+  const [matchLlibre, paramsLlibre] = useRoute("/:locale/llibre/:id"); // ca-ES
+  const [matchLivre, paramsLivre] = useRoute("/:locale/livre/:id"); // fr-FR
+  const [matchBuch, paramsBuch] = useRoute("/:locale/buch/:id"); // de-DE
+  const [matchLivro, paramsLivro] = useRoute("/:locale/livro/:id"); // pt-PT
+  
+  const bookId = paramsLibro?.id || paramsBook?.id || paramsLlibre?.id || 
+                 paramsLivre?.id || paramsBuch?.id || paramsLivro?.id;
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const { addToCart } = useCart();
   const { toast } = useToast();
