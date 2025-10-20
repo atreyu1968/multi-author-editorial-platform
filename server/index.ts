@@ -66,22 +66,14 @@ async function startServer() {
     throw err;
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
-
   // ALWAYS serve the app on the port specified in the environment variable PORT
   // Other ports are firewalled. Default to 5000 if not specified.
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
   
-  // Start listening IMMEDIATELY to accept health checks
+  // START LISTENING IMMEDIATELY - This is critical for health checks
+  // All other initialization happens in the background after this
   server.listen({
     port,
     host: "0.0.0.0",
@@ -89,11 +81,23 @@ async function startServer() {
   }, () => {
     log(`serving on port ${port}`);
     
+    // Setup Vite (dev) or static files (production) AFTER server is listening
+    const setupPromise = app.get("env") === "development" 
+      ? setupVite(app, server)
+      : Promise.resolve(serveStatic(app));
+    
     // Run all initialization tasks asynchronously in background
-    // This ensures health checks succeed while initialization happens
+    // Health checks will succeed immediately while initialization happens
     Promise.all([
-      initializeAdminUser(),
-      seedUiTexts()
+      setupPromise,
+      initializeAdminUser().catch(err => {
+        console.error('Warning: Admin user initialization failed:', err);
+        return null;
+      }),
+      seedUiTexts().catch(err => {
+        console.error('Warning: UI texts seed failed:', err);
+        return null;
+      })
     ]).catch(err => {
       console.error('Warning: Background initialization failed:', err);
       // Server continues running even if initialization fails

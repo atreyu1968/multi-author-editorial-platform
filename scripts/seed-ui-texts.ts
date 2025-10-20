@@ -4,12 +4,18 @@ import { readFileSync } from "fs";
 import { sql } from "drizzle-orm";
 
 export async function seedUiTexts() {
-  console.log("🔍 Verificando si necesita seed de UI texts...");
+  // Timeout wrapper to prevent hanging (60 seconds for large seed operations)
+  const timeoutPromise = new Promise((_, reject) => 
+    setTimeout(() => reject(new Error('UI texts seed timeout after 60s')), 60000)
+  );
   
-  // Verificar si ya existen textos
-  const existingCount = await db.select({ count: sql<number>`count(*)` })
-    .from(uiTexts)
-    .then(result => Number(result[0].count));
+  const seedPromise = (async () => {
+    console.log("🔍 Verificando si necesita seed de UI texts...");
+    
+    // Verificar si ya existen textos
+    const existingCount = await db.select({ count: sql<number>`count(*)` })
+      .from(uiTexts)
+      .then(result => Number(result[0].count));
   
   console.log(`   Textos existentes: ${existingCount}`);
   
@@ -55,6 +61,14 @@ export async function seedUiTexts() {
   }
   
   console.log(`✅ Seed completado. ${totalInserted} textos insertados.`);
+  })();
+  
+  try {
+    await Promise.race([seedPromise, timeoutPromise]);
+  } catch (error) {
+    console.error("❌ Error during UI texts seed:", error);
+    throw error; // Re-throw to be caught by caller
+  }
 }
 
 // Si se ejecuta directamente

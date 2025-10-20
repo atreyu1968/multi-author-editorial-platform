@@ -13,10 +13,15 @@ async function hashPassword(password: string) {
 
 /**
  * Initialize default admin user and author if none exists
- * This runs automatically on server startup
+ * This runs automatically on server startup with timeout protection
  */
 export async function initializeAdminUser() {
-  try {
+  // Timeout wrapper to prevent hanging
+  const timeoutPromise = new Promise((_, reject) => 
+    setTimeout(() => reject(new Error('Admin initialization timeout')), 30000)
+  );
+  
+  const initPromise = (async () => {
     // Check if any admin user exists
     const existingUsers = await db.select().from(users).limit(1);
     
@@ -77,7 +82,10 @@ export async function initializeAdminUser() {
       console.log("   Go to /admin and update your credentials.");
       console.log("=".repeat(70));
     }
-    
+  })();
+  
+  try {
+    await Promise.race([initPromise, timeoutPromise]);
   } catch (error) {
     console.error("❌ Error initializing admin user:", error);
     // Don't throw - let the app continue even if this fails
