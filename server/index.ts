@@ -59,9 +59,6 @@ app.use((req, res, next) => {
 
   // Initialize default admin user on first startup
   await initializeAdminUser();
-  
-  // Seed UI texts if database is empty (production first run)
-  await seedUiTexts();
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -91,5 +88,12 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    
+    // Seed UI texts in background after server is running (production first run)
+    // This runs asynchronously and won't block the server
+    seedUiTexts().catch(err => {
+      console.error('Warning: UI texts seed failed:', err);
+      // Server continues running even if seed fails
+    });
   });
 })();
