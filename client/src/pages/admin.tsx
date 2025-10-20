@@ -14,6 +14,7 @@ import BlogManagement from "@/components/admin/blog-management";
 import HelpInstructions from "@/components/admin/help-instructions";
 import UiTextsManagement from "@/components/admin/ui-texts-management";
 import TranslationManagement from "@/components/admin/translation-management";
+import SimpleUiTexts from "@/components/admin/simple-ui-texts";
 import AuthorManagement from "@/components/admin/author-management";
 import EditorialSettingsManagement from "@/components/admin/editorial-settings-management";
 import AnalyticsManagement from "@/components/admin/analytics-management";
@@ -69,9 +70,9 @@ function AdminContent() {
       case 'settings':
         return <SettingsManagement />;
       case 'ui-texts':
-        return <TranslationManagement />;
+        return <SimpleUiTexts />;
       case 'translations':
-        return <UiTextsManagement />;
+        return <TranslationManagement />;
       case 'editorial-settings':
         return <EditorialSettingsManagement />;
       case 'analytics':
