@@ -58,9 +58,6 @@ app.use((req, res, next) => {
 async function startServer() {
   const server = await registerRoutes(app);
 
-  // Initialize default admin user on first startup
-  await initializeAdminUser();
-
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
@@ -83,6 +80,8 @@ async function startServer() {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
+  
+  // Start listening IMMEDIATELY to accept health checks
   server.listen({
     port,
     host: "0.0.0.0",
@@ -90,11 +89,14 @@ async function startServer() {
   }, () => {
     log(`serving on port ${port}`);
     
-    // Seed UI texts in background after server is running (production first run)
-    // This runs asynchronously and won't block the server
-    seedUiTexts().catch(err => {
-      console.error('Warning: UI texts seed failed:', err);
-      // Server continues running even if seed fails
+    // Run all initialization tasks asynchronously in background
+    // This ensures health checks succeed while initialization happens
+    Promise.all([
+      initializeAdminUser(),
+      seedUiTexts()
+    ]).catch(err => {
+      console.error('Warning: Background initialization failed:', err);
+      // Server continues running even if initialization fails
     });
   });
 }
