@@ -54,7 +54,8 @@ app.use((req, res, next) => {
   next();
 });
 
-(async () => {
+// Main server initialization function
+async function startServer() {
   const server = await registerRoutes(app);
 
   // Initialize default admin user on first startup
@@ -96,4 +97,10 @@ app.use((req, res, next) => {
       // Server continues running even if seed fails
     });
   });
-})();
+}
+
+// Start the server - catch any errors but don't exit
+startServer().catch(err => {
+  console.error('Fatal error during server startup:', err);
+  process.exit(1);
+});
