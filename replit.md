@@ -26,6 +26,13 @@ Preferred communication style: Simple, everyday language.
 - **Features**: Case-insensitive search, 20-result limit, active/published filtering, locale-aware navigation, responsive design for desktop and mobile
 - **Architect Review**: Approved - scalable for current use, recommend full-text search indexing for future growth beyond few thousand records
 
+### Dynamic SEO Titles (October 2025)
+- **Fixed Hardcoded Titles**: Removed hardcoded "María González" from all page titles
+- **Dynamic Editorial Name**: Page titles now use editorial name from database settings ("Atreyu Ediciones")
+- **Format**: All pages now show `[Page Title] | [Editorial Name]` in browser tab
+- **Implementation**: SEOHead component now fetches editorial settings and uses dynamic configuration
+- **Structured Data**: Schema.org metadata also updated to use dynamic site URLs and names
+
 ### Content Translation Improvements (October 2025)
 - **Spanish Base Content**: All translation endpoints now automatically include Spanish (es-ES) content as base reference
 - **Improved UX**: Administrators can now see the original content when managing translations

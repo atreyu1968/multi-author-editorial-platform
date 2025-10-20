@@ -1,6 +1,8 @@
 import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { localeToHreflang } from "@/lib/localized-routes";
 import type { Locale } from "@/contexts/locale-context";
+import type { EditorialSettings } from "@shared/schema";
 
 export interface AlternateLink {
   locale: Locale;
@@ -38,15 +40,15 @@ interface SEOConfig {
   twitterHandle?: string;
 }
 
-const seoConfig: SEOConfig = {
-  siteName: "María González - Autora",
-  siteUrl: "https://mariawriter.replit.app", // Update with actual domain
-  defaultTitle: "María González - Autora de Novelas Románticas y Suspenso",
-  defaultDescription: "Descubre las cautivadoras novelas de María González. Desde romances apasionados hasta misterios que te mantendrán despierto toda la noche. Explora mis series y libros independientes.",
-  defaultKeywords: ["María González", "autora", "novelas", "romance", "suspenso", "libros", "ficción", "literatura"],
-  defaultAuthor: "María González",
+const defaultSeoConfig: SEOConfig = {
+  siteName: "Editorial",
+  siteUrl: typeof window !== 'undefined' ? window.location.origin : "",
+  defaultTitle: "Plataforma Editorial Multi-Autor",
+  defaultDescription: "Descubre nuestro catálogo de autores y obras literarias. Explora series y libros de diversos géneros.",
+  defaultKeywords: ["editorial", "autores", "novelas", "libros", "ficción", "literatura"],
+  defaultAuthor: "Editorial",
   defaultOgImage: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=630",
-  twitterHandle: "@MariaGonzalezAuthor"
+  twitterHandle: ""
 };
 
 export function SEOHead({
@@ -68,6 +70,21 @@ export function SEOHead({
   structuredData,
   faviconUrl
 }: SEOProps) {
+  const { data: editorialSettings } = useQuery<EditorialSettings>({
+    queryKey: ["/api/editorial-settings"],
+  });
+
+  const seoConfig = editorialSettings ? {
+    siteName: editorialSettings.name,
+    siteUrl: typeof window !== 'undefined' ? window.location.origin : "",
+    defaultTitle: `${editorialSettings.name} - Plataforma Editorial`,
+    defaultDescription: editorialSettings.heroSubtitle || defaultSeoConfig.defaultDescription,
+    defaultKeywords: defaultSeoConfig.defaultKeywords,
+    defaultAuthor: editorialSettings.name,
+    defaultOgImage: editorialSettings.logoUrl || defaultSeoConfig.defaultOgImage,
+    twitterHandle: defaultSeoConfig.twitterHandle
+  } : defaultSeoConfig;
+
   const fullTitle = title 
     ? `${title} | ${seoConfig.siteName}`
     : seoConfig.defaultTitle;
@@ -272,118 +289,133 @@ export function SEOHead({
 
 // Helper function to generate structured data for different page types
 export const generateStructuredData = {
-  author: (author: any) => ({
-    "@context": "https://schema.org",
-    "@type": "Person",
-    "name": author.name,
-    "jobTitle": "Autora",
-    "description": author.bio,
-    "image": author.photo,
-    "url": seoConfig.siteUrl,
-    "sameAs": [
-      author.twitterUrl,
-      author.facebookUrl,
-      author.instagramUrl,
-      author.amazonUrl
-    ].filter(Boolean)
-  }),
-
-  book: (book: any) => ({
-    "@context": "https://schema.org",
-    "@type": "Book",
-    "name": book.title,
-    "author": {
+  author: (author: any) => {
+    const siteUrl = typeof window !== 'undefined' ? window.location.origin : "";
+    return {
+      "@context": "https://schema.org",
       "@type": "Person",
-      "name": seoConfig.defaultAuthor
-    },
-    "description": book.description,
-    "genre": book.genre,
-    "image": book.coverUrl,
-    "url": `${seoConfig.siteUrl}/libro/${book.id}`,
-    "datePublished": book.publicationDate,
-    "inLanguage": "es",
-    "offers": book.amazonUrl ? {
-      "@type": "Offer",
-      "url": book.amazonUrl,
-      "availability": "https://schema.org/InStock",
-      "seller": {
-        "@type": "Organization",
-        "name": "Amazon"
-      }
-    } : undefined
-  }),
+      "name": author.name,
+      "jobTitle": "Autora",
+      "description": author.bio,
+      "image": author.photo,
+      "url": siteUrl,
+      "sameAs": [
+        author.twitterUrl,
+        author.facebookUrl,
+        author.instagramUrl,
+        author.amazonUrl
+      ].filter(Boolean)
+    };
+  },
 
-  bookSeries: (series: any, books: any[]) => ({
-    "@context": "https://schema.org",
-    "@type": "BookSeries",
-    "name": series.title,
-    "description": series.description,
-    "author": {
-      "@type": "Person",
-      "name": seoConfig.defaultAuthor
-    },
-    "numberOfItems": books.length,
-    "genre": series.genre,
-    "hasPart": books.map(book => ({
+  book: (book: any) => {
+    const siteUrl = typeof window !== 'undefined' ? window.location.origin : "";
+    return {
+      "@context": "https://schema.org",
       "@type": "Book",
       "name": book.title,
-      "position": book.orderInSeries,
-      "url": `${seoConfig.siteUrl}/libro/${book.id}`
-    }))
-  }),
-
-  article: (post: any) => ({
-    "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    "headline": post.title,
-    "description": post.excerpt,
-    "articleBody": post.content,
-    "author": {
-      "@type": "Person",
-      "name": seoConfig.defaultAuthor
-    },
-    "publisher": {
-      "@type": "Organization",
-      "name": seoConfig.siteName,
-      "logo": {
-        "@type": "ImageObject",
-        "url": seoConfig.defaultOgImage
-      }
-    },
-    "datePublished": post.publishedAt,
-    "dateModified": post.updatedAt,
-    "mainEntityOfPage": {
-      "@type": "WebPage",
-      "@id": `${seoConfig.siteUrl}/blog/${post.id}`
-    },
-    "image": {
-      "@type": "ImageObject",
-      "url": post.featuredImage || seoConfig.defaultOgImage,
-      "width": 1200,
-      "height": 630
-    },
-    "articleSection": post.category,
-    "keywords": post.tags?.join(", ")
-  }),
-
-  website: () => ({
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": seoConfig.siteName,
-    "url": seoConfig.siteUrl,
-    "description": seoConfig.defaultDescription,
-    "author": {
-      "@type": "Person",
-      "name": seoConfig.defaultAuthor
-    },
-    "inLanguage": "es",
-    "potentialAction": {
-      "@type": "SearchAction",
-      "target": {
-        "@type": "EntryPoint",
-        "urlTemplate": `${seoConfig.siteUrl}/buscar?q={search_term_string}`
+      "author": {
+        "@type": "Person",
+        "name": book.authorName || defaultSeoConfig.defaultAuthor
       },
-      "query-input": "required name=search_term_string"
-    }
-  })
+      "description": book.description,
+      "genre": book.genre,
+      "image": book.coverUrl,
+      "url": `${siteUrl}/libro/${book.id}`,
+      "datePublished": book.publicationDate,
+      "inLanguage": "es",
+      "offers": book.amazonUrl ? {
+        "@type": "Offer",
+        "url": book.amazonUrl,
+        "availability": "https://schema.org/InStock",
+        "seller": {
+          "@type": "Organization",
+          "name": "Amazon"
+        }
+      } : undefined
+    };
+  },
+
+  bookSeries: (series: any, books: any[]) => {
+    const siteUrl = typeof window !== 'undefined' ? window.location.origin : "";
+    return {
+      "@context": "https://schema.org",
+      "@type": "BookSeries",
+      "name": series.title,
+      "description": series.description,
+      "author": {
+        "@type": "Person",
+        "name": series.authorName || defaultSeoConfig.defaultAuthor
+      },
+      "numberOfItems": books.length,
+      "genre": series.genre,
+      "hasPart": books.map(book => ({
+        "@type": "Book",
+        "name": book.title,
+        "position": book.orderInSeries,
+        "url": `${siteUrl}/libro/${book.id}`
+      }))
+    };
+  },
+
+  article: (post: any) => {
+    const siteUrl = typeof window !== 'undefined' ? window.location.origin : "";
+    return {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      "headline": post.title,
+      "description": post.excerpt,
+      "articleBody": post.content,
+      "author": {
+        "@type": "Person",
+        "name": post.authorName || defaultSeoConfig.defaultAuthor
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": defaultSeoConfig.siteName,
+        "logo": {
+          "@type": "ImageObject",
+          "url": defaultSeoConfig.defaultOgImage
+        }
+      },
+      "datePublished": post.publishedAt,
+      "dateModified": post.updatedAt,
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": `${siteUrl}/blog/${post.id}`
+      },
+      "image": {
+        "@type": "ImageObject",
+        "url": post.featuredImage || defaultSeoConfig.defaultOgImage,
+        "width": 1200,
+        "height": 630
+      },
+      "articleSection": post.category,
+      "keywords": post.tags?.join(", ")
+    };
+  },
+
+  website: () => {
+    const siteUrl = typeof window !== 'undefined' ? window.location.origin : "";
+    return {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": defaultSeoConfig.siteName,
+      "url": siteUrl,
+      "description": defaultSeoConfig.defaultDescription,
+      "author": {
+        "@type": "Person",
+        "name": defaultSeoConfig.defaultAuthor
+      },
+      "inLanguage": "es",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": `${siteUrl}/buscar?q={search_term_string}`
+        },
+        "query-input": "required name=search_term_string"
+      }
+    };
+  }
 };
