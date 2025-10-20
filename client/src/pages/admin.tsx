@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { ArrowLeft, Home, BookOpen, Users, User, Star, Settings, FileText, HelpCircle, Type, UserCircle, Building2, BarChart3, ShoppingCart, Languages } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DynamicTheme } from "@/components/dynamic-theme";
+import { SEOHead } from "@/components/seo/seo-head";
 import AdminDashboard from "@/components/admin/admin-dashboard";
 import BookManagement from "@/components/admin/book-management";
 import SeriesManagement from "@/components/admin/series-management";
@@ -126,6 +127,7 @@ function AdminContent() {
 
   return (
     <DynamicTheme authorId={selectedAuthorId!}>
+      <SEOHead title={t.panelTitle} />
       <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="bg-primary text-primary-foreground p-6 flex justify-between items-center">
