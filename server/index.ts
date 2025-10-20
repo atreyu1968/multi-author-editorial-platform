@@ -3,6 +3,7 @@ import helmet from "helmet";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeAdminUser } from "./init-admin";
+import { seedUiTexts } from "../scripts/seed-ui-texts";
 
 const app = express();
 
@@ -58,6 +59,9 @@ app.use((req, res, next) => {
 
   // Initialize default admin user on first startup
   await initializeAdminUser();
+  
+  // Seed UI texts if database is empty (production first run)
+  await seedUiTexts();
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
