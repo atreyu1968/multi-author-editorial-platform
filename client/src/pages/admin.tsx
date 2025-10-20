@@ -69,9 +69,9 @@ function AdminContent() {
       case 'settings':
         return <SettingsManagement />;
       case 'ui-texts':
-        return <UiTextsManagement />;
-      case 'translations':
         return <TranslationManagement />;
+      case 'translations':
+        return <UiTextsManagement />;
       case 'editorial-settings':
         return <EditorialSettingsManagement />;
       case 'analytics':
