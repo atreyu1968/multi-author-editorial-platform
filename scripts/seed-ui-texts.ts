@@ -4,9 +4,9 @@ import { readFileSync } from "fs";
 import { sql } from "drizzle-orm";
 
 export async function seedUiTexts() {
-  // Timeout wrapper to prevent hanging (60 seconds for large seed operations)
+  // Timeout wrapper to prevent hanging (5 minutes for large seed operations)
   const timeoutPromise = new Promise((_, reject) => 
-    setTimeout(() => reject(new Error('UI texts seed timeout after 60s')), 60000)
+    setTimeout(() => reject(new Error('UI texts seed timeout after 5 minutes')), 300000)
   );
   
   const seedPromise = (async () => {
@@ -18,13 +18,6 @@ export async function seedUiTexts() {
       .then(result => Number(result[0].count));
   
   console.log(`   Textos existentes: ${existingCount}`);
-  
-  // Si ya hay más de 10000 textos, asumir que ya está poblada
-  // (el seed completo inserta 11,238 textos en 7 idiomas)
-  if (existingCount > 10000) {
-    console.log("✅ Base de datos ya tiene textos. Saltando seed.");
-    return;
-  }
   
   console.log("📦 Cargando textos desde archivo...");
   
@@ -38,30 +31,49 @@ export async function seedUiTexts() {
     return;
   }
   
-  console.log("💾 Insertando textos en la base de datos...");
+  // Calcular cuántos textos hay en el archivo
+  let totalInFile = 0;
+  for (const texts of Object.values(seedData)) {
+    totalInFile += texts.length;
+  }
+  
+  console.log(`   Total en archivo: ${totalInFile}`);
+  
+  // Si ya están todos los textos, saltar
+  if (existingCount >= totalInFile) {
+    console.log("✅ Base de datos ya tiene todos los textos. Saltando seed.");
+    return;
+  }
+  
+  console.log(`💾 Insertando ${totalInFile - existingCount} textos faltantes...`);
   
   let totalInserted = 0;
+  let totalSkipped = 0;
   
   for (const [namespace, texts] of Object.entries(seedData)) {
-    console.log(`   Insertando ${texts.length} textos de ${namespace}...`);
+    console.log(`   Procesando ${texts.length} textos de ${namespace}...`);
     
     for (const text of texts) {
       try {
-        await db.insert(uiTexts).values({
+        const result = await db.insert(uiTexts).values({
           namespace,
           key: text.key,
           locale: text.locale,
           value: text.value
-        }).onConflictDoNothing();
+        }).onConflictDoNothing().returning();
         
-        totalInserted++;
+        if (result.length > 0) {
+          totalInserted++;
+        } else {
+          totalSkipped++;
+        }
       } catch (error) {
-        // Ignorar errores de duplicados
+        totalSkipped++;
       }
     }
   }
   
-  console.log(`✅ Seed completado. ${totalInserted} textos insertados.`);
+  console.log(`✅ Seed completado. ${totalInserted} textos insertados, ${totalSkipped} duplicados saltados.`);
   })();
   
   try {

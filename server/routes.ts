@@ -853,6 +853,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Force seed UI texts (temporary endpoint for production database population)
+  app.post("/api/admin/force-seed-ui-texts", requireAuth, async (req, res) => {
+    try {
+      const { seedUiTexts } = await import("../scripts/seed-ui-texts");
+      console.log("🔄 Manual seed triggered by admin");
+      await seedUiTexts();
+      res.json({ message: "UI texts seed completed successfully" });
+    } catch (error) {
+      console.error("❌ Seed error:", error);
+      res.status(500).json({ message: "Seed failed: " + (error as Error).message });
+    }
+  });
+
   // Translation Management routes
   app.get("/api/translations/summary", requireAuth, async (req, res) => {
     try {
