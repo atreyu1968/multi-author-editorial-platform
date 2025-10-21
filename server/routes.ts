@@ -56,8 +56,8 @@ function isValidHexColor(color: string): boolean {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Health check endpoint for deployment platform at root (must be first)
-  app.get("/", (_req, res) => {
+  // Health check endpoint for deployment platform
+  app.get("/health", (_req, res) => {
     res.status(200).json({ status: "ok" });
   });
 
