@@ -66,14 +66,21 @@ async function startServer() {
     throw err;
   });
 
+  // Setup Vite (dev) or static files (production) BEFORE listening
+  // This is just middleware setup, not expensive - ensures routes are properly configured
+  if (app.get("env") === "development") {
+    await setupVite(app, server);
+  } else {
+    serveStatic(app);
+  }
+
   // ALWAYS serve the app on the port specified in the environment variable PORT
   // Other ports are firewalled. Default to 5000 if not specified.
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
   
-  // START LISTENING IMMEDIATELY - This is critical for health checks
-  // All other initialization happens in the background after this
+  // START LISTENING - Health check is now ready to respond
   server.listen({
     port,
     host: "0.0.0.0",
@@ -81,15 +88,9 @@ async function startServer() {
   }, () => {
     log(`serving on port ${port}`);
     
-    // Setup Vite (dev) or static files (production) AFTER server is listening
-    const setupPromise = app.get("env") === "development" 
-      ? setupVite(app, server)
-      : Promise.resolve(serveStatic(app));
-    
-    // Run all initialization tasks asynchronously in background
-    // Health checks will succeed immediately while initialization happens
+    // Run ONLY database initialization tasks asynchronously in background
+    // Health checks succeed immediately while these expensive operations happen
     Promise.all([
-      setupPromise,
       initializeAdminUser().catch(err => {
         console.error('Warning: Admin user initialization failed:', err);
         return null;
