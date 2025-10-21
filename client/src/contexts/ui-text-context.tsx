@@ -18,7 +18,7 @@ interface UiTextProviderProps {
 export function UiTextProvider({ children }: UiTextProviderProps) {
   const { locale } = useLocale();
   const { data: uiTexts = [], isLoading } = useQuery<UiText[]>({
-    queryKey: ["/api/ui-texts", { locale }],
+    queryKey: [`/api/ui-texts?locale=${locale}`],
     staleTime: 1000 * 60 * 5,
   });
 
