@@ -19,8 +19,9 @@ export async function seedUiTexts() {
   
   console.log(`   Textos existentes: ${existingCount}`);
   
-  // Si ya hay más de 1000 textos, asumir que ya está poblada
-  if (existingCount > 1000) {
+  // Si ya hay más de 10000 textos, asumir que ya está poblada
+  // (el seed completo inserta 11,238 textos en 7 idiomas)
+  if (existingCount > 10000) {
     console.log("✅ Base de datos ya tiene textos. Saltando seed.");
     return;
   }
