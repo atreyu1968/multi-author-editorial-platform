@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
-import { Save, Info, ExternalLink, Upload } from "lucide-react";
+import { Save, Info, ExternalLink, Upload, Database, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,7 +15,7 @@ import type { EditorialSettings } from "@shared/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertEditorialSettingsSchema } from "@shared/schema";
 import { getCurrencySymbol } from "@/lib/format-currency";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useUiText } from "@/contexts/ui-text-context";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import type { UploadResult } from "@uppy/core";
@@ -72,6 +72,7 @@ function EmailProviderInstructions({ provider, instructionsTitle, instructionsLi
 
 export default function EditorialSettingsManagement() {
   const { toast } = useToast();
+  const [isSeedingTexts, setIsSeedingTexts] = useState(false);
 
   const emailProviderSteps: Record<string, string[]> = {
     "Resend": ["Ve a tu cuenta de Resend", "Genera una nueva API Key en Settings", "Copia la key y pégala aquí"],
@@ -403,6 +404,35 @@ export default function EditorialSettingsManagement() {
     }
   };
 
+  const handleSeedTexts = async () => {
+    setIsSeedingTexts(true);
+    try {
+      const response = await apiRequest("POST", "/api/admin/force-seed-ui-texts", {});
+      const data = await response.json();
+      
+      toast({
+        title: "Textos actualizados",
+        description: "Los textos de UI se han actualizado correctamente. Recarga la página para ver los cambios.",
+      });
+      
+      // Invalidar cache para forzar recarga de textos
+      queryClient.invalidateQueries({ queryKey: ["/api/ui-texts"] });
+      
+      // Recargar página después de 2 segundos
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudieron actualizar los textos de UI",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSeedingTexts(false);
+    }
+  };
+
   if (isLoading) {
     return <div className="text-center py-12">{t.loading}</div>;
   }
@@ -421,7 +451,7 @@ export default function EditorialSettingsManagement() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <Tabs defaultValue="branding" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 mb-6">
+            <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9 mb-6">
               <TabsTrigger value="branding" data-testid="tab-branding">{t.tabBranding}</TabsTrigger>
               <TabsTrigger value="hero" data-testid="tab-hero">{t.tabHero}</TabsTrigger>
               <TabsTrigger value="features" data-testid="tab-features">{t.tabFeatures}</TabsTrigger>
@@ -430,6 +460,7 @@ export default function EditorialSettingsManagement() {
               <TabsTrigger value="seo" data-testid="tab-seo">{t.tabSeo}</TabsTrigger>
               <TabsTrigger value="paypal" data-testid="tab-paypal">{t.tabPaypal}</TabsTrigger>
               <TabsTrigger value="email" data-testid="tab-email">{t.tabEmail}</TabsTrigger>
+              <TabsTrigger value="system" data-testid="tab-system">Sistema</TabsTrigger>
             </TabsList>
 
             <TabsContent value="branding" className="space-y-6">
@@ -1470,6 +1501,52 @@ export default function EditorialSettingsManagement() {
                       </FormItem>
                     )}
                   />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="system" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Database className="h-5 w-5" />
+                    Mantenimiento de Base de Datos
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      Si los textos del panel de administración no se muestran correctamente (aparecen como "admin.editorial_settings.label_name"), 
+                      usa este botón para actualizar todos los textos de la interfaz.
+                    </p>
+                    <Alert className="bg-yellow-50 border-yellow-200 dark:bg-yellow-950/30 dark:border-yellow-900">
+                      <Info className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                      <AlertDescription className="text-sm text-yellow-800 dark:text-yellow-200">
+                        Este proceso insertará aproximadamente 8,000 textos faltantes en la base de datos. 
+                        Puede tomar 1-2 minutos. La página se recargará automáticamente al finalizar.
+                      </AlertDescription>
+                    </Alert>
+                    <Button 
+                      type="button"
+                      onClick={handleSeedTexts}
+                      disabled={isSeedingTexts}
+                      variant="default"
+                      className="w-full sm:w-auto"
+                      data-testid="button-seed-texts"
+                    >
+                      {isSeedingTexts ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                          Actualizando textos...
+                        </>
+                      ) : (
+                        <>
+                          <Database className="h-4 w-4 mr-2" />
+                          Actualizar Textos de UI
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
