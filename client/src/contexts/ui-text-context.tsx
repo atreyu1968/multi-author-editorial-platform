@@ -26,13 +26,6 @@ export function UiTextProvider({ children }: UiTextProviderProps) {
   // Filter by locale before populating the map to prevent other locales from overwriting
   const filteredTexts = uiTexts.filter(text => text.locale === locale);
   
-  // Temporary debug logging
-  if (uiTexts.length > 0) {
-    console.log(`[UiTextProvider] Total texts received: ${uiTexts.length}, Filtered for ${locale}: ${filteredTexts.length}`);
-    const locales = Array.from(new Set(uiTexts.map(t => t.locale)));
-    console.log(`[UiTextProvider] Locales in response: ${locales.join(', ')}`);
-  }
-  
   for (const text of filteredTexts) {
     const mapKey = `${text.namespace}.${text.key}`;
     textsMap.set(mapKey, text.value);
