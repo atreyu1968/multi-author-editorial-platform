@@ -70,16 +70,3 @@ export async function seedUiTexts() {
     throw error; // Re-throw to be caught by caller
   }
 }
-
-// Si se ejecuta directamente
-if (import.meta.url === `file://${process.argv[1]}`) {
-  seedUiTexts()
-    .then(() => {
-      console.log("✅ Seed ejecutado exitosamente");
-      process.exit(0);
-    })
-    .catch(error => {
-      console.error("❌ Error ejecutando seed:", error);
-      process.exit(1);
-    });
-}
