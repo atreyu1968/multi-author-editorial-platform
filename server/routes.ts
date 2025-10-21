@@ -1111,13 +1111,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/editorial-settings", requireAuth, async (req, res) => {
     try {
       const validatedSettings = insertEditorialSettingsSchema.partial().parse(req.body);
+      
+      // This will create or update the settings automatically
       const settings = await storage.updateEditorialSettings(validatedSettings);
+      
       if (!settings) {
-        res.status(404).json({ message: "Editorial settings not found" });
+        res.status(500).json({ message: "Failed to update editorial settings" });
         return;
       }
       res.json(settings);
     } catch (error) {
+      console.error("Editorial settings update error:", error);
       res.status(400).json({ message: "Invalid editorial settings data" });
     }
   });

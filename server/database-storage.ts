@@ -636,8 +636,14 @@ export class DatabaseStorage implements IStorage {
 
   async updateEditorialSettings(settings: Partial<InsertEditorialSettings>): Promise<EditorialSettings | undefined> {
     const existing = await this.getEditorialSettings();
+    
     if (!existing) {
-      return undefined;
+      // Create initial settings if they don't exist
+      const [created] = await db
+        .insert(editorialSettings)
+        .values(settings as InsertEditorialSettings)
+        .returning();
+      return created || undefined;
     }
     
     const [updated] = await db
