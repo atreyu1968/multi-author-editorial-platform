@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import type { Book } from "@shared/schema";
@@ -56,6 +57,39 @@ function isValidHexColor(color: string): boolean {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Rate limiters for critical endpoints
+  const newsletterLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 5, // 5 signups per hour per IP
+    message: { message: "Too many newsletter signup attempts, please try again later" },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  const orderLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 20, // 20 orders per 15 minutes per IP
+    message: { message: "Too many order attempts, please try again later" },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  const paypalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 30, // 30 PayPal calls per 15 minutes per IP
+    message: { message: "Too many payment attempts, please try again later" },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  const downloadLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 50, // 50 download attempts per hour per IP
+    message: { message: "Too many download attempts, please try again later" },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
   // Health check endpoint for deployment platform
   app.get("/health", (_req, res) => {
     res.status(200).json({ status: "ok" });
@@ -525,7 +559,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/newsletter", async (req, res) => {
+  app.post("/api/newsletter", newsletterLimiter, async (req, res) => {
     try {
       const validatedSubscriber = insertNewsletterSchema.parse(req.body);
       const subscriber = await storage.createNewsletterSubscriber(validatedSubscriber);
@@ -1457,7 +1491,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/orders", async (req, res) => {
+  app.post("/api/orders", orderLimiter, async (req, res) => {
     try {
       const validatedOrder = insertOrderSchema.parse(req.body);
       const order = await storage.createOrder(validatedOrder);
@@ -1534,7 +1568,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Secure digital file download endpoint with token validation
-  app.get("/api/download/:token", async (req, res) => {
+  app.get("/api/download/:token", downloadLimiter, async (req, res) => {
     try {
       const { token } = req.params;
 
@@ -1975,16 +2009,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PayPal routes - Referenced from blueprint:javascript_paypal
-  app.get("/paypal/setup", async (req, res) => {
+  app.get("/paypal/setup", paypalLimiter, async (req, res) => {
     await loadPaypalDefault(req, res);
   });
 
-  app.post("/paypal/order", async (req, res) => {
+  app.post("/paypal/order", paypalLimiter, async (req, res) => {
     // Request body should contain: { intent, amount, currency }
     await createPaypalOrder(req, res);
   });
 
-  app.post("/paypal/order/:orderID/capture", async (req, res) => {
+  app.post("/paypal/order/:orderID/capture", paypalLimiter, async (req, res) => {
     await capturePaypalOrder(req, res);
   });
 

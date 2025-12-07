@@ -229,7 +229,9 @@ import createMemoryStore from "memorystore";
 
 const MemoryStore = createMemoryStore(session);
 
-export class MemStorage implements IStorage {
+// Note: MemStorage is deprecated - use DatabaseStorage instead
+// Keeping for reference but not implementing full IStorage interface
+export class MemStorage {
   private authors: Map<string, Author>;
   private bookSeries: Map<string, BookSeries>;
   private books: Map<string, Book>;
