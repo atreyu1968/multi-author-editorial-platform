@@ -1506,14 +1506,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Valid order status values
+  const orderStatusSchema = z.enum(['pending', 'processing', 'completed', 'cancelled', 'refunded']);
+
   app.put("/api/orders/:id/status", requireAuth, async (req, res) => {
     try {
       const { status } = req.body;
-      if (!status) {
-        res.status(400).json({ message: "Status is required" });
+      
+      // Validate status with Zod
+      const validationResult = orderStatusSchema.safeParse(status);
+      if (!validationResult.success) {
+        res.status(400).json({ 
+          message: "Invalid status. Must be one of: pending, processing, completed, cancelled, refunded" 
+        });
         return;
       }
-      const order = await storage.updateOrderStatus(req.params.id, status);
+      
+      const order = await storage.updateOrderStatus(req.params.id, validationResult.data);
       if (!order) {
         res.status(404).json({ message: "Order not found" });
         return;
@@ -2192,6 +2201,39 @@ ${sitemapRefs}`;
     }
   });
 
+  // Cache for exchange rates (24 hour TTL)
+  let cachedRates: { rates: Record<string, number>; timestamp: number } | null = null;
+  const RATES_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+  // Fallback rates if API fails
+  const FALLBACK_RATES: Record<string, number> = {
+    EUR: 1.0, USD: 1.10, GBP: 0.85, JPY: 165.0, CNY: 7.85,
+    KRW: 1450.0, BRL: 5.50, MXN: 18.50, ARS: 350.0, CAD: 1.48,
+    AUD: 1.65, CHF: 0.95, SEK: 11.20, NOK: 11.50, DKK: 7.45,
+  };
+
+  async function getServerExchangeRates(): Promise<Record<string, number>> {
+    // Check cache first
+    if (cachedRates && Date.now() - cachedRates.timestamp < RATES_CACHE_TTL) {
+      return cachedRates.rates;
+    }
+
+    try {
+      const response = await fetch('https://api.frankfurter.app/latest?from=EUR');
+      if (!response.ok) throw new Error('API error');
+      
+      const data = await response.json();
+      const rates = { EUR: 1.0, ...data.rates };
+      
+      // Update cache
+      cachedRates = { rates, timestamp: Date.now() };
+      return rates;
+    } catch (error) {
+      console.error('Exchange rates API failed, using fallback:', error);
+      return FALLBACK_RATES;
+    }
+  }
+
   app.get("/api/currency/convert", async (req, res) => {
     try {
       const { from = 'EUR', to = 'USD', amount = 100 } = req.query;
@@ -2202,16 +2244,22 @@ ${sitemapRefs}`;
         res.status(400).json({ message: 'Invalid amount' });
         return;
       }
+
+      // Get rates (cached or fresh)
+      const rates = await getServerExchangeRates();
       
-      // Fetch current rates
-      const response = await fetch('https://api.frankfurter.app/latest?from=' + from);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch exchange rates');
+      // For non-EUR base, we need to convert through EUR
+      let rate = 1.0;
+      if (from === 'EUR') {
+        rate = rates[to as string] || 1.0;
+      } else if (to === 'EUR') {
+        rate = 1.0 / (rates[from as string] || 1.0);
+      } else {
+        // Convert from -> EUR -> to
+        const fromRate = rates[from as string] || 1.0;
+        const toRate = rates[to as string] || 1.0;
+        rate = toRate / fromRate;
       }
-      
-      const data = await response.json();
-      const rate = data.rates[to as string] || 1.0;
       
       // Convert using integer math (amount is in cents)
       const rateAsInt = Math.round(rate * 10000);

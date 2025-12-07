@@ -84,12 +84,19 @@ export function getCurrencyForLocale(locale: string): string {
 }
 
 /**
- * Fetch exchange rates from external API
- * Uses Frankfurter API (free, no API key required)
+ * Fetch exchange rates from backend API (which proxies to external API with fallback)
+ * Browser calls /api/currency/rates, server calls external API directly
  */
 export async function fetchExchangeRates(): Promise<ExchangeRates> {
   try {
-    const response = await fetch('https://api.frankfurter.app/latest?from=EUR');
+    // In browser, use backend endpoint (handles CORS and has fallback)
+    // On server, call external API directly
+    const isBrowser = typeof window !== 'undefined';
+    const apiUrl = isBrowser 
+      ? '/api/currency/rates'
+      : 'https://api.frankfurter.app/latest?from=EUR';
+    
+    const response = await fetch(apiUrl);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch exchange rates: ${response.status}`);
@@ -97,20 +104,21 @@ export async function fetchExchangeRates(): Promise<ExchangeRates> {
     
     const data = await response.json();
     
-    // Ensure EUR is in the rates (as 1.0)
+    // Backend returns { base, date, rates } format
+    // External API returns { base, date, rates } too
     const rates: Record<string, number> = {
       EUR: 1.0,
       ...data.rates,
     };
     
     return {
-      base: 'EUR',
+      base: data.base || 'EUR',
       date: data.date,
       rates,
     };
   } catch (error) {
     console.error('Error fetching exchange rates:', error);
-    // Return fallback rates
+    // Return fallback rates - ensures currency conversion always works
     return {
       base: 'EUR',
       date: new Date().toISOString().split('T')[0],

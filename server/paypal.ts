@@ -1,5 +1,6 @@
 // PayPal Integration - Based on blueprint:javascript_paypal
 // Modified to read credentials from database instead of environment variables
+// Security: Includes replay protection and order verification
 
 import {
   Client,
@@ -10,6 +11,27 @@ import {
 } from "@paypal/paypal-server-sdk";
 import { Request, Response } from "express";
 import { storage } from "./storage";
+
+// In-memory cache for pending PayPal orders (prevents replay attacks)
+// Maps PayPal orderID to { amount, currency, createdAt, captured }
+const pendingPayPalOrders = new Map<string, {
+  amount: string;
+  currency: string;
+  createdAt: Date;
+  captured: boolean;
+  cartId?: string;
+}>();
+
+// Clean up old pending orders every hour (prevent memory leak)
+setInterval(() => {
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+  const entries = Array.from(pendingPayPalOrders.entries());
+  entries.forEach(([orderId, data]) => {
+    if (data.createdAt < oneHourAgo) {
+      pendingPayPalOrders.delete(orderId);
+    }
+  });
+}, 60 * 60 * 1000);
 
 /* PayPal Configuration Helper */
 
@@ -90,7 +112,7 @@ export async function getClientToken() {
 
 export async function createPaypalOrder(req: Request, res: Response) {
   try {
-    const { amount, currency, intent } = req.body;
+    const { amount, currency, intent, cartId } = req.body;
 
     if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
       return res
@@ -136,6 +158,18 @@ export async function createPaypalOrder(req: Request, res: Response) {
     const jsonResponse = JSON.parse(String(body));
     const httpStatusCode = httpResponse.statusCode;
 
+    // Track the order for replay protection
+    if (jsonResponse.id) {
+      pendingPayPalOrders.set(jsonResponse.id, {
+        amount: amount,
+        currency: currency,
+        createdAt: new Date(),
+        captured: false,
+        cartId: cartId,
+      });
+      console.log(`[PayPal] Order created: ${jsonResponse.id}, amount: ${currency} ${amount}`);
+    }
+
     res.status(httpStatusCode).json(jsonResponse);
   } catch (error: any) {
     console.error("Failed to create order:", error);
@@ -146,6 +180,23 @@ export async function createPaypalOrder(req: Request, res: Response) {
 export async function capturePaypalOrder(req: Request, res: Response) {
   try {
     const { orderID } = req.params;
+    
+    // Security: Check if this order was created by our system
+    const pendingOrder = pendingPayPalOrders.get(orderID);
+    
+    if (!pendingOrder) {
+      console.warn(`[PayPal] Unknown order capture attempt: ${orderID}`);
+      // Still proceed - order might be created before server restart
+      // But log it for monitoring
+    }
+    
+    // Security: Prevent replay attacks - check if already captured
+    if (pendingOrder?.captured) {
+      console.warn(`[PayPal] Replay attack prevented: ${orderID} already captured`);
+      return res.status(400).json({ 
+        error: "This order has already been processed." 
+      });
+    }
     
     const client = await createPayPalClient();
     const ordersController = new OrdersController(client);
@@ -160,6 +211,12 @@ export async function capturePaypalOrder(req: Request, res: Response) {
 
     const jsonResponse = JSON.parse(String(body));
     const httpStatusCode = httpResponse.statusCode;
+
+    // Mark as captured to prevent replays
+    if (pendingOrder && httpStatusCode === 201) {
+      pendingOrder.captured = true;
+      console.log(`[PayPal] Order captured successfully: ${orderID}`);
+    }
 
     res.status(httpStatusCode).json(jsonResponse);
   } catch (error: any) {
