@@ -2,75 +2,11 @@
 
 ## Overview
 
-This project is a full-stack web application designed to manage up to 30 authors within a single editorial platform. It provides each author with customizable landing pages, including sections for their books, biography, testimonials, newsletter, and blog. A centralized admin panel allows editorial staff to manage all content, which is stored in a single PostgreSQL database with data scoped by `authorId`. The platform aims to be a robust, modern single-page application solution for literary agencies or publishers to efficiently manage multiple author presences under one umbrella, offering features like dynamic theming, content personalization, promotional material management, and multi-author series support. It also includes a proprietary analytics system and a secure digital product download system.
+This project is a full-stack web application designed to manage up to 30 authors within a single editorial platform. It provides each author with customizable landing pages, including sections for their books, biography, testimonials, newsletter, and blog. A centralized admin panel allows editorial staff to manage all content, which is stored in a single PostgreSQL database with data scoped by `authorId`. The platform aims to be a robust, modern single-page application solution for literary agencies or publishers to efficiently manage multiple author presences under one umbrella, offering features like dynamic theming, content personalization, promotional material management, multi-author series support, a proprietary analytics system, and a secure digital product download system.
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
-
-## Recent Changes
-
-### Help Section Complete Update (October 2025)
-- **16 Comprehensive Sections**: Completely rebuilt help-instructions.tsx with full coverage of all platform features
-- **New Sections Added**: Autores (SEO, backgrounds), Configuración Editorial (8 pestañas), Traducciones (7 idiomas, import/export), Textos UI (10,000+ textos personalizables), Analíticas (métricas propietarias), Pedidos y Clientes, Búsqueda Universal (7 idiomas), Ventas y Productos Digitales
-- **Maintained Sections**: Libros (actualizado con ventas), Series (multi-autor), Biografías, Testimonios, Blog, Configuración del Autor (6 pestañas), Imágenes (especificaciones), Material Promocional, Flujos de Trabajo
-- **Architect Review**: Verified completitud (16 accordions), exactitud (cross-checked with all management components), claridad (non-technical language), and organización (structured with icons and fallback defaults)
-- **Status**: All instructions match current platform functionality, 0 LSP errors, ready for use
-
-### GitHub Publication Ready (October 2025)
-- **Complete Installation Documentation**: README.md, INSTALLATION.md, install.sh script with multi-language support
-- **Environment Configuration**: .env.example with all variables documented, including Gmail provider support
-- **Translation System Complete**: 7 languages fully supported, Translation Management UI displays all locales correctly
-- **Email Providers**: 7 providers available (Resend, SendGrid, Mailchimp, Brevo, Postmark, Mailgun, Gmail) with admin panel configuration
-- **Deployment Ready**: Production-ready codebase with systemd service, Nginx configuration, SSL support, firewall setup
-- **Status**: All features implemented, 0 LSP errors, comprehensive documentation, ready for GitHub publication
-
-### Universal Search System (October 2025)
-- **Search Infrastructure**: Implemented comprehensive search across authors, series, and books with 4 API endpoints (global + per-entity)
-- **SearchBar Component**: Debounced universal search (300ms) with keyboard navigation, grouped dropdown results, and multi-language support integrated into all navigation components
-- **Search Results Page**: Full-page search with filter tabs (All/Authors/Series/Books), localized routes for all 7 languages (/buscar, /search, /cercar, /rechercher, /cerca, /suchen, /procurar)
-- **UI Translations**: Added 98 new UI texts across 7 languages in "search" namespace
-- **Features**: Case-insensitive search, 20-result limit, active/published filtering, locale-aware navigation, responsive design for desktop and mobile
-- **Architect Review**: Approved - scalable for current use, recommend full-text search indexing for future growth beyond few thousand records
-
-### Book Landing Page Route Fix (October 2025)
-- **Fixed Book Pages**: Book landing pages now work correctly with all 7 language routes
-- **Problem**: useRoute pattern didn't match localized URLs (/:locale/libro/:id)
-- **Solution**: Updated BookLanding component to match all localized routes (libro, book, llibre, livre, buch, livro)
-- **Impact**: Books are now accessible in production with proper locale-prefixed URLs
-
-### Dynamic SEO Titles (October 2025)
-- **Fixed Hardcoded Titles**: Removed hardcoded "María González" from all page titles
-- **Dynamic Editorial Name**: Page titles now use editorial name from database settings ("Atreyu Ediciones")
-- **Format**: All pages now show `[Page Title] | [Editorial Name]` in browser tab
-- **Implementation**: SEOHead component now fetches editorial settings and uses dynamic configuration
-- **Structured Data**: Schema.org metadata also updated to use dynamic site URLs and names
-
-### Content Translation Improvements (October 2025)
-- **Spanish Base Content**: All translation endpoints now automatically include Spanish (es-ES) content as base reference
-- **Improved UX**: Administrators can now see the original content when managing translations
-- **Affected Entities**: Authors, books, series, testimonials, and blog posts
-- **Implementation**: Modified GET endpoints to include original entity content in es-ES locale when no translation exists
-
-### Author Visibility Filter (October 2025)
-- **Smart Author Filtering**: Authors without published books or active series no longer appear in public navigation menus
-- **New Endpoint**: Created `/api/authors-with-content` to efficiently filter authors with published content
-- **Performance Optimization**: Server-side filtering reduces client-side data transfer and computation
-- **Affected Components**: Home page featured authors section and authors list page
-- **Logic**: Authors displayed only if they have at least one published book OR an active series containing their books
-
-### Navigation System Overhaul (October 2025)
-- **Fixed cross-page navigation**: Updated Navigation component to use intelligent basePath logic with Link components, enabling navigation from series/book pages back to author pages with correct anchor scrolling
-- **Fixed editorial navigation**: Implemented context-aware EditorialNavigation with route normalization to distinguish home page (scroll buttons) from sub-pages (navigation links)
-- **Route normalization**: Added trailing slash handling to correctly identify home routes (/es-ES/ → /es-ES) across all 7 locales
-- **Section IDs**: Added missing IDs (#inicio, #standalone) to home page for proper scroll navigation
-- **Testing**: Comprehensive e2e tests verify navigation works correctly across all page types and locales
-- **Result**: Navigation now works seamlessly from any page (home, author, series, book) in both desktop and mobile views
-
-### Previous Updates
-- Completed 3 internationalization enhancements: dynamic content translation system (5 entity types), advanced multi-language SEO (localized URLs, hreflang tags, dynamic sitemaps), and regional currency conversion (8+ currencies with 24h cache)
-- Fixed book cover display: changed from square format to proper book aspect ratio (aspect-[2/3]) across all components
-- All changes production-ready: 0 LSP errors, clean logs, architect approved
 
 ## System Architecture
 
@@ -118,25 +54,11 @@ Preferred communication style: Simple, everyday language.
 
 ### Internationalization System (7 Languages)
 - **Supported Languages**: Spanish (es-ES), English (en-US), Catalan (ca-ES), French (fr-FR), Italian (it-IT), German (de-DE), Portuguese (pt-PT).
-- **UI Text Translation**: Complete translation of 10,205 UI texts across all 7 languages (including 98 search-related texts), managed via admin panel with namespace organization (public, admin.books, admin.authors, search, etc.).
-- **Market-Based Default Locale**: Admins configure default language and auto-detection based on target market, with priority chain (localStorage → browser detection → admin default → fallback).
-- **Dynamic Content Translation System**: 
-  - Dedicated translation tables for authors, books, series, testimonials, and blog posts.
-  - Locale-scoped fallback logic (user preference → default locale → source language).
-  - API endpoints (GET/POST) for each entity translation with Zod validation.
-  - Helper utility `getTranslatedField()` for seamless content retrieval.
-- **SEO Multi-language Infrastructure**:
-  - Locale-prefixed URLs (/:locale/libro/:id, /:locale/autor/:slug).
-  - Centralized SEOHead component with hreflang tags for all 7 languages.
-  - OG metadata localization (og:locale, og:locale:alternate).
-  - Dynamic sitemaps per locale (/sitemap-:locale.xml) with proper hreflang alternates.
-  - Robots.txt with references to all localized sitemaps.
-- **Regional Currency System**:
-  - Automatic currency selection based on user's locale (EUR for European locales, USD for en-US).
-  - Real-time exchange rate fetching from Frankfurter API with 24-hour cache and fallback rates.
-  - Precise currency conversion using integer mathematics (avoiding floating-point errors).
-  - Locale-aware price formatting with Intl.NumberFormat (automatic decimal handling for zero-decimal currencies like JPY/KRW).
-  - API endpoints for currency rates and conversion (/api/currency/rates, /api/currency/convert).
+- **UI Text Translation**: Complete translation of UI texts across all 7 languages, managed via admin panel with namespace organization.
+- **Market-Based Default Locale**: Admins configure default language and auto-detection based on target market, with priority chain.
+- **Dynamic Content Translation System**: Dedicated translation tables for authors, books, series, testimonials, and blog posts with locale-scoped fallback logic.
+- **SEO Multi-language Infrastructure**: Locale-prefixed URLs, centralized SEOHead component with hreflang tags, OG metadata localization, dynamic sitemaps per locale, and Robots.txt with localized sitemaps.
+- **Regional Currency System**: Automatic currency selection, real-time exchange rate fetching with cache and fallback, precise currency conversion, and locale-aware price formatting.
 
 ## External Dependencies
 
@@ -152,7 +74,7 @@ Preferred communication style: Simple, everyday language.
 - **Google Fonts**: Inter, Playfair Display.
 
 ### Email and Newsletter
-- **Custom Email Service**: Supports 7 email providers - Resend, SendGrid, Mailchimp Transactional, Brevo, Postmark, Mailgun, Gmail. All configurable from admin panel UI with automatic app password whitespace stripping for Gmail.
+- **Custom Email Service**: Supports 7 email providers - Resend, SendGrid, Mailchimp Transactional, Brevo, Postmark, Mailgun, Gmail.
 
 ### File Storage
 - **Replit Object Storage**: For all file uploads and digital product storage.
