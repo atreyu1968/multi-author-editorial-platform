@@ -255,6 +255,7 @@ DATABASE_URL=$DATABASE_URL
 SESSION_SECRET=$SESSION_SECRET
 DEFAULT_LOCALE=$DEFAULT_LOCALE
 SECURE_COOKIES=false
+UPLOADS_DIR=$APP_DIR/uploads
 PAYPAL_CLIENT_ID=$PAYPAL_CLIENT_ID
 PAYPAL_CLIENT_SECRET=$PAYPAL_CLIENT_SECRET
 EMAIL_PROVIDER=$EMAIL_PROVIDER
@@ -323,6 +324,19 @@ sudo -u $APP_USER -E npm run db:push 2>&1 | tail -5
 print_success "Base de datos sincronizada"
 
 # ============================================================
+# CREAR DIRECTORIO DE UPLOADS
+# ============================================================
+print_status "Creando directorio de uploads..."
+
+UPLOADS_DIR="$APP_DIR/uploads"
+mkdir -p "$UPLOADS_DIR/public"
+mkdir -p "$UPLOADS_DIR/private"
+chown -R $APP_USER:$APP_USER "$UPLOADS_DIR"
+chmod -R 755 "$UPLOADS_DIR"
+
+print_success "Directorio de uploads creado"
+
+# ============================================================
 # CONFIGURAR SERVICIO SYSTEMD (NO PM2 - lección aprendida)
 # ============================================================
 print_status "Configurando servicio systemd..."
@@ -351,7 +365,7 @@ SyslogIdentifier=$APP_NAME
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
-ReadWritePaths=$APP_DIR
+ReadWritePaths=$APP_DIR $APP_DIR/uploads
 
 [Install]
 WantedBy=multi-user.target

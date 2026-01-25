@@ -1,6 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import rateLimit from "express-rate-limit";
+import express from "express";
+import path from "path";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import type { Book } from "@shared/schema";
@@ -31,6 +33,8 @@ import { z } from "zod";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 // Referenced from blueprint:javascript_paypal
 import { createPaypalOrder, capturePaypalOrder, loadPaypalDefault } from "./paypal";
+// Local storage for non-Replit environments
+import { upload, handleFileUpload, getStorageType } from "./storageService";
 
 // Authentication middleware to protect admin routes
 function requireAuth(req: any, res: any, next: any) {
@@ -784,9 +788,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Object Storage routes
   // Referenced from blueprint:javascript_object_storage
+  // Enhanced to support both Replit Object Storage and local file storage
+  
+  const UPLOADS_DIR = process.env.UPLOADS_DIR || "./uploads";
+  const storageType = getStorageType();
+  console.log(`[Storage] Using ${storageType} storage`);
+  
+  // Serve static uploads for local storage (non-Replit)
+  if (storageType === "local") {
+    app.use("/uploads", express.static(path.resolve(UPLOADS_DIR)));
+  }
   
   // Endpoint to serve uploaded images (public access for landing pages)
   app.get("/objects/:objectPath(*)", async (req, res) => {
+    if (storageType === "local") {
+      return res.sendStatus(404);
+    }
+    
     const objectStorageService = new ObjectStorageService();
     try {
       const objectFile = await objectStorageService.getObjectEntityFile(
@@ -804,6 +822,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Endpoint to get upload URL (protected - admin only)
   app.post("/api/objects/upload", requireAuth, async (req, res) => {
+    if (storageType === "local") {
+      return res.json({ uploadURL: "/api/files/upload", useMultipart: true });
+    }
+    
     try {
       const objectStorageService = new ObjectStorageService();
       const uploadURL = await objectStorageService.getObjectEntityUploadURL();
@@ -811,6 +833,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error getting upload URL:", error);
       res.status(500).json({ error: "Failed to get upload URL" });
+    }
+  });
+  
+  // Local file upload endpoint (for non-Replit environments)
+  app.post("/api/files/upload", requireAuth, upload.single("file"), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+      
+      const result = await handleFileUpload(req, req.file);
+      res.json({
+        objectPath: result.url,
+        url: result.url,
+        filename: result.filename,
+        size: result.size,
+        mimetype: result.mimetype,
+      });
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      res.status(500).json({ error: "Failed to upload file" });
     }
   });
 
@@ -821,6 +864,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
+      // For local storage, just return the URL as-is
+      if (storageType === "local") {
+        return res.status(200).json({
+          objectPath: req.body.imageURL,
+        });
+      }
+      
       const objectStorageService = new ObjectStorageService();
       const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
         req.body.imageURL,
@@ -837,6 +887,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error setting image:", error);
       res.status(500).json({ error: "Internal server error" });
     }
+  });
+  
+  // Storage type info endpoint
+  app.get("/api/storage-info", requireAuth, (req, res) => {
+    res.json({
+      type: storageType,
+      uploadsDir: storageType === "local" ? UPLOADS_DIR : null,
+    });
   });
 
   // UI Texts routes

@@ -93,6 +93,21 @@ print_status "Actualizando esquema de base de datos..."
 sudo -u $APP_USER -E npm run db:push 2>&1 | tail -5
 print_success "Base de datos actualizada"
 
+# Crear/verificar directorio de uploads
+print_status "Verificando directorio de uploads..."
+UPLOADS_DIR="$APP_DIR/uploads"
+mkdir -p "$UPLOADS_DIR/public"
+mkdir -p "$UPLOADS_DIR/private"
+chown -R $APP_USER:$APP_USER "$UPLOADS_DIR"
+chmod -R 755 "$UPLOADS_DIR"
+print_success "Directorio de uploads verificado"
+
+# Agregar UPLOADS_DIR al env si no existe
+if ! grep -q "UPLOADS_DIR" "$CONFIG_DIR/env"; then
+    echo "UPLOADS_DIR=$UPLOADS_DIR" >> "$CONFIG_DIR/env"
+    print_success "Variable UPLOADS_DIR agregada a configuración"
+fi
+
 # Reiniciar servicio
 print_status "Reiniciando servicio..."
 systemctl start $APP_NAME
