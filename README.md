@@ -104,6 +104,68 @@ El actualizador:
 - Preserva toda la configuración y datos
 - Actualiza el esquema de base de datos si es necesario
 
+### Desinstalación Completa
+
+Para eliminar completamente la plataforma del servidor, usa el script automático:
+
+```bash
+# Descargar el desinstalador
+curl -O https://raw.githubusercontent.com/atreyu1968/multi-author-editorial-platform/main/uninstall.sh
+
+# Ejecutar como root
+sudo bash uninstall.sh
+```
+
+El desinstalador:
+- Ofrece hacer backup automático antes de eliminar
+- Detiene y elimina todos los servicios
+- Elimina base de datos, archivos y configuración
+- Limpia Nginx y Cloudflare Tunnel si están configurados
+
+**Desinstalación manual** (si prefieres hacerlo paso a paso):
+
+```bash
+# 1. Detener y deshabilitar servicios
+sudo systemctl stop editorial
+sudo systemctl disable editorial
+sudo rm /etc/systemd/system/editorial.service
+sudo systemctl daemon-reload
+
+# 2. (Opcional) Detener Cloudflare Tunnel si lo usaste
+sudo systemctl stop cloudflared 2>/dev/null
+sudo systemctl disable cloudflared 2>/dev/null
+sudo cloudflared service uninstall 2>/dev/null
+
+# 3. Eliminar archivos de la aplicación
+sudo rm -rf /var/www/editorial
+sudo rm -rf /etc/editorial
+
+# 4. Eliminar configuración de Nginx
+sudo rm /etc/nginx/sites-enabled/editorial
+sudo rm /etc/nginx/sites-available/editorial
+sudo nginx -t && sudo systemctl reload nginx
+
+# 5. Eliminar base de datos y usuario PostgreSQL
+sudo -u postgres psql -c "DROP DATABASE IF EXISTS editorial_platform;"
+sudo -u postgres psql -c "DROP USER IF EXISTS editorial;"
+
+# 6. Eliminar usuario del sistema
+sudo userdel -r editorial 2>/dev/null
+
+# 7. (Opcional) Eliminar dependencias si no las necesitas
+# ADVERTENCIA: Solo si no tienes otras apps que las usen
+# sudo apt remove nodejs postgresql nginx
+```
+
+**Nota**: Antes de desinstalar, considera hacer un backup:
+```bash
+# Backup de la base de datos
+sudo -u postgres pg_dump editorial_platform > ~/editorial_backup_$(date +%Y%m%d).sql
+
+# Backup de archivos subidos
+sudo tar -czvf ~/editorial_uploads_$(date +%Y%m%d).tar.gz /var/www/editorial/uploads
+```
+
 ### Después de instalar
 
 - **URL**: `https://tu-dominio.com` (o `http://IP-servidor` sin dominio)
