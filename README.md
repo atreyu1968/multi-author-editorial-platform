@@ -70,34 +70,64 @@ Una aplicación web completa de pila completa diseñada para gestionar hasta 30 
 - Acceso root o sudo
 - Conexión a Internet
 
-### Instalación
+### Instalación Rápida
 
-1. **Clonar el repositorio:**
-   ```bash
-   git clone https://github.com/atreyu1968/multi-author-editorial-platform.git
-   cd multi-author-editorial-platform
-   ```
+```bash
+# Descargar el instalador
+curl -O https://raw.githubusercontent.com/atreyu1968/multi-author-editorial-platform/main/install.sh
 
-2. **Ejecutar el instalador:**
-   ```bash
-   sudo bash install.sh
-   ```
+# Ejecutar como root
+sudo bash install.sh
+```
 
-3. **Seguir las indicaciones** para configurar:
-   - Idioma de instalación
-   - Credenciales de base de datos
-   - Cuenta de administrador
-   - Configuración de PayPal (opcional)
-   - Dominio y SSL (opcional)
+El instalador te guiará para configurar:
+- Idioma de la plataforma (7 idiomas disponibles)
+- Dominio (ej: `ediciones.tudominio.com`)
+- Certificado SSL con Let's Encrypt (automático)
+- Credenciales de PayPal (opcional)
+- Proveedor de email (opcional)
+- Cloudflare Tunnel (opcional, para acceso sin abrir puertos)
 
-4. **Acceder a tu plataforma:**
-   - Abre tu navegador en `http://tu-ip-servidor:5000`
-   - La primera vez que inicies la aplicación, se crearán automáticamente:
-     - Usuario admin: `admin` / `admin123`
-     - Autor de ejemplo: "Autor Ejemplo"
-   - Inicia sesión en `/admin` y **cambia la contraseña inmediatamente**
+### Actualización
 
-Para instrucciones detalladas de instalación, consulta [INSTALLATION.md](INSTALLATION.md).
+```bash
+# Descargar el actualizador
+curl -O https://raw.githubusercontent.com/atreyu1968/multi-author-editorial-platform/main/update.sh
+
+# Ejecutar como root
+sudo bash update.sh
+```
+
+El actualizador:
+- Crea backup automático de la base de datos y código
+- Descarga la última versión
+- Preserva toda la configuración y datos
+- Actualiza el esquema de base de datos si es necesario
+
+### Después de instalar
+
+- **URL**: `https://tu-dominio.com` (o `http://IP-servidor` sin dominio)
+- **Admin**: usuario `admin` / contraseña `admin123`
+- **Panel de administración**: `/admin`
+- ⚠️ **Cambia la contraseña inmediatamente** después del primer acceso
+
+### Comandos Útiles
+
+```bash
+# Estado del servicio
+systemctl status editorial
+
+# Ver logs en tiempo real
+journalctl -u editorial -f
+
+# Reiniciar la aplicación
+systemctl restart editorial
+
+# Ver configuración
+cat /etc/editorial/env
+```
+
+Para instrucciones detalladas, consulta [INSTALLATION.md](INSTALLATION.md).
 
 ## 📖 Documentación
 
