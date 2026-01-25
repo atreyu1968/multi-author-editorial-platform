@@ -31,6 +31,9 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
+  // Use SECURE_COOKIES env var for cookie security (defaults to false for compatibility)
+  const useSecureCookies = process.env.SECURE_COOKIES === 'true';
+  
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET!,
     resave: false,
@@ -38,11 +41,13 @@ export function setupAuth(app: Express) {
     store: storage.sessionStore,
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 1000 * 60 * 60 * 24 // 24 hours
+      secure: useSecureCookies,
+      sameSite: useSecureCookies ? 'none' : 'lax',
+      maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
     }
   };
+  
+  console.log(`[Auth] Cookies: secure=${useSecureCookies}`);
 
   app.set("trust proxy", 1);
   app.use(session(sessionSettings));
