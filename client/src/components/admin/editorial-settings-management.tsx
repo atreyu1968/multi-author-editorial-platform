@@ -369,11 +369,12 @@ export default function EditorialSettingsManagement() {
   };
 
   const handleFileUploadComplete = (fieldName: string, result: { url: string; objectPath: string }) => {
-    form.setValue(fieldName as any, result.objectPath);
-    toast({
-      title: "Imagen subida",
-      description: "La imagen se ha subido correctamente",
-    });
+    const imageUrl = result.url || result.objectPath;
+    form.setValue(fieldName as any, imageUrl);
+    
+    // Auto-save after upload
+    const currentValues = form.getValues();
+    updateMutation.mutate({ ...currentValues, [fieldName]: imageUrl });
   };
 
   const handleSeedTexts = async () => {

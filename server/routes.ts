@@ -840,10 +840,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/files/upload", requireAuth, upload.single("file"), async (req, res) => {
     try {
       if (!req.file) {
+        console.error("[Upload] No file in request");
         return res.status(400).json({ error: "No file uploaded" });
       }
       
+      console.log(`[Upload] Received file: ${req.file.originalname} (${req.file.size} bytes)`);
+      console.log(`[Upload] Saved to: ${req.file.path}`);
+      
       const result = await handleFileUpload(req, req.file);
+      console.log(`[Upload] URL: ${result.url}`);
+      
       res.json({
         objectPath: result.url,
         url: result.url,
@@ -852,7 +858,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mimetype: result.mimetype,
       });
     } catch (error) {
-      console.error("Error uploading file:", error);
+      console.error("[Upload] Error:", error);
       res.status(500).json({ error: "Failed to upload file" });
     }
   });
