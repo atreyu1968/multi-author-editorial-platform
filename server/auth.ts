@@ -85,8 +85,26 @@ export function setupAuth(app: Express) {
     return res.status(403).json({ message: "Registration is disabled. Contact administrator." });
   });
 
-  app.post("/api/login", loginLimiter, passport.authenticate("local"), (req, res) => {
-    res.status(200).json(req.user);
+  app.post("/api/login", loginLimiter, (req, res, next) => {
+    passport.authenticate("local", (err: any, user: SelectUser | false, info: any) => {
+      if (err) {
+        console.log('[Auth] Login error:', err);
+        return next(err);
+      }
+      if (!user) {
+        console.log('[Auth] Login failed - invalid credentials');
+        return res.status(401).json({ message: "Invalid username or password" });
+      }
+      req.login(user, (loginErr) => {
+        if (loginErr) {
+          console.log('[Auth] Session error:', loginErr);
+          return next(loginErr);
+        }
+        console.log('[Auth] Login successful for user:', user.username);
+        console.log('[Auth] Session ID:', req.sessionID);
+        res.status(200).json(user);
+      });
+    })(req, res, next);
   });
 
   app.post("/api/logout", (req, res, next) => {
