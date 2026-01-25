@@ -18,7 +18,7 @@ export function FileUploader({
   buttonClassName,
   children,
   allowedFileTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"],
-  maxFileSize = 10485760,
+  maxFileSize = 52428800, // 50MB
 }: FileUploaderProps) {
   const [showModal, setShowModal] = useState(false);
   const [uploading, setUploading] = useState(false);
