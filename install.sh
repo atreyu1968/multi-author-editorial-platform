@@ -31,8 +31,8 @@ APP_USER="editorial"
 DB_NAME="editorial"
 DB_USER="editorial"
 
-# ⚠️ IMPORTANTE: Cambia esta URL por tu repositorio de GitHub
-GITHUB_REPO="https://github.com/TU_USUARIO/TU_REPOSITORIO.git"
+# Repositorio de GitHub
+GITHUB_REPO="https://github.com/atreyu1968/landing.git"
 
 # ============================================================
 # VERIFICACIONES INICIALES
