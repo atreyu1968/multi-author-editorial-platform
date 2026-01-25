@@ -31,8 +31,14 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
-  // Use SECURE_COOKIES env var for cookie security (defaults to false for compatibility)
-  const useSecureCookies = process.env.SECURE_COOKIES === 'true';
+  // Cookie security configuration:
+  // - SECURE_COOKIES=true: For HTTPS direct or reverse proxy with HTTPS (Cloudflare Tunnel, etc)
+  // - SECURE_COOKIES=false: For HTTP-only environments
+  // - SECURE_COOKIES=auto: Auto-detect based on X-Forwarded-Proto header (default)
+  const secureCookiesEnv = process.env.SECURE_COOKIES || 'auto';
+  
+  // Trust proxy must be set BEFORE session middleware
+  app.set("trust proxy", 1);
   
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET!,
@@ -41,15 +47,14 @@ export function setupAuth(app: Express) {
     store: storage.sessionStore,
     cookie: {
       httpOnly: true,
-      secure: useSecureCookies,
-      sameSite: useSecureCookies ? 'none' : 'lax',
+      // For 'auto' mode, let Express determine secure based on req.secure (uses X-Forwarded-Proto)
+      secure: secureCookiesEnv === 'true' ? true : secureCookiesEnv === 'false' ? false : 'auto',
+      sameSite: 'lax',
       maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
     }
   };
   
-  console.log(`[Auth] Cookies: secure=${useSecureCookies}`);
-
-  app.set("trust proxy", 1);
+  console.log(`[Auth] Cookies: secure=${secureCookiesEnv}`);
   app.use(session(sessionSettings));
   app.use(passport.initialize());
   app.use(passport.session());
