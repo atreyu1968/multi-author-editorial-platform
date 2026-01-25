@@ -82,9 +82,13 @@ export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
 
   constructor() {
+    // Use MemoryStore - sessions persist in memory
+    // For production external servers, use connect-pg-simple with standard pg driver
     this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000,
+      checkPeriod: 86400000, // Clear expired entries every 24h
     });
+    
+    console.log('[Session] Using MemoryStore');
   }
 
   // Author methods
