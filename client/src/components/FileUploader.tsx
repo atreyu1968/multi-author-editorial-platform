@@ -67,7 +67,10 @@ export function FileUploader({
       });
 
       if (!configResponse.ok) {
-        throw new Error("Error al obtener configuración de subida");
+        if (configResponse.status === 401) {
+          throw new Error("Sesión expirada. Por favor, vuelve a iniciar sesión.");
+        }
+        throw new Error(`Error al obtener configuración de subida (${configResponse.status})`);
       }
 
       const config = await configResponse.json();
