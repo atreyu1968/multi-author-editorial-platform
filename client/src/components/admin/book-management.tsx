@@ -21,8 +21,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertBookSchema } from "@shared/schema";
 import { z } from "zod";
 import type { Book, BookSeries } from "@shared/schema";
-import { ObjectUploader } from "@/components/ObjectUploader";
-import type { UploadResult } from "@uppy/core";
+import { FileUploader } from "@/components/FileUploader";
 import QRCode from "qrcode";
 
 const bookFormSchema = insertBookSchema.extend({
@@ -514,86 +513,44 @@ export default function BookManagement() {
   });
 
   // Helper functions for image upload
-  const handleGetUploadParameters = async () => {
-    const response = await apiRequest("POST", "/api/objects/upload", {});
-    const data = await response.json();
-    return {
-      method: "PUT" as const,
-      url: data.uploadURL,
-    };
+  const handleImageUploadComplete = (fieldName: keyof BookFormData, result: { url: string; objectPath: string }) => {
+    form.setValue(fieldName, result.objectPath);
+    toast({
+      title: t.toastImageUploadTitle,
+      description: t.toastImageUploadDescription,
+    });
   };
 
-  const handleImageUploadComplete = async (fieldName: keyof BookFormData, result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
-    if (result.successful && result.successful.length > 0) {
-      const uploadedFile = result.successful[0];
-      const imageURL = uploadedFile.uploadURL;
-      
-      try {
-        const response = await apiRequest("POST", "/api/images/upload", { imageURL });
-        const data = await response.json();
-        
-        form.setValue(fieldName, data.objectPath);
-        
-        toast({
-          title: t.toastImageUploadTitle,
-          description: t.toastImageUploadDescription,
-        });
-      } catch (error) {
-        toast({
-          title: t.toastImageUploadErrorTitle,
-          description: t.toastImageUploadErrorDescription,
-          variant: "destructive",
-        });
-      }
-    }
+  const handleEpubUploadComplete = (result: { url: string; objectPath: string }) => {
+    form.setValue('digitalFileEpub', result.objectPath);
+    toast({
+      title: t.toastEpubUploadTitle,
+      description: t.toastEpubUploadDescription,
+    });
   };
 
-  const handleEpubUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
-    if (result.successful && result.successful.length > 0) {
-      const uploadedFile = result.successful[0];
-      const fileURL = uploadedFile.uploadURL;
-      form.setValue('digitalFileEpub', fileURL);
-      toast({
-        title: t.toastEpubUploadTitle,
-        description: t.toastEpubUploadDescription,
-      });
-    }
+  const handlePdfUploadComplete = (result: { url: string; objectPath: string }) => {
+    form.setValue('digitalFilePdf', result.objectPath);
+    toast({
+      title: t.toastPdfUploadTitle,
+      description: t.toastPdfUploadDescription,
+    });
   };
 
-  const handlePdfUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
-    if (result.successful && result.successful.length > 0) {
-      const uploadedFile = result.successful[0];
-      const fileURL = uploadedFile.uploadURL;
-      form.setValue('digitalFilePdf', fileURL);
-      toast({
-        title: t.toastPdfUploadTitle,
-        description: t.toastPdfUploadDescription,
-      });
-    }
+  const handleMobiUploadComplete = (result: { url: string; objectPath: string }) => {
+    form.setValue('digitalFileMobi', result.objectPath);
+    toast({
+      title: t.toastMobiUploadTitle,
+      description: t.toastMobiUploadDescription,
+    });
   };
 
-  const handleMobiUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
-    if (result.successful && result.successful.length > 0) {
-      const uploadedFile = result.successful[0];
-      const fileURL = uploadedFile.uploadURL;
-      form.setValue('digitalFileMobi', fileURL);
-      toast({
-        title: t.toastMobiUploadTitle,
-        description: t.toastMobiUploadDescription,
-      });
-    }
-  };
-
-  const handleAzw3UploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
-    if (result.successful && result.successful.length > 0) {
-      const uploadedFile = result.successful[0];
-      const fileURL = uploadedFile.uploadURL;
-      form.setValue('digitalFileAzw3', fileURL);
-      toast({
-        title: t.toastAzw3UploadTitle,
-        description: t.toastAzw3UploadDescription,
-      });
-    }
+  const handleAzw3UploadComplete = (result: { url: string; objectPath: string }) => {
+    form.setValue('digitalFileAzw3', result.objectPath);
+    toast({
+      title: t.toastAzw3UploadTitle,
+      description: t.toastAzw3UploadDescription,
+    });
   };
 
   const getSeriesTitle = (seriesId: string | null) => {
@@ -850,30 +807,12 @@ export default function BookManagement() {
     }
   };
 
-  // Helper function for background image upload
-  const handleBgImageUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
-    if (result.successful && result.successful.length > 0) {
-      const uploadedFile = result.successful[0];
-      const fileURL = uploadedFile.uploadURL;
-      
-      try {
-        const response = await apiRequest("POST", "/api/images/upload", { imageURL: fileURL });
-        const data = await response.json();
-        
-        form.setValue("backgroundImageUrl", data.objectPath);
-        
-        toast({
-          title: "Imagen de fondo subida",
-          description: "La imagen de fondo se ha subido correctamente",
-        });
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "No se pudo subir la imagen de fondo",
-          variant: "destructive",
-        });
-      }
-    }
+  const handleBgImageUploadComplete = (result: { url: string; objectPath: string }) => {
+    form.setValue("backgroundImageUrl", result.objectPath);
+    toast({
+      title: "Imagen de fondo subida",
+      description: "La imagen de fondo se ha subido correctamente",
+    });
   };
 
   const handleAddStoreLink = () => {
@@ -1140,17 +1079,15 @@ export default function BookManagement() {
                                 className="flex-1"
                               />
                             </FormControl>
-                            <ObjectUploader
-                              maxNumberOfFiles={1}
+                            <FileUploader
                               maxFileSize={524288}
                               allowedFileTypes={['image/jpeg', 'image/png', 'image/webp']}
-                              onGetUploadParameters={handleGetUploadParameters}
                               onComplete={(result) => handleImageUploadComplete('coverImage', result)}
                               buttonClassName="shrink-0"
                             >
                               <Upload className="h-4 w-4 mr-2" />
                               {t.buttonUpload}
-                            </ObjectUploader>
+                            </FileUploader>
                           </div>
                           <FormMessage />
                         </FormItem>
@@ -1521,17 +1458,15 @@ export default function BookManagement() {
                                         readOnly
                                       />
                                     </FormControl>
-                                    <ObjectUploader
-                                      maxNumberOfFiles={1}
+                                    <FileUploader
                                       maxFileSize={52428800}
                                       allowedFileTypes={['application/epub+zip']}
-                                      onGetUploadParameters={handleGetUploadParameters}
                                       onComplete={handleEpubUploadComplete}
                                       buttonClassName="shrink-0"
                                     >
                                       <Upload className="h-4 w-4 mr-2" />
                                       {t.buttonUpload}
-                                    </ObjectUploader>
+                                    </FileUploader>
                                     {field.value && (
                                       <Button
                                         type="button"
@@ -1571,17 +1506,15 @@ export default function BookManagement() {
                                         readOnly
                                       />
                                     </FormControl>
-                                    <ObjectUploader
-                                      maxNumberOfFiles={1}
+                                    <FileUploader
                                       maxFileSize={52428800}
                                       allowedFileTypes={['application/pdf']}
-                                      onGetUploadParameters={handleGetUploadParameters}
                                       onComplete={handlePdfUploadComplete}
                                       buttonClassName="shrink-0"
                                     >
                                       <Upload className="h-4 w-4 mr-2" />
                                       {t.buttonUpload}
-                                    </ObjectUploader>
+                                    </FileUploader>
                                     {field.value && (
                                       <Button
                                         type="button"
@@ -1621,17 +1554,15 @@ export default function BookManagement() {
                                         readOnly
                                       />
                                     </FormControl>
-                                    <ObjectUploader
-                                      maxNumberOfFiles={1}
+                                    <FileUploader
                                       maxFileSize={52428800}
                                       allowedFileTypes={['application/x-mobipocket-ebook']}
-                                      onGetUploadParameters={handleGetUploadParameters}
                                       onComplete={handleMobiUploadComplete}
                                       buttonClassName="shrink-0"
                                     >
                                       <Upload className="h-4 w-4 mr-2" />
                                       {t.buttonUpload}
-                                    </ObjectUploader>
+                                    </FileUploader>
                                     {field.value && (
                                       <Button
                                         type="button"
@@ -1671,17 +1602,15 @@ export default function BookManagement() {
                                         readOnly
                                       />
                                     </FormControl>
-                                    <ObjectUploader
-                                      maxNumberOfFiles={1}
+                                    <FileUploader
                                       maxFileSize={52428800}
                                       allowedFileTypes={['application/vnd.amazon.ebook']}
-                                      onGetUploadParameters={handleGetUploadParameters}
                                       onComplete={handleAzw3UploadComplete}
                                       buttonClassName="shrink-0"
                                     >
                                       <Upload className="h-4 w-4 mr-2" />
                                       {t.buttonUpload}
-                                    </ObjectUploader>
+                                    </FileUploader>
                                     {field.value && (
                                       <Button
                                         type="button"
@@ -1782,15 +1711,14 @@ export default function BookManagement() {
                         </div>
                       )}
                       <div className="space-y-2">
-                        <ObjectUploader
-                          onGetUploadParameters={handleGetUploadParameters}
+                        <FileUploader
                           onComplete={handleBgImageUploadComplete}
                           allowedFileTypes={["image/jpeg", "image/png", "image/webp"]}
                           maxFileSize={5 * 1024 * 1024}
                         >
                           <Upload className="h-4 w-4 mr-2" />
                           Subir Imagen de Fondo
-                        </ObjectUploader>
+                        </FileUploader>
                         <p className="text-xs text-muted-foreground">
                           Formatos: JPEG, PNG, WebP • Tamaño máximo: 5 MB
                         </p>
@@ -1849,17 +1777,15 @@ export default function BookManagement() {
                               className="flex-1"
                             />
                           </FormControl>
-                          <ObjectUploader
-                            maxNumberOfFiles={1}
+                          <FileUploader
                             maxFileSize={1048576}
                             allowedFileTypes={['image/jpeg', 'image/png', 'image/webp']}
-                            onGetUploadParameters={handleGetUploadParameters}
                             onComplete={(result) => handleImageUploadComplete('landingHeroImage', result)}
                             buttonClassName="shrink-0"
                           >
                             <Upload className="h-4 w-4 mr-2" />
                             {t.buttonUpload}
-                          </ObjectUploader>
+                          </FileUploader>
                         </div>
                         <FormDescription>
                           {t.descriptionLandingHeroUpload}

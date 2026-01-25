@@ -17,8 +17,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertAuthorSchema } from "@shared/schema";
 import { z } from "zod";
 import type { Author } from "@shared/schema";
-import { ObjectUploader } from "@/components/ObjectUploader";
-import type { UploadResult } from "@uppy/core";
+import { FileUploader } from "@/components/FileUploader";
 import { useUiText } from "@/contexts/ui-text-context";
 
 type AuthorFormData = z.infer<typeof insertAuthorSchema>;
@@ -217,38 +216,12 @@ export default function AuthorManagement() {
     },
   });
 
-  const handleGetUploadParameters = async () => {
-    const response = await apiRequest("POST", "/api/objects/upload", {});
-    const data = await response.json();
-    return {
-      method: "PUT" as const,
-      url: data.uploadURL,
-    };
-  };
-
-  const handleImageUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
-    if (result.successful && result.successful.length > 0) {
-      const uploadedFile = result.successful[0];
-      const imageURL = uploadedFile.uploadURL;
-      
-      try {
-        const response = await apiRequest("POST", "/api/images/upload", { imageURL });
-        const data = await response.json();
-        
-        form.setValue("photo", data.objectPath);
-        
-        toast({
-          title: t.toastImageUploadTitle,
-          description: t.toastImageUploadDescription,
-        });
-      } catch (error) {
-        toast({
-          title: t.toastImageUploadErrorTitle,
-          description: t.toastImageUploadErrorDescription,
-          variant: "destructive",
-        });
-      }
-    }
+  const handleImageUploadComplete = (result: { url: string; objectPath: string }) => {
+    form.setValue("photo", result.objectPath);
+    toast({
+      title: t.toastImageUploadTitle,
+      description: t.toastImageUploadDescription,
+    });
   };
 
   const filteredAuthors = authors.filter(author => {
@@ -334,29 +307,12 @@ export default function AuthorManagement() {
     }
   };
 
-  const handleFileUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
-    if (result.successful && result.successful.length > 0) {
-      const uploadedFile = result.successful[0];
-      const fileURL = uploadedFile.uploadURL;
-      
-      try {
-        const response = await apiRequest("POST", "/api/images/upload", { imageURL: fileURL });
-        const data = await response.json();
-        
-        form.setValue("backgroundImageUrl", data.objectPath);
-        
-        toast({
-          title: "Imagen de fondo subida",
-          description: "La imagen de fondo se ha subido correctamente",
-        });
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "No se pudo subir la imagen de fondo",
-          variant: "destructive",
-        });
-      }
-    }
+  const handleBackgroundUploadComplete = (result: { url: string; objectPath: string }) => {
+    form.setValue("backgroundImageUrl", result.objectPath);
+    toast({
+      title: "Imagen de fondo subida",
+      description: "La imagen de fondo se ha subido correctamente",
+    });
   };
 
   return (
@@ -581,15 +537,14 @@ export default function AuthorManagement() {
                     <FormControl>
                       <div className="flex gap-4 items-center">
                         <Input {...field} value={field.value || ""} placeholder={t.placeholderPhoto} data-testid="input-author-photo" />
-                        <ObjectUploader
-                          onGetUploadParameters={handleGetUploadParameters}
+                        <FileUploader
                           onComplete={handleImageUploadComplete}
-                          allowedFileTypes={['image/*']}
+                          allowedFileTypes={['image/jpeg', 'image/png', 'image/gif', 'image/webp']}
                           buttonClassName="shrink-0"
                         >
                           <Upload className="h-4 w-4 mr-2" />
                           {t.buttonUpload}
-                        </ObjectUploader>
+                        </FileUploader>
                       </div>
                     </FormControl>
                     {field.value && (
@@ -750,15 +705,14 @@ export default function AuthorManagement() {
                   </div>
                 )}
                 <div className="space-y-2">
-                  <ObjectUploader
-                    onGetUploadParameters={handleGetUploadParameters}
-                    onComplete={handleFileUploadComplete}
+                  <FileUploader
+                    onComplete={handleBackgroundUploadComplete}
                     allowedFileTypes={["image/jpeg", "image/png", "image/webp"]}
                     maxFileSize={5 * 1024 * 1024}
                   >
                     <Upload className="h-4 w-4 mr-2" />
                     Subir Imagen de Fondo
-                  </ObjectUploader>
+                  </FileUploader>
                   <p className="text-xs text-muted-foreground">
                     Formatos: JPEG, PNG, WebP • Tamaño máximo: 5 MB
                   </p>

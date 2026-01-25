@@ -17,8 +17,7 @@ import { insertEditorialSettingsSchema } from "@shared/schema";
 import { getCurrencySymbol } from "@/lib/format-currency";
 import { useEffect, useState } from "react";
 import { useUiText } from "@/contexts/ui-text-context";
-import { ObjectUploader } from "@/components/ObjectUploader";
-import type { UploadResult } from "@uppy/core";
+import { FileUploader } from "@/components/FileUploader";
 
 interface EmailProviderInstructionsProps {
   provider: string;
@@ -369,39 +368,12 @@ export default function EditorialSettingsManagement() {
     updateMutation.mutate(data);
   };
 
-  // Helper functions for file upload
-  const handleGetUploadParameters = async () => {
-    const response = await apiRequest("POST", "/api/objects/upload", {});
-    const data = await response.json();
-    return {
-      method: "PUT" as const,
-      url: data.uploadURL,
-    };
-  };
-
-  const handleFileUploadComplete = async (fieldName: string, result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
-    if (result.successful && result.successful.length > 0) {
-      const uploadedFile = result.successful[0];
-      const fileURL = uploadedFile.uploadURL;
-      
-      try {
-        const response = await apiRequest("POST", "/api/images/upload", { imageURL: fileURL });
-        const data = await response.json();
-        
-        form.setValue(fieldName as any, data.objectPath);
-        
-        toast({
-          title: "Imagen subida",
-          description: "La imagen se ha subido correctamente",
-        });
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "No se pudo subir la imagen",
-          variant: "destructive",
-        });
-      }
-    }
+  const handleFileUploadComplete = (fieldName: string, result: { url: string; objectPath: string }) => {
+    form.setValue(fieldName as any, result.objectPath);
+    toast({
+      title: "Imagen subida",
+      description: "La imagen se ha subido correctamente",
+    });
   };
 
   const handleSeedTexts = async () => {
@@ -495,15 +467,14 @@ export default function EditorialSettingsManagement() {
                       />
                     </div>
                   )}
-                  <ObjectUploader
-                    onGetUploadParameters={handleGetUploadParameters}
+                  <FileUploader
                     onComplete={(result) => handleFileUploadComplete("logoUrl", result)}
                     allowedFileTypes={["image/png", "image/jpeg", "image/svg+xml"]}
                     maxFileSize={2 * 1024 * 1024}
                   >
                     <Upload className="h-4 w-4 mr-2" />
                     Subir Logo
-                  </ObjectUploader>
+                  </FileUploader>
                   <FormField
                     control={form.control}
                     name="logoUrl"
@@ -531,15 +502,14 @@ export default function EditorialSettingsManagement() {
                       <span className="text-sm text-muted-foreground">Vista previa del favicon</span>
                     </div>
                   )}
-                  <ObjectUploader
-                    onGetUploadParameters={handleGetUploadParameters}
+                  <FileUploader
                     onComplete={(result) => handleFileUploadComplete("faviconUrl", result)}
                     allowedFileTypes={["image/png", "image/x-icon", "image/vnd.microsoft.icon"]}
                     maxFileSize={100 * 1024}
                   >
                     <Upload className="h-4 w-4 mr-2" />
                     Subir Favicon
-                  </ObjectUploader>
+                  </FileUploader>
                   <FormField
                     control={form.control}
                     name="faviconUrl"
@@ -608,15 +578,14 @@ export default function EditorialSettingsManagement() {
                     </div>
                   )}
                   <div className="space-y-2">
-                    <ObjectUploader
-                      onGetUploadParameters={handleGetUploadParameters}
+                    <FileUploader
                       onComplete={(result) => handleFileUploadComplete("backgroundImageUrl", result)}
                       allowedFileTypes={["image/jpeg", "image/png", "image/webp"]}
                       maxFileSize={5 * 1024 * 1024}
                     >
                       <Upload className="h-4 w-4 mr-2" />
                       Subir Imagen de Fondo
-                    </ObjectUploader>
+                    </FileUploader>
                     <p className="text-xs text-muted-foreground">
                       Formatos: JPEG, PNG, WebP • Tamaño máximo: 5 MB
                     </p>

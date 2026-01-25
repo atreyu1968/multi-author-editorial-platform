@@ -14,8 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { SiteSettings, Newsletter } from "@shared/schema";
-import { ObjectUploader } from "@/components/ObjectUploader";
-import type { UploadResult } from "@uppy/core";
+import { FileUploader } from "@/components/FileUploader";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useUiText } from "@/contexts/ui-text-context";
 import { AVAILABLE_LOCALES, type Locale } from "@/contexts/locale-context";
@@ -439,39 +438,12 @@ export default function SettingsManagement() {
     updateLanguageMutation.mutate(data);
   };
 
-  // Helper functions for file upload
-  const handleGetUploadParameters = async () => {
-    const response = await apiRequest("POST", "/api/objects/upload", {});
-    const data = await response.json();
-    return {
-      method: "PUT" as const,
-      url: data.uploadURL,
-    };
-  };
-
-  const handleFileUploadComplete = async (fieldName: keyof SettingsFormData, result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
-    if (result.successful && result.successful.length > 0) {
-      const uploadedFile = result.successful[0];
-      const fileURL = uploadedFile.uploadURL;
-      
-      try {
-        const response = await apiRequest("POST", "/api/images/upload", { imageURL: fileURL });
-        const data = await response.json();
-        
-        form.setValue(fieldName, data.objectPath);
-        
-        toast({
-          title: t.toastFileUploadTitle,
-          description: t.toastFileUploadDescription,
-        });
-      } catch (error) {
-        toast({
-          title: t.toastErrorTitle,
-          description: t.toastFileUploadErrorDescription,
-          variant: "destructive",
-        });
-      }
-    }
+  const handleFileUploadComplete = (fieldName: string, result: { url: string; objectPath: string }) => {
+    form.setValue(fieldName as keyof SettingsFormData, result.objectPath);
+    toast({
+      title: t.toastFileUploadTitle,
+      description: t.toastFileUploadDescription,
+    });
   };
 
   const providerSteps: Record<string, string[]> = {
@@ -629,15 +601,14 @@ export default function SettingsManagement() {
                           />
                         </div>
                       )}
-                      <ObjectUploader
-                        onGetUploadParameters={handleGetUploadParameters}
+                      <FileUploader
                         onComplete={(result) => handleFileUploadComplete("logoUrl", result)}
                         allowedFileTypes={["image/png", "image/jpeg", "image/svg+xml"]}
                         maxFileSize={2 * 1024 * 1024}
                       >
                         <Upload className="h-4 w-4 mr-2" />
                         {t.buttonUploadLogo}
-                      </ObjectUploader>
+                      </FileUploader>
                       <FormField
                         control={form.control}
                         name="logoUrl"
@@ -671,15 +642,14 @@ export default function SettingsManagement() {
                           <span className="text-sm text-muted-foreground">{t.textFaviconPreview}</span>
                         </div>
                       )}
-                      <ObjectUploader
-                        onGetUploadParameters={handleGetUploadParameters}
+                      <FileUploader
                         onComplete={(result) => handleFileUploadComplete("faviconUrl", result)}
                         allowedFileTypes={["image/png", "image/x-icon", "image/vnd.microsoft.icon"]}
                         maxFileSize={100 * 1024}
                       >
                         <Upload className="h-4 w-4 mr-2" />
                         {t.buttonUploadFavicon}
-                      </ObjectUploader>
+                      </FileUploader>
                       <FormField
                         control={form.control}
                         name="faviconUrl"
@@ -1085,17 +1055,15 @@ export default function SettingsManagement() {
                                 data-testid="input-free-book-file"
                               />
                             </FormControl>
-                            <ObjectUploader
-                              maxNumberOfFiles={1}
-                              maxFileSize={10485760}
+                            <FileUploader
+                              onComplete={(result) => handleFileUploadComplete("freeBookFile", result)}
                               allowedFileTypes={['application/pdf', 'application/epub+zip']}
-                              onGetUploadParameters={handleGetUploadParameters}
-                              onComplete={(result) => handleFileUploadComplete('freeBookFile', result)}
+                              maxFileSize={10485760}
                               buttonClassName="shrink-0"
                             >
                               <Upload className="h-4 w-4 mr-2" />
                               {t.buttonUploadFile}
-                            </ObjectUploader>
+                            </FileUploader>
                           </div>
                           <FormDescription>
                             {t.descFreeBookFile}

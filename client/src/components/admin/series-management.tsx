@@ -19,8 +19,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertBookSeriesSchema } from "@shared/schema";
 import { z } from "zod";
 import type { BookSeries, Book } from "@shared/schema";
-import { ObjectUploader } from "@/components/ObjectUploader";
-import type { UploadResult } from "@uppy/core";
+import { FileUploader } from "@/components/FileUploader";
 
 type SeriesFormData = z.infer<typeof insertBookSeriesSchema>;
 
@@ -265,39 +264,12 @@ export default function SeriesManagement() {
     },
   });
 
-  // Helper functions for image upload
-  const handleGetUploadParameters = async () => {
-    const response = await apiRequest("POST", "/api/objects/upload", {});
-    const data = await response.json();
-    return {
-      method: "PUT" as const,
-      url: data.uploadURL,
-    };
-  };
-
-  const handleImageUploadComplete = async (fieldName: keyof SeriesFormData, result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
-    if (result.successful && result.successful.length > 0) {
-      const uploadedFile = result.successful[0];
-      const imageURL = uploadedFile.uploadURL;
-      
-      try {
-        const response = await apiRequest("POST", "/api/images/upload", { imageURL });
-        const data = await response.json();
-        
-        form.setValue(fieldName, data.objectPath);
-        
-        toast({
-          title: t.toastImageUploadTitle,
-          description: t.toastImageUploadDescription,
-        });
-      } catch (error) {
-        toast({
-          title: t.toastImageUploadErrorTitle,
-          description: t.toastImageUploadErrorDescription,
-          variant: "destructive",
-        });
-      }
-    }
+  const handleImageUploadComplete = (fieldName: keyof SeriesFormData, result: { url: string; objectPath: string }) => {
+    form.setValue(fieldName, result.objectPath);
+    toast({
+      title: t.toastImageUploadTitle,
+      description: t.toastImageUploadDescription,
+    });
   };
 
   const getSeriesBookCount = (seriesId: string) => {
@@ -394,31 +366,6 @@ export default function SeriesManagement() {
     }
   };
 
-  // Helper functions for background image upload
-  const handleBgImageUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
-    if (result.successful && result.successful.length > 0) {
-      const uploadedFile = result.successful[0];
-      const fileURL = uploadedFile.uploadURL;
-      
-      try {
-        const response = await apiRequest("POST", "/api/images/upload", { imageURL: fileURL });
-        const data = await response.json();
-        
-        form.setValue("backgroundImageUrl", data.objectPath);
-        
-        toast({
-          title: "Imagen de fondo subida",
-          description: "La imagen de fondo se ha subido correctamente",
-        });
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "No se pudo subir la imagen de fondo",
-          variant: "destructive",
-        });
-      }
-    }
-  };
 
   return (
     <div>
@@ -599,17 +546,13 @@ export default function SeriesManagement() {
                               data-testid="input-series-card-background"
                             />
                           </FormControl>
-                          <ObjectUploader
-                            maxNumberOfFiles={1}
-                            maxFileSize={1048576}
-                            allowedFileTypes={['image/jpeg', 'image/png', 'image/webp']}
-                            onGetUploadParameters={handleGetUploadParameters}
+                          <FileUploader
                             onComplete={(result) => handleImageUploadComplete('cardBackgroundImage', result)}
                             buttonClassName="shrink-0"
                           >
                             <Upload className="h-4 w-4 mr-2" />
                             {t.buttonUpload}
-                          </ObjectUploader>
+                          </FileUploader>
                         </div>
                         <FormDescription>
                           {t.descriptionCardBackground}
@@ -653,17 +596,13 @@ export default function SeriesManagement() {
                               className="flex-1"
                             />
                           </FormControl>
-                          <ObjectUploader
-                            maxNumberOfFiles={1}
-                            maxFileSize={1048576}
-                            allowedFileTypes={['image/jpeg', 'image/png', 'image/webp']}
-                            onGetUploadParameters={handleGetUploadParameters}
+                          <FileUploader
                             onComplete={(result) => handleImageUploadComplete('landingHeroImage', result)}
                             buttonClassName="shrink-0"
                           >
                             <Upload className="h-4 w-4 mr-2" />
                             {t.buttonUpload}
-                          </ObjectUploader>
+                          </FileUploader>
                         </div>
                         <FormDescription>
                           {t.descriptionLandingHero}
@@ -796,15 +735,12 @@ export default function SeriesManagement() {
                       </div>
                     )}
                     <div className="space-y-2">
-                      <ObjectUploader
-                        onGetUploadParameters={handleGetUploadParameters}
-                        onComplete={handleBgImageUploadComplete}
-                        allowedFileTypes={["image/jpeg", "image/png", "image/webp"]}
-                        maxFileSize={5 * 1024 * 1024}
+                      <FileUploader
+                        onComplete={(result) => handleImageUploadComplete('backgroundImageUrl', result)}
                       >
                         <Upload className="h-4 w-4 mr-2" />
                         Subir Imagen de Fondo
-                      </ObjectUploader>
+                      </FileUploader>
                       <p className="text-xs text-muted-foreground">
                         Formatos: JPEG, PNG, WebP • Tamaño máximo: 5 MB
                       </p>
