@@ -32,7 +32,7 @@ DB_NAME="editorial"
 DB_USER="editorial"
 
 # Repositorio de GitHub
-GITHUB_REPO="https://github.com/atreyu1968/landing.git"
+GITHUB_REPO="https://github.com/atreyu1968/multi-author-editorial-platform.git"
 
 # ============================================================
 # VERIFICACIONES INICIALES
