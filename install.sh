@@ -367,10 +367,21 @@ print_success "Servicio systemd configurado"
 # ============================================================
 print_status "Configurando Nginx..."
 
-cat > "/etc/nginx/sites-available/$APP_NAME" << 'NGINX_EOF'
+# Preguntar por el dominio
+echo ""
+read -p "Dominio (ej: ediciones.atreyu.net) [dejar vacío para IP]: " DOMAIN_NAME
+DOMAIN_NAME=${DOMAIN_NAME:-_}
+
+if [ "$DOMAIN_NAME" != "_" ]; then
+    SERVER_NAME="$DOMAIN_NAME"
+else
+    SERVER_NAME="_"
+fi
+
+cat > "/etc/nginx/sites-available/$APP_NAME" << NGINX_EOF
 server {
     listen 80;
-    server_name _;
+    server_name $SERVER_NAME;
     
     # Archivos grandes (subida de libros digitales)
     client_max_body_size 500M;
@@ -389,13 +400,13 @@ server {
     location / {
         proxy_pass http://127.0.0.1:5000;
         proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_cache_bypass \$http_upgrade;
         proxy_read_timeout 86400;
         proxy_send_timeout 86400;
     }
@@ -425,6 +436,26 @@ nginx -t > /dev/null 2>&1
 systemctl restart nginx
 
 print_success "Nginx configurado"
+
+# Ofrecer SSL con Let's Encrypt si hay dominio
+if [ "$DOMAIN_NAME" != "_" ]; then
+    echo ""
+    read -p "¿Configurar SSL con Let's Encrypt para $DOMAIN_NAME? (S/n): " SETUP_SSL
+    SETUP_SSL=${SETUP_SSL:-S}
+    
+    if [ "$SETUP_SSL" = "S" ] || [ "$SETUP_SSL" = "s" ]; then
+        print_status "Instalando Certbot..."
+        apt-get install -y -qq certbot python3-certbot-nginx
+        
+        print_status "Obteniendo certificado SSL..."
+        certbot --nginx -d "$DOMAIN_NAME" --non-interactive --agree-tos --register-unsafely-without-email 2>&1 | tail -5
+        
+        # Habilitar cookies seguras (SSL = HTTPS)
+        sed -i 's/SECURE_COOKIES=false/SECURE_COOKIES=true/' "$CONFIG_DIR/env"
+        
+        print_success "SSL configurado para $DOMAIN_NAME"
+    fi
+fi
 
 # ============================================================
 # CONFIGURAR FIREWALL
