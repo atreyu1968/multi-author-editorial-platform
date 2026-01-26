@@ -350,57 +350,33 @@ export default function AuthorPage() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
               {publishedStandaloneBooks.map((book) => (
-                <Card key={book.id} className="book-card bg-card rounded-xl shadow-lg border border-border overflow-hidden" data-testid={`standalone-book-${book.id}`}>
-                  <div className="relative aspect-[2/3] bg-gradient-to-br from-primary/20 to-accent/20">
-                    <img 
-                      src={book.coverImage || "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=600"} 
-                      alt={`${t.altBookCoverPrefix} ${book.title}`}
+                <div key={book.id} className="group" data-testid={`standalone-book-${book.id}`}>
+                  <Link href={`/libro/${book.id}`}>
+                    <div className="relative aspect-[2/3] rounded-lg overflow-hidden shadow-lg transition-all transform group-hover:scale-105 group-hover:shadow-xl cursor-pointer">
+                      <img 
+                        src={book.coverImage || "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=600"} 
+                        alt={`${t.altBookCoverPrefix} ${book.title}`}
                         className="w-full h-full object-cover" 
-                    />
-                  </div>
-                  <div className="p-6">
-                    <h3 className="text-2xl font-serif font-bold text-primary mb-3">
-                      {book.title}
-                    </h3>
-                    <p className="text-muted-foreground mb-4 leading-relaxed">
-                      {book.description || t.bookDefaultDesc}
-                    </p>
-                    <div className="flex flex-wrap gap-2 mb-6">
-                      <Badge className="bg-accent/20 text-accent-foreground">{book.genre}</Badge>
-                      {book.price && (
-                        <Badge className="bg-primary text-primary-foreground text-lg px-3 py-1">
-                          €{book.price.toFixed(2)}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <Link href={`/libro/${book.id}`}>
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-4">
                         <Button 
-                          variant="outline"
-                          className="w-full transition-all transform hover:scale-105"
+                          variant="secondary"
+                          size="sm"
+                          className="transition-all"
                           data-testid={`button-view-book-${book.id}`}
                         >
-                          <BookOpen className="h-4 w-4 mr-2" />
+                          <BookOpen className="h-3 w-3 mr-1" />
                           {t.buttonViewDetails}
                         </Button>
-                      </Link>
-                      {book.amazonUrl && (
-                        <Button 
-                          className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                          asChild
-                          data-testid={`button-buy-${book.id}`}
-                        >
-                          <a href={book.amazonUrl} target="_blank" rel="noopener noreferrer">
-                            <ShoppingCart className="h-4 w-4 mr-2" />
-                            {t.buttonBuy}
-                          </a>
-                        </Button>
-                      )}
+                      </div>
                     </div>
-                  </div>
-                </Card>
+                    <h3 className="text-sm font-medium text-center mt-2 text-foreground line-clamp-2">
+                      {book.title}
+                    </h3>
+                  </Link>
+                </div>
               ))}
             </div>
           </div>
