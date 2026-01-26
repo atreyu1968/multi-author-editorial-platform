@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, X, Settings } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Menu, X } from "lucide-react";
 import { useUiText } from "@/contexts/ui-text-context";
 import { useQuery } from "@tanstack/react-query";
 import type { EditorialSettings } from "@shared/schema";
@@ -14,8 +13,6 @@ export default function EditorialNavigation() {
   const navHome = useUiText("navigation", "editorial_home", "Inicio");
   const navPublications = useUiText("navigation", "publications", "Publicaciones");
   const navAuthors = useUiText("navigation", "authors", "Autores");
-  const navAdmin = useUiText("navigation", "admin", "Admin");
-
   const { data: settings } = useQuery<EditorialSettings>({
     queryKey: ["/api/editorial-settings"],
   });
@@ -85,12 +82,6 @@ export default function EditorialNavigation() {
             <div className="w-64">
               <SearchBar />
             </div>
-            <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90" data-testid="button-admin">
-              <Link href="/admin">
-                <Settings className="h-4 w-4 mr-2" />
-                {navAdmin}
-              </Link>
-            </Button>
           </div>
           <div className="md:hidden flex items-center">
             <button 
@@ -142,10 +133,6 @@ export default function EditorialNavigation() {
                 </Link>
               </>
             )}
-            <Link href="/admin" className="block w-full text-left py-2 text-primary" onClick={() => setMobileMenuOpen(false)}>
-              <Settings className="h-4 w-4 mr-2 inline" />
-              {navAdmin}
-            </Link>
           </div>
         </div>
       )}
