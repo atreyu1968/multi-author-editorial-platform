@@ -93,6 +93,28 @@ print_status "Actualizando esquema de base de datos..."
 sudo -u $APP_USER -E npm run db:push 2>&1 | tail -5
 print_success "Base de datos actualizada"
 
+# Asegurar que existe usuario admin
+print_status "Verificando usuario administrador..."
+sudo -u $APP_USER -E npx tsx scripts/create-admin.ts 2>&1 || {
+    print_warning "Creando admin con método alternativo..."
+    sudo -u $APP_USER -E npx tsx -e "
+const { scrypt, randomBytes } = require('crypto');
+const { promisify } = require('util');
+const { neon } = require('@neondatabase/serverless');
+const scryptAsync = promisify(scrypt);
+async function run() {
+  const sql = neon(process.env.DATABASE_URL);
+  const salt = randomBytes(16).toString('hex');
+  const buf = await scryptAsync('admin123', salt, 64);
+  const hash = buf.toString('hex') + '.' + salt;
+  await sql\\\`INSERT INTO users (id, username, password) VALUES (gen_random_uuid(), 'admin', \\\${hash}) ON CONFLICT (username) DO UPDATE SET password = \\\${hash}\\\`;
+  console.log('Admin: admin / admin123');
+}
+run();
+" 2>&1
+}
+print_success "Usuario administrador verificado"
+
 # Crear/verificar directorio de uploads
 print_status "Verificando directorio de uploads..."
 UPLOADS_DIR="$APP_DIR/uploads"

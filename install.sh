@@ -323,6 +323,34 @@ sudo -u $APP_USER -E npm run db:push 2>&1 | tail -5
 
 print_success "Base de datos sincronizada"
 
+# Crear usuario admin por defecto
+print_status "Creando usuario administrador..."
+sudo -u $APP_USER -E npx tsx scripts/create-admin.ts 2>&1 || {
+    print_warning "No se pudo crear admin con script, intentando método alternativo..."
+    sudo -u $APP_USER -E npx tsx -e "
+const { scrypt, randomBytes } = require('crypto');
+const { promisify } = require('util');
+const { neon } = require('@neondatabase/serverless');
+
+const scryptAsync = promisify(scrypt);
+
+async function hashPassword(password) {
+  const salt = randomBytes(16).toString('hex');
+  const buf = await scryptAsync(password, salt, 64);
+  return buf.toString('hex') + '.' + salt;
+}
+
+async function createAdmin() {
+  const sql = neon(process.env.DATABASE_URL);
+  const hash = await hashPassword('admin123');
+  await sql\\\`INSERT INTO users (id, username, password) VALUES (gen_random_uuid(), 'admin', \\\${hash}) ON CONFLICT (username) DO UPDATE SET password = \\\${hash}\\\`;
+  console.log('Admin creado: admin / admin123');
+}
+createAdmin();
+" 2>&1
+}
+print_success "Usuario administrador configurado"
+
 # ============================================================
 # CREAR DIRECTORIO DE UPLOADS
 # ============================================================

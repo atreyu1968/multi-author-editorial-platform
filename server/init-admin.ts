@@ -23,7 +23,12 @@ export async function initializeAdminUser() {
   
   const initPromise = (async () => {
     // Check if any admin user exists
-    const existingUsers = await db.select().from(users).limit(1);
+    let existingUsers: any[] = [];
+    try {
+      existingUsers = await db.select().from(users).limit(1);
+    } catch (err: any) {
+      console.log("⚠️ Users table might not exist yet, will create admin");
+    }
     
     if (existingUsers.length > 0) {
       console.log("✓ Admin user already exists");
