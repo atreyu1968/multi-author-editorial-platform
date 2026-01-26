@@ -244,16 +244,16 @@ export default function BookLanding() {
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
           
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 py-12">
+            <div className="grid lg:grid-cols-5 gap-8 lg:gap-16 items-center">
               {/* Book Cover */}
-              <div className="flex justify-center lg:justify-start">
+              <div className="lg:col-span-2 flex justify-center order-1">
                 <div className="relative group">
                   <div className="absolute inset-0 bg-primary/20 blur-3xl group-hover:blur-4xl transition-all duration-300 rounded-lg" />
                   <img
                     src={book.coverImage || heroImage || ""}
                     alt={`${t.seoImageAltPortada} ${book.title}`}
-                    className="relative w-80 h-auto rounded-lg shadow-2xl transform group-hover:scale-105 transition-transform duration-300"
+                    className="relative w-64 md:w-80 lg:w-full max-w-sm h-auto rounded-lg shadow-2xl transform group-hover:scale-105 transition-transform duration-300"
                     data-testid="book-cover"
                   />
                   {book.landingAwards && book.landingAwards.length > 0 && (
@@ -266,26 +266,38 @@ export default function BookLanding() {
               </div>
 
               {/* Book Info */}
-              <div className="text-center lg:text-left">
+              <div className="lg:col-span-3 text-center lg:text-left order-2">
                 <div className="mb-6">
+                  {/* Title first for better hierarchy */}
+                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold mb-6 text-primary" data-testid="book-title">
+                    {translatedTitle}
+                  </h1>
+                  
+                  {tagline && (
+                    <p className="text-xl md:text-2xl text-muted-foreground mb-6 font-light leading-relaxed">
+                      {tagline}
+                    </p>
+                  )}
+
+                  {/* Badges below title */}
                   <div className="flex flex-wrap gap-2 justify-center lg:justify-start mb-4">
-                    <Badge variant="secondary" className="text-base px-4 py-1" data-testid="book-genre">
+                    <Badge variant="secondary" className="text-sm md:text-base px-3 md:px-4 py-1" data-testid="book-genre">
                       {book.genre}
                     </Badge>
                     {isPartOfSeries && (
-                      <Badge variant="outline" className="text-base px-4 py-1" data-testid="book-series">
+                      <Badge variant="outline" className="text-sm md:text-base px-3 md:px-4 py-1" data-testid="book-series">
                         {series.title} - {t.libro} {book.orderInSeries}
                       </Badge>
                     )}
                     {book.isDigitalProduct && (
-                      <Badge variant="default" className="text-base px-4 py-1" data-testid="badge-digital-product">
+                      <Badge variant="default" className="text-sm md:text-base px-3 md:px-4 py-1" data-testid="badge-digital-product">
                         {t.productoDigital}
                       </Badge>
                     )}
                   </div>
 
                   {book.directSaleEnabled && (
-                    <div className="flex gap-2 mb-4">
+                    <div className="flex flex-wrap gap-2 justify-center lg:justify-start mb-4">
                       {book.saleFormatPhysical && (
                         <Badge variant="outline" data-testid="badge-format-physical">
                           <Package className="h-3 w-3 mr-1" />
@@ -299,16 +311,6 @@ export default function BookLanding() {
                         </Badge>
                       )}
                     </div>
-                  )}
-                  
-                  <h1 className="text-5xl lg:text-6xl font-serif font-bold mb-6 text-primary" data-testid="book-title">
-                    {translatedTitle}
-                  </h1>
-                  
-                  {tagline && (
-                    <p className="text-2xl text-muted-foreground mb-8 font-light leading-relaxed">
-                      {tagline}
-                    </p>
                   )}
                 </div>
 
@@ -338,7 +340,7 @@ export default function BookLanding() {
                   </div>
                 )}
 
-                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center lg:justify-start mb-8">
                   {book.directSaleEnabled && book.directSaleStock !== null && book.directSaleStock !== undefined && book.directSaleStock > 0 ? (
                     <Button 
                       onClick={handleAddToCart} 
