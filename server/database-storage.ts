@@ -204,19 +204,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getStandaloneBooks(authorId?: string): Promise<Book[]> {
+    // Books are standalone if they have no series OR isStandalone flag is true
     const conditions = [
-      eq(books.isStandalone, true),
-      eq(books.isPublished, true)
+      eq(books.isPublished, true),
     ];
     
     if (authorId) {
       conditions.push(eq(books.authorId, authorId));
     }
     
+    // Get books that are either marked as standalone OR have no series assigned
     return await db
       .select()
       .from(books)
-      .where(and(...conditions));
+      .where(and(
+        ...conditions,
+        sql`(${books.isStandalone} = true OR ${books.seriesId} IS NULL)`
+      ));
   }
 
   async getLatestBooks(limit: number = 6): Promise<Book[]> {
