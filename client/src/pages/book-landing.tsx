@@ -14,7 +14,7 @@ import { formatPriceWithConversionSync } from "@shared/currency-service";
 import type { Book, EditorialSettings, Author } from "@shared/schema";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useUiText } from "@/contexts/ui-text-context";
 import { useLocale } from "@/contexts/locale-context";
 import { getAllLocalizedUrls } from "@/lib/localized-routes";
@@ -147,6 +147,11 @@ export default function BookLanding() {
     queryKey: [`/api/books/${bookId}/translations`],
     enabled: !!bookId,
   });
+
+  // Scroll to top when component mounts or bookId changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [bookId]);
 
   const handleAddToCart = async () => {
     if (!bookId) return;
