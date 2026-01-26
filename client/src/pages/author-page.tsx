@@ -164,7 +164,7 @@ export default function AuthorPage() {
               <img 
                 src={author.photo} 
                 alt={`${t.altPhotoPrefix} ${author.name}`}
-                className="w-32 h-32 rounded-full mx-auto mb-6 object-cover border-4 border-white/30 shadow-2xl"
+                className="w-48 h-48 md:w-56 md:h-56 lg:w-64 lg:h-64 rounded-full mx-auto mb-6 object-cover border-4 border-white/30 shadow-2xl"
                 data-testid="author-hero-photo"
               />
             )}
