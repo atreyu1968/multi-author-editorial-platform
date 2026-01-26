@@ -425,6 +425,14 @@ server {
         proxy_send_timeout 86400;
     }
     
+    # Servir archivos subidos directamente desde Nginx
+    location /uploads/ {
+        alias $APP_DIR/uploads/;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+        try_files \$uri =404;
+    }
+    
     # Cache para archivos estáticos
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
         proxy_pass http://127.0.0.1:5000;
