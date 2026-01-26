@@ -1179,15 +1179,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Public endpoint - excludes sensitive PayPal credentials
   app.get("/api/editorial-settings", async (req, res) => {
     try {
-      const settings = await storage.getEditorialSettings();
+      let settings = await storage.getEditorialSettings();
+      
+      // Auto-create default settings if none exist
       if (!settings) {
-        res.status(404).json({ message: "Editorial settings not found" });
-        return;
+        console.log("[Editorial Settings] Creating default settings...");
+        settings = await storage.updateEditorialSettings({
+          name: "Editorial",
+          heroTitle: "Descubre Historias que Transforman Vidas",
+          heroSubtitle: "Una editorial comprometida con nuevas voces literarias.",
+        });
+        
+        if (!settings) {
+          res.status(500).json({ message: "Failed to create default editorial settings" });
+          return;
+        }
       }
+      
       // Remove sensitive PayPal credentials from public response
       const { paypalClientId, paypalClientSecret, paypalEnvironment, ...publicSettings } = settings;
       res.json(publicSettings);
     } catch (error) {
+      console.error("Editorial settings error:", error);
       res.status(500).json({ message: "Failed to get editorial settings" });
     }
   });
