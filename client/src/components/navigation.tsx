@@ -4,7 +4,7 @@ import { Menu, X, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
-import type { Author, SiteSettings } from "@shared/schema";
+import type { Author, SiteSettings, EditorialSettings } from "@shared/schema";
 import { useUiText } from "@/contexts/ui-text-context";
 import { useCart } from "@/contexts/CartContext";
 import { LanguageSelector } from "@/components/language-selector";
@@ -26,6 +26,10 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
   const { data: settings = [] } = useQuery<SiteSettings[]>({
     queryKey: authorId ? ["/api/settings", { authorId }] : ["/api/settings"]
   });
+
+  const { data: editorialSettings } = useQuery<EditorialSettings>({
+    queryKey: ["/api/editorial-settings"]
+  });
   
   const settingsMap = settings.reduce((acc, setting) => {
     acc[setting.key] = setting.value;
@@ -33,6 +37,9 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
   }, {} as Record<string, string>);
   
   const logoUrl = settingsMap.logoUrl || "";
+  
+  // Show cart only if PayPal is configured
+  const isCartEnabled = !!(editorialSettings?.paypalClientId);
   
   const navHome = useUiText("navigation", "home", "Inicio");
   const navSeries = useUiText("navigation", "series", "Series");
@@ -88,20 +95,22 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
               <SearchBar />
             </div>
             <LanguageSelector />
-            <Link href="/checkout" data-testid="link-cart">
-              <Button variant="ghost" size="icon" className="relative">
-                <ShoppingCart className="h-5 w-5" />
-                {totalItems > 0 && (
-                  <Badge 
-                    variant="destructive" 
-                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-                    data-testid="badge-cart-count"
-                  >
-                    {totalItems}
-                  </Badge>
-                )}
-              </Button>
-            </Link>
+            {isCartEnabled && (
+              <Link href="/checkout" data-testid="link-cart">
+                <Button variant="ghost" size="icon" className="relative">
+                  <ShoppingCart className="h-5 w-5" />
+                  {totalItems > 0 && (
+                    <Badge 
+                      variant="destructive" 
+                      className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                      data-testid="badge-cart-count"
+                    >
+                      {totalItems}
+                    </Badge>
+                  )}
+                </Button>
+              </Link>
+            )}
           </div>
           <div className="md:hidden flex items-center">
             <button 
@@ -140,21 +149,23 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
             <div className="py-2">
               <LanguageSelector />
             </div>
-            <Link href="/checkout" className="block w-full text-left py-2 text-primary" onClick={() => setMobileMenuOpen(false)} data-testid="link-cart-mobile">
-              <div className="flex items-center">
-                <ShoppingCart className="h-4 w-4 mr-2 inline" />
-                Carrito
-                {totalItems > 0 && (
-                  <Badge 
-                    variant="destructive" 
-                    className="ml-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
-                    data-testid="badge-cart-count-mobile"
-                  >
-                    {totalItems}
-                  </Badge>
-                )}
-              </div>
-            </Link>
+            {isCartEnabled && (
+              <Link href="/checkout" className="block w-full text-left py-2 text-primary" onClick={() => setMobileMenuOpen(false)} data-testid="link-cart-mobile">
+                <div className="flex items-center">
+                  <ShoppingCart className="h-4 w-4 mr-2 inline" />
+                  Carrito
+                  {totalItems > 0 && (
+                    <Badge 
+                      variant="destructive" 
+                      className="ml-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                      data-testid="badge-cart-count-mobile"
+                    >
+                      {totalItems}
+                    </Badge>
+                  )}
+                </div>
+              </Link>
+            )}
           </div>
         </div>
       )}
