@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { Menu, X, Settings, ShoppingCart } from "lucide-react";
+import { Menu, X, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
@@ -39,8 +39,6 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
   const navBooks = useUiText("navigation", "books", "Libros");
   const navBio = useUiText("navigation", "bio", "Biografía");
   const navTestimonials = useUiText("navigation", "testimonials", "Reseñas");
-  const navAdmin = useUiText("navigation", "admin", "Admin");
-  const navAdminPanel = useUiText("navigation", "admin_panel", "Panel Admin");
   const commonLoading = useUiText("common", "loading", "Cargando...");
 
   // Build base path for navigation links
@@ -104,12 +102,6 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
                 )}
               </Button>
             </Link>
-            <Link href="/auth">
-              <Button className="bg-primary text-primary-foreground hover:bg-primary/90" data-testid="button-admin">
-                <Settings className="h-4 w-4 mr-2" />
-                {navAdmin}
-              </Button>
-            </Link>
           </div>
           <div className="md:hidden flex items-center">
             <button 
@@ -162,10 +154,6 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
                   </Badge>
                 )}
               </div>
-            </Link>
-            <Link href="/auth" className="block w-full text-left py-2 text-primary" onClick={() => setMobileMenuOpen(false)}>
-              <Settings className="h-4 w-4 mr-2 inline" />
-              {navAdminPanel}
             </Link>
           </div>
         </div>
