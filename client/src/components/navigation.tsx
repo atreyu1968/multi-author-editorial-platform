@@ -7,7 +7,6 @@ import { useQuery } from "@tanstack/react-query";
 import type { Author, SiteSettings, EditorialSettings } from "@shared/schema";
 import { useUiText } from "@/contexts/ui-text-context";
 import { useCart } from "@/contexts/CartContext";
-import { LanguageSelector } from "@/components/language-selector";
 import SearchBar from "@/components/search-bar";
 
 interface NavigationProps {
@@ -94,7 +93,6 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
             <div className="w-64">
               <SearchBar />
             </div>
-            <LanguageSelector />
             {isCartEnabled && (
               <Link href="/checkout" data-testid="link-cart">
                 <Button variant="ghost" size="icon" className="relative">
@@ -146,9 +144,6 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
             <a href="#testimonios" className="block py-2 text-muted-foreground hover:text-primary cursor-pointer" onClick={() => setMobileMenuOpen(false)}>
               {navTestimonials}
             </a>
-            <div className="py-2">
-              <LanguageSelector />
-            </div>
             {isCartEnabled && (
               <Link href="/checkout" className="block w-full text-left py-2 text-primary" onClick={() => setMobileMenuOpen(false)} data-testid="link-cart-mobile">
                 <div className="flex items-center">
