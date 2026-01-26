@@ -75,19 +75,19 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
             </Link>
           </div>
           <div className="hidden md:flex items-center space-x-8">
-            <a href="#inicio" className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="nav-inicio">
+            <a href={`${basePath}#inicio`} className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="nav-inicio">
               {navHome}
             </a>
-            <a href="#series" className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="nav-series">
+            <a href={`${basePath}#series`} className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="nav-series">
               {navSeries}
             </a>
-            <a href="#standalone" className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="nav-standalone">
+            <a href={`${basePath}#standalone`} className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="nav-standalone">
               {navBooks}
             </a>
-            <a href="#biografia" className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="nav-biografia">
+            <a href={`${basePath}#biografia`} className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="nav-biografia">
               {navBio}
             </a>
-            <a href="#testimonios" className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="nav-testimonios">
+            <a href={`${basePath}#testimonios`} className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="nav-testimonios">
               {navTestimonials}
             </a>
             <div className="w-64">
@@ -129,19 +129,19 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
             <div className="py-2">
               <SearchBar />
             </div>
-            <a href="#inicio" className="block py-2 text-muted-foreground hover:text-primary cursor-pointer" onClick={() => setMobileMenuOpen(false)}>
+            <a href={`${basePath}#inicio`} className="block py-2 text-muted-foreground hover:text-primary cursor-pointer" onClick={() => setMobileMenuOpen(false)}>
               {navHome}
             </a>
-            <a href="#series" className="block py-2 text-muted-foreground hover:text-primary cursor-pointer" onClick={() => setMobileMenuOpen(false)}>
+            <a href={`${basePath}#series`} className="block py-2 text-muted-foreground hover:text-primary cursor-pointer" onClick={() => setMobileMenuOpen(false)}>
               {navSeries}
             </a>
-            <a href="#standalone" className="block py-2 text-muted-foreground hover:text-primary cursor-pointer" onClick={() => setMobileMenuOpen(false)}>
+            <a href={`${basePath}#standalone`} className="block py-2 text-muted-foreground hover:text-primary cursor-pointer" onClick={() => setMobileMenuOpen(false)}>
               {navBooks}
             </a>
-            <a href="#biografia" className="block py-2 text-muted-foreground hover:text-primary cursor-pointer" onClick={() => setMobileMenuOpen(false)}>
+            <a href={`${basePath}#biografia`} className="block py-2 text-muted-foreground hover:text-primary cursor-pointer" onClick={() => setMobileMenuOpen(false)}>
               {navBio}
             </a>
-            <a href="#testimonios" className="block py-2 text-muted-foreground hover:text-primary cursor-pointer" onClick={() => setMobileMenuOpen(false)}>
+            <a href={`${basePath}#testimonios`} className="block py-2 text-muted-foreground hover:text-primary cursor-pointer" onClick={() => setMobileMenuOpen(false)}>
               {navTestimonials}
             </a>
             {isCartEnabled && (
