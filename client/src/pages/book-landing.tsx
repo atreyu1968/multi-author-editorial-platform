@@ -702,7 +702,7 @@ export default function BookLanding() {
               <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
                 {series.description}
               </p>
-              <Link href="/#series">
+              <Link href={author?.slug ? `/autor/${author.slug}#series` : `/#series`}>
                 <Button size="lg" variant="outline" className="text-lg">
                   {t.explorarSerie}
                 </Button>
@@ -770,6 +770,15 @@ export default function BookLanding() {
             <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
               {author?.bioParagraph1 || ""}
             </p>
+            {author?.slug && (
+              <div className="mb-6">
+                <Link href={`/autor/${author.slug}`}>
+                  <Button variant="outline" size="sm">
+                    Ver todos los libros
+                  </Button>
+                </Link>
+              </div>
+            )}
             <div className="flex justify-center space-x-4">
               {author?.instagramUrl && (
                 <a href={author.instagramUrl} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
