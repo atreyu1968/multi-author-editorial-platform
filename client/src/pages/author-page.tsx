@@ -188,7 +188,7 @@ export default function AuthorPage() {
                 variant="outline" 
                 className="bg-white/20 backdrop-blur-sm text-white border-2 border-white/30 px-8 py-4 text-lg font-semibold hover:bg-white/30 transition-all"
                 data-testid="button-books"
-                onClick={() => document.getElementById('books')?.scrollIntoView({ behavior: 'smooth' })}
+                onClick={() => document.getElementById('standalone')?.scrollIntoView({ behavior: 'smooth' })}
               >
                 <BookOpen className="h-5 w-5 mr-2" />
                 {t.buttonBooks}
@@ -496,7 +496,7 @@ export default function AuthorPage() {
               <ul className="space-y-2">
                 <li><a href="#biografia" className="text-muted-foreground hover:text-primary transition-colors">{t.footerBio}</a></li>
                 {activeSeries.length > 0 && <li><a href="#series" className="text-muted-foreground hover:text-primary transition-colors">{t.footerSeries}</a></li>}
-                {publishedStandaloneBooks.length > 0 && <li><a href="#books" className="text-muted-foreground hover:text-primary transition-colors">{t.footerBooks}</a></li>}
+                {publishedStandaloneBooks.length > 0 && <li><a href="#standalone" className="text-muted-foreground hover:text-primary transition-colors">{t.footerBooks}</a></li>}
                 {testimonials.length > 0 && <li><a href="#testimonios" className="text-muted-foreground hover:text-primary transition-colors">{t.footerReviews}</a></li>}
               </ul>
             </div>
