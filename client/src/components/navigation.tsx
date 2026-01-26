@@ -71,21 +71,21 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
             </Link>
           </div>
           <div className="hidden md:flex items-center space-x-8">
-            <Link href={`${basePath}#inicio`} className="text-muted-foreground hover:text-primary transition-colors" data-testid="nav-inicio">
+            <a href="#inicio" className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="nav-inicio">
               {navHome}
-            </Link>
-            <Link href={`${basePath}#series`} className="text-muted-foreground hover:text-primary transition-colors" data-testid="nav-series">
+            </a>
+            <a href="#series" className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="nav-series">
               {navSeries}
-            </Link>
-            <Link href={`${basePath}#standalone`} className="text-muted-foreground hover:text-primary transition-colors" data-testid="nav-standalone">
+            </a>
+            <a href="#standalone" className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="nav-standalone">
               {navBooks}
-            </Link>
-            <Link href={`${basePath}#biografia`} className="text-muted-foreground hover:text-primary transition-colors" data-testid="nav-biografia">
+            </a>
+            <a href="#biografia" className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="nav-biografia">
               {navBio}
-            </Link>
-            <Link href={`${basePath}#testimonios`} className="text-muted-foreground hover:text-primary transition-colors" data-testid="nav-testimonios">
+            </a>
+            <a href="#testimonios" className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="nav-testimonios">
               {navTestimonials}
-            </Link>
+            </a>
             <div className="w-64">
               <SearchBar />
             </div>
@@ -130,21 +130,21 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
             <div className="py-2">
               <SearchBar />
             </div>
-            <Link href={`${basePath}#inicio`} className="block py-2 text-muted-foreground hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+            <a href="#inicio" className="block py-2 text-muted-foreground hover:text-primary cursor-pointer" onClick={() => setMobileMenuOpen(false)}>
               {navHome}
-            </Link>
-            <Link href={`${basePath}#series`} className="block py-2 text-muted-foreground hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+            </a>
+            <a href="#series" className="block py-2 text-muted-foreground hover:text-primary cursor-pointer" onClick={() => setMobileMenuOpen(false)}>
               {navSeries}
-            </Link>
-            <Link href={`${basePath}#standalone`} className="block py-2 text-muted-foreground hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+            </a>
+            <a href="#standalone" className="block py-2 text-muted-foreground hover:text-primary cursor-pointer" onClick={() => setMobileMenuOpen(false)}>
               {navBooks}
-            </Link>
-            <Link href={`${basePath}#biografia`} className="block py-2 text-muted-foreground hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+            </a>
+            <a href="#biografia" className="block py-2 text-muted-foreground hover:text-primary cursor-pointer" onClick={() => setMobileMenuOpen(false)}>
               {navBio}
-            </Link>
-            <Link href={`${basePath}#testimonios`} className="block py-2 text-muted-foreground hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+            </a>
+            <a href="#testimonios" className="block py-2 text-muted-foreground hover:text-primary cursor-pointer" onClick={() => setMobileMenuOpen(false)}>
               {navTestimonials}
-            </Link>
+            </a>
             <div className="py-2">
               <LanguageSelector />
             </div>

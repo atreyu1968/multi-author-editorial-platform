@@ -156,7 +156,7 @@ export default function AuthorPage() {
         <Navigation authorId={author.id} />
 
       {/* Hero Section */}
-      <section className="hero-gradient relative overflow-hidden">
+      <section id="inicio" className="hero-gradient relative overflow-hidden">
         <div className="absolute inset-0 bg-black/10"></div>
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32 relative z-10">
           <div className="max-w-4xl mx-auto text-center text-white">
