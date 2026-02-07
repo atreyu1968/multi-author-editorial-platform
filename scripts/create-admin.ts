@@ -1,6 +1,5 @@
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
-import { neon } from "@neondatabase/serverless";
 
 const scryptAsync = promisify(scrypt);
 
@@ -18,7 +17,6 @@ async function createAdmin() {
     process.exit(1);
   }
   
-  const sql = neon(databaseUrl);
   const username = process.env.ADMIN_USERNAME || "admin";
   const password = process.env.ADMIN_PASSWORD || "admin123";
   
@@ -27,11 +25,30 @@ async function createAdmin() {
   try {
     const passwordHash = await hashPassword(password);
     
-    await sql`
-      INSERT INTO users (id, username, password)
-      VALUES (gen_random_uuid(), ${username}, ${passwordHash})
-      ON CONFLICT (username) DO UPDATE SET password = ${passwordHash}
-    `;
+    const isNeonDatabase = databaseUrl.includes('neon.tech') || 
+                           databaseUrl.includes('neon.fl0.io') ||
+                           databaseUrl.includes('ep-');
+    
+    if (isNeonDatabase) {
+      const { neon } = await import("@neondatabase/serverless");
+      const sql = neon(databaseUrl);
+      await sql`
+        INSERT INTO users (id, username, password)
+        VALUES (gen_random_uuid(), ${username}, ${passwordHash})
+        ON CONFLICT (username) DO UPDATE SET password = ${passwordHash}
+      `;
+    } else {
+      const { default: pg } = await import("pg");
+      const Pool = pg.Pool || (pg as any);
+      const pool = new Pool({ connectionString: databaseUrl });
+      await pool.query(
+        `INSERT INTO users (id, username, password)
+         VALUES (gen_random_uuid(), $1, $2)
+         ON CONFLICT (username) DO UPDATE SET password = $2`,
+        [username, passwordHash]
+      );
+      await pool.end();
+    }
     
     console.log("=".repeat(50));
     console.log("✅ ADMIN USER CREATED/UPDATED");

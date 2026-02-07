@@ -97,21 +97,32 @@ print_success "Base de datos actualizada"
 print_status "Verificando usuario administrador..."
 sudo -u $APP_USER -E npx tsx scripts/create-admin.ts 2>&1 || {
     print_warning "Creando admin con método alternativo..."
-    sudo -u $APP_USER -E npx tsx -e "
-const { scrypt, randomBytes } = require('crypto');
-const { promisify } = require('util');
-const { neon } = require('@neondatabase/serverless');
+    ADMIN_SCRIPT=$(mktemp /tmp/create-admin-XXXXXX.ts)
+    cat > "$ADMIN_SCRIPT" << 'ADMIN_EOF'
+import { scrypt, randomBytes } from "crypto";
+import { promisify } from "util";
+import pg from "pg";
+
 const scryptAsync = promisify(scrypt);
+
 async function run() {
-  const sql = neon(process.env.DATABASE_URL);
-  const salt = randomBytes(16).toString('hex');
-  const buf = await scryptAsync('admin123', salt, 64);
-  const hash = buf.toString('hex') + '.' + salt;
-  await sql\\\`INSERT INTO users (id, username, password) VALUES (gen_random_uuid(), 'admin', \\\${hash}) ON CONFLICT (username) DO UPDATE SET password = \\\${hash}\\\`;
-  console.log('Admin: admin / admin123');
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync("admin123", salt, 64)) as Buffer;
+  const hash = buf.toString("hex") + "." + salt;
+  const Pool = pg.Pool || (pg as any);
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  await pool.query(
+    "INSERT INTO users (id, username, password) VALUES (gen_random_uuid(), $1, $2) ON CONFLICT (username) DO UPDATE SET password = $2",
+    ["admin", hash]
+  );
+  await pool.end();
+  console.log("Admin creado: admin / admin123");
 }
 run();
-" 2>&1
+ADMIN_EOF
+    chown $APP_USER:$APP_USER "$ADMIN_SCRIPT"
+    sudo -u $APP_USER -E npx tsx "$ADMIN_SCRIPT" 2>&1
+    rm -f "$ADMIN_SCRIPT"
 }
 print_success "Usuario administrador verificado"
 
