@@ -132,7 +132,9 @@ print_success "Dependencias actualizadas"
 print_status "Recompilando aplicación..."
 BUILD_LOG="/tmp/editorial_build_$BACKUP_DATE.log"
 
-sudo -u $APP_USER -E npm run build > "$BUILD_LOG" 2>&1
+# Agregar node_modules/.bin al PATH para que vite/esbuild se encuentren
+export PATH="$APP_DIR/node_modules/.bin:$PATH"
+sudo -u $APP_USER -E env PATH="$PATH" npm run build > "$BUILD_LOG" 2>&1
 BUILD_EXIT=$?
 
 if [ $BUILD_EXIT -ne 0 ]; then
@@ -180,6 +182,7 @@ rm -f "$BUILD_LOG"
 
 # ============================================================
 # ACTUALIZAR ESQUEMA DE BASE DE DATOS
+# (PATH ya incluye node_modules/.bin desde el paso de compilación)
 # ============================================================
 print_status "Actualizando esquema de base de datos..."
 cd "$APP_DIR"

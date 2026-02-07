@@ -303,7 +303,10 @@ sudo -u $APP_USER -E npm install --legacy-peer-deps 2>&1 | tail -5
 
 print_status "Compilando aplicación..."
 BUILD_LOG="/tmp/editorial_build.log"
-sudo -u $APP_USER -E npm run build > "$BUILD_LOG" 2>&1
+
+# Agregar node_modules/.bin al PATH para que vite/esbuild se encuentren
+export PATH="$APP_DIR/node_modules/.bin:$PATH"
+sudo -u $APP_USER -E env PATH="$PATH" npm run build > "$BUILD_LOG" 2>&1
 BUILD_EXIT=$?
 
 if [ $BUILD_EXIT -ne 0 ]; then
