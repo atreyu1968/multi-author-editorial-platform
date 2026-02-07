@@ -117,6 +117,8 @@ export const books = pgTable("books", {
   // Sale format configuration
   saleFormatPhysical: boolean("sale_format_physical").default(false),
   saleFormatDigital: boolean("sale_format_digital").default(false),
+  // Coming soon flag
+  isComingSoon: boolean("is_coming_soon").default(false),
 });
 
 export const testimonials = pgTable("testimonials", {

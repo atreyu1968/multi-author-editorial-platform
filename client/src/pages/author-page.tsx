@@ -101,6 +101,7 @@ export default function AuthorPage() {
     altPhotoPrefix: useUiText("author_page", "alt_photo_prefix", "Foto de"),
     altPortraitPrefix: useUiText("author_page", "alt_portrait_prefix", "Retrato profesional de"),
     altBookCoverPrefix: useUiText("author_page", "alt_book_cover_prefix", "Portada del libro"),
+    badgeComingSoon: useUiText("author_page", "badge_coming_soon", "Próximamente"),
     altProfilePhotoPrefix: useUiText("author_page", "alt_profile_photo_prefix", "Foto de perfil de"),
   };
 
@@ -328,6 +329,13 @@ export default function AuthorPage() {
                               className="w-full h-full object-cover" 
                               data-testid={`series-book-cover-${book.id}`}
                             />
+                            {book.isComingSoon && (
+                              <div className="absolute top-2 left-2">
+                                <Badge className="bg-blue-600 text-white shadow-lg" data-testid={`badge-coming-soon-${book.id}`}>
+                                  {t.badgeComingSoon}
+                                </Badge>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -361,6 +369,13 @@ export default function AuthorPage() {
                         alt={`${t.altBookCoverPrefix} ${book.title}`}
                         className="w-full h-full object-cover" 
                       />
+                      {book.isComingSoon && (
+                        <div className="absolute top-2 left-2 z-10">
+                          <Badge className="bg-blue-600 text-white shadow-lg" data-testid={`badge-coming-soon-${book.id}`}>
+                            {t.badgeComingSoon}
+                          </Badge>
+                        </div>
+                      )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-4">
                         <Button 
                           variant="secondary"

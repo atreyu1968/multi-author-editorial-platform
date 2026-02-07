@@ -122,6 +122,8 @@ export default function BookLanding() {
     seoDescSuffix: useUiText("book_landing", "seo_desc_suffix", "que te mantendrá enganchado desde la primera página."),
     seoImageAltPortada: useUiText("book_landing", "seo_image_alt_portada", "Portada de"),
     galleryImageAltImagen: useUiText("book_landing", "gallery_image_alt_imagen", "Imagen"),
+    badgeComingSoon: useUiText("book_landing", "badge_coming_soon", "Próximamente"),
+    comingSoonMessage: useUiText("book_landing", "coming_soon_message", "Este libro estará disponible próximamente. ¡Mantente atento!"),
     galleryImageAltDe: useUiText("book_landing", "gallery_image_alt_de", "de"),
   };
 
@@ -262,6 +264,13 @@ export default function BookLanding() {
                     className="relative w-64 md:w-80 lg:w-full max-w-sm h-auto rounded-lg shadow-2xl transform group-hover:scale-105 transition-transform duration-300"
                     data-testid="book-cover"
                   />
+                  {book.isComingSoon && (
+                    <div className="absolute top-4 left-4 z-10">
+                      <Badge className="bg-blue-600 text-white text-sm px-4 py-2 shadow-lg" data-testid="badge-coming-soon">
+                        {t.badgeComingSoon}
+                      </Badge>
+                    </div>
+                  )}
                   {book.landingAwards && book.landingAwards.length > 0 && (
                     <div className="absolute -top-4 -right-4 bg-amber-500 text-white px-4 py-2 rounded-full flex items-center gap-2 shadow-lg animate-bounce">
                       <Award className="h-5 w-5" />
@@ -347,6 +356,13 @@ export default function BookLanding() {
                 )}
 
                 <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center lg:justify-start mb-8">
+                  {book.isComingSoon ? (
+                    <div className="flex items-center gap-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg px-6 py-4" data-testid="coming-soon-notice">
+                      <Calendar className="h-5 w-5 text-blue-600" />
+                      <p className="text-blue-700 dark:text-blue-300 font-medium">{t.comingSoonMessage}</p>
+                    </div>
+                  ) : (
+                    <>
                   {book.directSaleEnabled && book.directSaleStock !== null && book.directSaleStock !== undefined && book.directSaleStock > 0 ? (
                     <Button 
                       onClick={handleAddToCart} 
@@ -403,6 +419,8 @@ export default function BookLanding() {
                     }
                   })()}
                   
+                    </>
+                  )}
                   <Button variant="outline" asChild size="lg" className="text-lg px-8 py-6" data-testid="button-preview">
                     <a href="#synopsis">
                       {t.verMasDetalles}
@@ -721,11 +739,12 @@ export default function BookLanding() {
         <section className="py-20 bg-gradient-to-r from-primary to-secondary text-primary-foreground">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-4xl font-serif font-bold mb-6">
-              {t.listoSum}
+              {book.isComingSoon ? t.badgeComingSoon : t.listoSum}
             </h2>
             <p className="text-xl mb-8 max-w-2xl mx-auto">
-              {t.comienzaAv}
+              {book.isComingSoon ? t.comingSoonMessage : t.comienzaAv}
             </p>
+            {!book.isComingSoon && (
             <div className="flex flex-wrap gap-4 justify-center">
               {book.amazonUrl && (
                 <Button asChild size="lg" variant="secondary" className="text-lg px-10 py-6">
@@ -760,6 +779,7 @@ export default function BookLanding() {
                 }
               })()}
             </div>
+            )}
           </div>
         </section>
       </main>

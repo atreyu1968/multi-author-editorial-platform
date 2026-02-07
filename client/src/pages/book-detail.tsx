@@ -112,6 +112,11 @@ export default function BookDetail() {
                       {series.title} - Libro {book.orderInSeries}
                     </Badge>
                   )}
+                  {book.isComingSoon && (
+                    <Badge className="bg-blue-600 text-white" data-testid="badge-coming-soon">
+                      Próximamente
+                    </Badge>
+                  )}
                 </div>
                 
                 <h1 className="text-4xl lg:text-5xl font-serif font-bold mb-4 text-primary" data-testid="book-title">
@@ -131,14 +136,18 @@ export default function BookDetail() {
 
               {/* Purchase Links */}
               <div className="flex flex-col sm:flex-row gap-4">
-                {book.amazonUrl && (
+                {book.isComingSoon ? (
+                  <div className="flex items-center gap-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg px-6 py-4" data-testid="coming-soon-notice">
+                    <p className="text-blue-700 dark:text-blue-300 font-medium">Este libro estará disponible próximamente. ¡Mantente atento!</p>
+                  </div>
+                ) : book.amazonUrl ? (
                   <Button asChild size="lg" data-testid="button-amazon">
                     <a href={book.amazonUrl} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="mr-2 h-4 w-4" />
                       Comprar en Amazon
                     </a>
                   </Button>
-                )}
+                ) : null}
               </div>
             </div>
           </div>

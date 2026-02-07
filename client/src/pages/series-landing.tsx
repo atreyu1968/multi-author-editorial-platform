@@ -251,10 +251,15 @@ export default function SeriesLanding() {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     )}
-                    <div className="absolute top-4 left-4 z-10">
+                    <div className="absolute top-4 left-4 z-10 flex gap-2">
                       <Badge className="text-lg px-4 py-2">
                         Libro {book.orderInSeries || index + 1}
                       </Badge>
+                      {book.isComingSoon && (
+                        <Badge className="text-lg px-4 py-2 bg-blue-600 text-white" data-testid={`badge-coming-soon-${book.id}`}>
+                          Próximamente
+                        </Badge>
+                      )}
                     </div>
                   </div>
                   <CardHeader>
@@ -271,7 +276,7 @@ export default function SeriesLanding() {
                         Ver detalles
                       </Button>
                     </Link>
-                    {book.amazonUrl && (
+                    {book.amazonUrl && !book.isComingSoon && (
                       <Button asChild className="flex-1">
                         <a href={book.amazonUrl} target="_blank" rel="noopener noreferrer">
                           <ExternalLink className="mr-2 h-4 w-4" />

@@ -106,6 +106,7 @@ export default function BookManagement() {
     // Badges/Status
     badgePublished: useUiText("admin.books", "badge_published", "Publicado"),
     badgeDraft: useUiText("admin.books", "badge_draft", "Borrador"),
+    badgeComingSoon: useUiText("admin.books", "badge_coming_soon", "Próximamente"),
     badgeStandalone: useUiText("admin.books", "badge_standalone", "Independiente"),
     badgeBookNumber: useUiText("admin.books", "badge_book_number", "Libro #"),
     // Action Buttons
@@ -131,6 +132,8 @@ export default function BookManagement() {
     labelOrderInSeries: useUiText("admin.books", "label_order_in_series", "Orden en la Serie"),
     labelStandalone: useUiText("admin.books", "label_standalone", "Libro independiente"),
     labelPublished: useUiText("admin.books", "label_published", "Publicado"),
+    labelComingSoon: useUiText("admin.books", "label_coming_soon", "Próximamente"),
+    descriptionComingSoon: useUiText("admin.books", "description_coming_soon", "Muestra el libro como 'Próximamente' sin opciones de compra"),
     labelCoverImage: useUiText("admin.books", "label_cover_image", "Imagen de Portada"),
     labelAmazonUrl: useUiText("admin.books", "label_amazon_url", "URL de Amazon"),
     // Basic Info - Placeholders
@@ -390,6 +393,7 @@ export default function BookManagement() {
       orderInSeries: undefined,
       isStandalone: false,
       isPublished: true,
+      isComingSoon: false,
       landingHeroImage: "",
       landingTagline: "",
       landingSynopsis: "",
@@ -645,6 +649,7 @@ export default function BookManagement() {
       orderInSeries: undefined,
       isStandalone: false,
       isPublished: true,
+      isComingSoon: false,
       landingHeroImage: "",
       landingTagline: "",
       landingSynopsis: "",
@@ -715,8 +720,9 @@ export default function BookManagement() {
       amazonUrl: book.amazonUrl || "",
       seriesId: book.seriesId || "none",
       orderInSeries: book.orderInSeries || undefined,
-      isStandalone: book.isStandalone || false,
-      isPublished: book.isPublished || true,
+      isStandalone: book.isStandalone ?? false,
+      isPublished: book.isPublished ?? true,
+      isComingSoon: book.isComingSoon ?? false,
       landingHeroImage: book.landingHeroImage || "",
       landingTagline: book.landingTagline || "",
       landingSynopsis: book.landingSynopsis || "",
@@ -939,14 +945,21 @@ export default function BookManagement() {
                       <Badge className="bg-accent/20 text-accent-foreground">{book.genre}</Badge>
                     </td>
                     <td className="p-4">
-                      <Badge 
-                        className={book.isPublished 
-                          ? "bg-green-100 text-green-800" 
-                          : "bg-yellow-100 text-yellow-800"
-                        }
-                      >
-                        {book.isPublished ? t.badgePublished : t.badgeDraft}
-                      </Badge>
+                      <div className="flex gap-1 flex-wrap">
+                        <Badge 
+                          className={book.isPublished 
+                            ? "bg-green-100 text-green-800" 
+                            : "bg-yellow-100 text-yellow-800"
+                          }
+                        >
+                          {book.isPublished ? t.badgePublished : t.badgeDraft}
+                        </Badge>
+                        {book.isComingSoon && (
+                          <Badge className="bg-blue-100 text-blue-800" data-testid={`badge-coming-soon-${book.id}`}>
+                            {t.badgeComingSoon}
+                          </Badge>
+                        )}
+                      </div>
                     </td>
                     <td className="p-4">
                       <div className="flex gap-2">
@@ -1268,6 +1281,26 @@ export default function BookManagement() {
                               />
                             </FormControl>
                             <FormLabel>{t.labelPublished}</FormLabel>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="isComingSoon"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <Switch
+                                checked={field.value || false}
+                                onCheckedChange={field.onChange}
+                                data-testid="switch-book-coming-soon"
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel>{t.labelComingSoon}</FormLabel>
+                              <FormDescription>{t.descriptionComingSoon}</FormDescription>
+                            </div>
                           </FormItem>
                         )}
                       />
