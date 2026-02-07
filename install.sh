@@ -323,9 +323,12 @@ sudo -u $APP_USER -E npm run db:push 2>&1 | tail -5
 
 print_success "Base de datos sincronizada"
 
-# Crear usuario admin por defecto
+# Crear usuario admin por defecto (no bloquea la instalación si falla)
 print_status "Creando usuario administrador..."
-sudo -u $APP_USER -E npx tsx scripts/create-admin.ts 2>&1 || {
+set +e
+sudo -u $APP_USER -E npx tsx scripts/create-admin.ts 2>&1
+ADMIN_RESULT=$?
+if [ $ADMIN_RESULT -ne 0 ]; then
     print_warning "No se pudo crear admin con script, intentando método alternativo..."
     ADMIN_SCRIPT=$(mktemp /tmp/create-admin-XXXXXX.ts)
     cat > "$ADMIN_SCRIPT" << 'ADMIN_EOF'
@@ -351,9 +354,10 @@ async function run() {
 run();
 ADMIN_EOF
     chown $APP_USER:$APP_USER "$ADMIN_SCRIPT"
-    sudo -u $APP_USER -E npx tsx "$ADMIN_SCRIPT" 2>&1
+    sudo -u $APP_USER -E npx tsx "$ADMIN_SCRIPT" 2>&1 || print_warning "No se pudo crear admin automáticamente. Crear manualmente desde el panel."
     rm -f "$ADMIN_SCRIPT"
-}
+fi
+set -e
 print_success "Usuario administrador configurado"
 
 # ============================================================
