@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "wouter";
+import { useState, useCallback } from "react";
+import { Link, useLocation } from "wouter";
 import { Menu, X, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ interface NavigationProps {
 export default function Navigation({ authorId }: NavigationProps = {}) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { totalItems } = useCart();
+  const [location] = useLocation();
   
   const { data: author } = useQuery<Author>({
     queryKey: [`/api/authors/${authorId}`],
@@ -37,7 +38,6 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
   
   const logoUrl = settingsMap.logoUrl || "";
   
-  // Show cart only if PayPal is configured
   const isCartEnabled = !!(editorialSettings?.paypalClientId);
   
   const navHome = useUiText("navigation", "home", "Inicio");
@@ -47,8 +47,25 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
   const navTestimonials = useUiText("navigation", "testimonials", "Reseñas");
   const commonLoading = useUiText("common", "loading", "Cargando...");
 
-  // Build base path for navigation links
   const basePath = author?.slug ? `/autor/${author.slug}` : "/";
+
+  const scrollToSection = useCallback((e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
+    e.preventDefault();
+    const isOnAuthorPage = authorId && location === basePath;
+    if (isOnAuthorPage || location === basePath) {
+      const element = document.getElementById(sectionId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      window.location.href = `${basePath}#${sectionId}`;
+    }
+  }, [authorId, location, basePath]);
+
+  const handleMobileNavClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
+    scrollToSection(e, sectionId);
+    setMobileMenuOpen(false);
+  }, [scrollToSection]);
 
   return (
     <nav className="bg-card/80 backdrop-blur-md border-b border-border sticky top-0 z-50">
@@ -75,19 +92,19 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
             </Link>
           </div>
           <div className="hidden md:flex items-center space-x-8">
-            <a href={`${basePath}#inicio`} className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="nav-inicio">
+            <a href={`${basePath}#inicio`} onClick={(e) => scrollToSection(e, 'inicio')} className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="nav-inicio">
               {navHome}
             </a>
-            <a href={`${basePath}#series`} className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="nav-series">
+            <a href={`${basePath}#series`} onClick={(e) => scrollToSection(e, 'series')} className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="nav-series">
               {navSeries}
             </a>
-            <a href={`${basePath}#standalone`} className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="nav-standalone">
+            <a href={`${basePath}#standalone`} onClick={(e) => scrollToSection(e, 'standalone')} className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="nav-standalone">
               {navBooks}
             </a>
-            <a href={`${basePath}#biografia`} className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="nav-biografia">
+            <a href={`${basePath}#biografia`} onClick={(e) => scrollToSection(e, 'biografia')} className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="nav-biografia">
               {navBio}
             </a>
-            <a href={`${basePath}#testimonios`} className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="nav-testimonios">
+            <a href={`${basePath}#testimonios`} onClick={(e) => scrollToSection(e, 'testimonios')} className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="nav-testimonios">
               {navTestimonials}
             </a>
             <div className="w-64">
@@ -122,26 +139,25 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
         </div>
       </div>
       
-      {/* Mobile Menu */}
       {mobileMenuOpen && (
         <div className="md:hidden bg-card border-t border-border">
           <div className="px-4 py-2 space-y-2">
             <div className="py-2">
               <SearchBar />
             </div>
-            <a href={`${basePath}#inicio`} className="block py-2 text-muted-foreground hover:text-primary cursor-pointer" onClick={() => setMobileMenuOpen(false)}>
+            <a href={`${basePath}#inicio`} onClick={(e) => handleMobileNavClick(e, 'inicio')} className="block py-2 text-muted-foreground hover:text-primary cursor-pointer">
               {navHome}
             </a>
-            <a href={`${basePath}#series`} className="block py-2 text-muted-foreground hover:text-primary cursor-pointer" onClick={() => setMobileMenuOpen(false)}>
+            <a href={`${basePath}#series`} onClick={(e) => handleMobileNavClick(e, 'series')} className="block py-2 text-muted-foreground hover:text-primary cursor-pointer">
               {navSeries}
             </a>
-            <a href={`${basePath}#standalone`} className="block py-2 text-muted-foreground hover:text-primary cursor-pointer" onClick={() => setMobileMenuOpen(false)}>
+            <a href={`${basePath}#standalone`} onClick={(e) => handleMobileNavClick(e, 'standalone')} className="block py-2 text-muted-foreground hover:text-primary cursor-pointer">
               {navBooks}
             </a>
-            <a href={`${basePath}#biografia`} className="block py-2 text-muted-foreground hover:text-primary cursor-pointer" onClick={() => setMobileMenuOpen(false)}>
+            <a href={`${basePath}#biografia`} onClick={(e) => handleMobileNavClick(e, 'biografia')} className="block py-2 text-muted-foreground hover:text-primary cursor-pointer">
               {navBio}
             </a>
-            <a href={`${basePath}#testimonios`} className="block py-2 text-muted-foreground hover:text-primary cursor-pointer" onClick={() => setMobileMenuOpen(false)}>
+            <a href={`${basePath}#testimonios`} onClick={(e) => handleMobileNavClick(e, 'testimonios')} className="block py-2 text-muted-foreground hover:text-primary cursor-pointer">
               {navTestimonials}
             </a>
             {isCartEnabled && (
