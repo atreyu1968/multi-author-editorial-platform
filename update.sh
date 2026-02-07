@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 
 # ============================================================
 # ACTUALIZADOR - Plataforma Editorial Multi-Autor
@@ -24,6 +23,26 @@ APP_NAME="editorial"
 APP_DIR="/var/www/$APP_NAME"
 CONFIG_DIR="/etc/$APP_NAME"
 APP_USER="editorial"
+
+# ============================================================
+# SAFETY NET: Si algo falla, siempre reiniciar el servicio
+# ============================================================
+SHOULD_RESTART=false
+cleanup() {
+    if [ "$SHOULD_RESTART" = true ]; then
+        echo ""
+        print_warning "El script terminó inesperadamente. Reiniciando servicio..."
+        systemctl start $APP_NAME 2>/dev/null || true
+        sleep 2
+        if systemctl is-active --quiet $APP_NAME; then
+            print_success "Servicio reiniciado (con la versión anterior)"
+        else
+            print_error "No se pudo reiniciar el servicio"
+            echo "  Revisa: journalctl -u $APP_NAME -n 30 --no-pager"
+        fi
+    fi
+}
+trap cleanup EXIT
 
 # Verificar root
 if [ "$EUID" -ne 0 ]; then
@@ -64,6 +83,7 @@ print_success "Backup creado en $BACKUP_DIR"
 # Detener servicio
 print_status "Deteniendo servicio..."
 systemctl stop $APP_NAME 2>/dev/null || true
+SHOULD_RESTART=true
 
 # ============================================================
 # ACTUALIZAR CÓDIGO
@@ -82,10 +102,11 @@ print_success "Código actualizado: $CURRENT_COMMIT"
 # Si el update.sh del repo es más nuevo, copiarlo y reiniciar
 # ============================================================
 if [ -f "$APP_DIR/update.sh" ]; then
-    SCRIPT_PATH=$(realpath "$0")
+    SCRIPT_PATH=$(realpath "$0" 2>/dev/null || echo "$0")
     REPO_SCRIPT="$APP_DIR/update.sh"
     if ! diff -q "$SCRIPT_PATH" "$REPO_SCRIPT" > /dev/null 2>&1; then
         print_warning "Se detectó una versión más nueva de update.sh"
+        SHOULD_RESTART=false
         cp "$REPO_SCRIPT" "$SCRIPT_PATH"
         chmod +x "$SCRIPT_PATH"
         print_status "Reiniciando con la versión actualizada..."
@@ -100,6 +121,9 @@ print_status "Actualizando dependencias..."
 cd "$APP_DIR"
 
 sudo -u $APP_USER -E npm install --legacy-peer-deps 2>&1 | tail -5
+if [ ${PIPESTATUS[0]} -ne 0 ]; then
+    print_warning "Hubo warnings en npm install (normalmente no es crítico)"
+fi
 print_success "Dependencias actualizadas"
 
 # ============================================================
@@ -107,13 +131,16 @@ print_success "Dependencias actualizadas"
 # ============================================================
 print_status "Recompilando aplicación..."
 BUILD_LOG="/tmp/editorial_build_$BACKUP_DATE.log"
+
 sudo -u $APP_USER -E npm run build > "$BUILD_LOG" 2>&1
 BUILD_EXIT=$?
 
 if [ $BUILD_EXIT -ne 0 ]; then
-    print_error "Error al compilar la aplicación"
-    echo "Últimas líneas del log de compilación:"
-    tail -20 "$BUILD_LOG"
+    print_error "Error al compilar la aplicación (código de salida: $BUILD_EXIT)"
+    echo ""
+    echo "═══════ LOG DE COMPILACIÓN ═══════"
+    cat "$BUILD_LOG"
+    echo "══════════════════════════════════"
     echo ""
     echo "Log completo en: $BUILD_LOG"
     echo ""
@@ -124,16 +151,20 @@ if [ $BUILD_EXIT -ne 0 ]; then
         chown -R $APP_USER:$APP_USER "$APP_DIR/dist"
         print_warning "Versión anterior restaurada"
     fi
+    print_status "Reiniciando servicio con versión anterior..."
     systemctl start $APP_NAME 2>/dev/null || true
+    SHOULD_RESTART=false
     exit 1
 fi
 
 print_success "Aplicación compilada correctamente"
-rm -f "$BUILD_LOG"
 
 # Verificar que los archivos de build existen
 if [ ! -f "$APP_DIR/dist/index.js" ] || [ ! -f "$APP_DIR/dist/public/index.html" ]; then
     print_error "Los archivos compilados no se generaron correctamente"
+    echo "Contenido de dist/:"
+    ls -la "$APP_DIR/dist/" 2>/dev/null || echo "  (no existe)"
+    ls -la "$APP_DIR/dist/public/" 2>/dev/null || echo "  (public/ no existe)"
     if [ -d "$BACKUP_DIR/dist_backup_$BACKUP_DATE" ]; then
         rm -rf "$APP_DIR/dist"
         cp -r "$BACKUP_DIR/dist_backup_$BACKUP_DATE" "$APP_DIR/dist"
@@ -141,9 +172,11 @@ if [ ! -f "$APP_DIR/dist/index.js" ] || [ ! -f "$APP_DIR/dist/public/index.html"
         print_warning "Versión anterior restaurada"
     fi
     systemctl start $APP_NAME 2>/dev/null || true
+    SHOULD_RESTART=false
     exit 1
 fi
 print_success "Archivos compilados verificados"
+rm -f "$BUILD_LOG"
 
 # ============================================================
 # ACTUALIZAR ESQUEMA DE BASE DE DATOS
@@ -157,10 +190,7 @@ print_success "Base de datos actualizada"
 # VERIFICAR USUARIO ADMIN
 # ============================================================
 print_status "Verificando usuario administrador..."
-set +e
-sudo -u $APP_USER -E npx tsx scripts/create-admin.ts 2>&1
-ADMIN_RESULT=$?
-if [ $ADMIN_RESULT -ne 0 ]; then
+sudo -u $APP_USER -E npx tsx scripts/create-admin.ts 2>&1 || {
     print_warning "Creando admin con método alternativo..."
     ADMIN_SCRIPT=$(mktemp /tmp/create-admin-XXXXXX.ts)
     cat > "$ADMIN_SCRIPT" << 'ADMIN_EOF'
@@ -188,8 +218,7 @@ ADMIN_EOF
     chown $APP_USER:$APP_USER "$ADMIN_SCRIPT"
     sudo -u $APP_USER -E npx tsx "$ADMIN_SCRIPT" 2>&1 || print_warning "No se pudo crear admin automáticamente."
     rm -f "$ADMIN_SCRIPT"
-fi
-set -e
+}
 print_success "Usuario administrador verificado"
 
 # ============================================================
@@ -217,13 +246,15 @@ systemctl start $APP_NAME
 sleep 3
 
 if systemctl is-active --quiet $APP_NAME; then
+    SHOULD_RESTART=false
     print_success "Servicio reiniciado correctamente"
 else
+    SHOULD_RESTART=false
     print_error "Error al reiniciar el servicio"
-    echo "Revisa los logs: journalctl -u $APP_NAME -n 50"
+    echo "Revisa los logs: journalctl -u $APP_NAME -n 50 --no-pager"
     echo ""
     echo "Para restaurar el backup de la base de datos:"
-    echo "  psql $DATABASE_URL < $BACKUP_DIR/db_backup_$BACKUP_DATE.sql"
+    echo "  psql \"$DATABASE_URL\" < $BACKUP_DIR/db_backup_$BACKUP_DATE.sql"
     exit 1
 fi
 
