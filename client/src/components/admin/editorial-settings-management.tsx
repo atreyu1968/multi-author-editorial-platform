@@ -72,6 +72,7 @@ function EmailProviderInstructions({ provider, instructionsTitle, instructionsLi
 export default function EditorialSettingsManagement() {
   const { toast } = useToast();
   const [isSeedingTexts, setIsSeedingTexts] = useState(false);
+  const [activeTab, setActiveTab] = useState("branding");
 
   const emailProviderSteps: Record<string, string[]> = {
     "Resend": ["Ve a tu cuenta de Resend", "Genera una nueva API Key en Settings", "Copia la key y pégala aquí"],
@@ -433,7 +434,7 @@ export default function EditorialSettingsManagement() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <Tabs defaultValue="branding" className="w-full">
+          <Tabs defaultValue="branding" className="w-full" onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9 mb-6">
               <TabsTrigger value="branding" data-testid="tab-branding">{t.tabBranding}</TabsTrigger>
               <TabsTrigger value="hero" data-testid="tab-hero">{t.tabHero}</TabsTrigger>
@@ -446,7 +447,7 @@ export default function EditorialSettingsManagement() {
               <TabsTrigger value="system" data-testid="tab-system">Sistema</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="branding" className="space-y-6">
+            <TabsContent value="branding" forceMount className={`space-y-6 ${activeTab !== "branding" ? "hidden" : ""}`}>
               <Card>
                 <CardHeader>
                   <CardTitle>{t.cardIdentityTitle}</CardTitle>
@@ -711,7 +712,7 @@ export default function EditorialSettingsManagement() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="hero" className="space-y-6">
+            <TabsContent value="hero" forceMount className={`space-y-6 ${activeTab !== "hero" ? "hidden" : ""}`}>
               <Card>
                 <CardHeader>
                   <CardTitle>{t.cardHeroTitle}</CardTitle>
@@ -776,7 +777,7 @@ export default function EditorialSettingsManagement() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="features" className="space-y-6">
+            <TabsContent value="features" forceMount className={`space-y-6 ${activeTab !== "features" ? "hidden" : ""}`}>
               <Card>
                 <CardHeader>
                   <CardTitle>{t.cardOfferTitle}</CardTitle>
@@ -963,7 +964,7 @@ export default function EditorialSettingsManagement() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="authors" className="space-y-6">
+            <TabsContent value="authors" forceMount className={`space-y-6 ${activeTab !== "authors" ? "hidden" : ""}`}>
               <Card>
                 <CardHeader>
                   <CardTitle>{t.cardFeaturedAuthorsTitle}</CardTitle>
@@ -1000,7 +1001,7 @@ export default function EditorialSettingsManagement() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="footer" className="space-y-6">
+            <TabsContent value="footer" forceMount className={`space-y-6 ${activeTab !== "footer" ? "hidden" : ""}`}>
               <Card>
                 <CardHeader>
                   <CardTitle>{t.cardFooterTitle}</CardTitle>
@@ -1145,7 +1146,7 @@ export default function EditorialSettingsManagement() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="seo" className="space-y-6">
+            <TabsContent value="seo" forceMount className={`space-y-6 ${activeTab !== "seo" ? "hidden" : ""}`}>
               <Card>
                 <CardHeader>
                   <CardTitle>{t.cardSeoTitle}</CardTitle>
@@ -1199,7 +1200,7 @@ export default function EditorialSettingsManagement() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="paypal" className="space-y-6">
+            <TabsContent value="paypal" forceMount className={`space-y-6 ${activeTab !== "paypal" ? "hidden" : ""}`}>
               <Card>
                 <CardHeader>
                   <CardTitle>{t.cardCurrencyTitle}</CardTitle>
@@ -1327,7 +1328,7 @@ export default function EditorialSettingsManagement() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="email" className="space-y-6">
+            <TabsContent value="email" forceMount className={`space-y-6 ${activeTab !== "email" ? "hidden" : ""}`}>
               <Card>
                 <CardHeader>
                   <CardTitle>{t.cardEmailNewsletterTitle}</CardTitle>
@@ -1596,7 +1597,7 @@ export default function EditorialSettingsManagement() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="system" className="space-y-6">
+            <TabsContent value="system" forceMount className={`space-y-6 ${activeTab !== "system" ? "hidden" : ""}`}>
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
