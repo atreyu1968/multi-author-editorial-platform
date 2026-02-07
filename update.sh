@@ -120,10 +120,9 @@ fi
 print_status "Actualizando dependencias..."
 cd "$APP_DIR"
 
-sudo -u $APP_USER -E npm install --legacy-peer-deps 2>&1 | tail -5
-if [ ${PIPESTATUS[0]} -ne 0 ]; then
-    print_warning "Hubo warnings en npm install (normalmente no es crítico)"
-fi
+# Instalar TODAS las dependencias (incluyendo devDependencies para vite/esbuild)
+# NODE_ENV=production hace que npm omita devDependencies, por eso usamos --include=dev
+npm install --legacy-peer-deps --include=dev 2>&1 | tail -5
 print_success "Dependencias actualizadas"
 
 # ============================================================

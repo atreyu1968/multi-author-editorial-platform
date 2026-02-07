@@ -298,8 +298,8 @@ set -a
 source "$CONFIG_DIR/env"
 set +a
 
-# Instalar dependencias
-sudo -u $APP_USER -E npm install --legacy-peer-deps 2>&1 | tail -5
+# Instalar TODAS las dependencias (incluyendo devDependencies para vite/esbuild)
+npm install --legacy-peer-deps --include=dev 2>&1 | tail -5
 
 print_status "Compilando aplicación..."
 BUILD_LOG="/tmp/editorial_build.log"
