@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { Menu, X, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +16,6 @@ interface NavigationProps {
 export default function Navigation({ authorId }: NavigationProps = {}) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { totalItems } = useCart();
-  const [location] = useLocation();
   
   const { data: author } = useQuery<Author>({
     queryKey: [`/api/authors/${authorId}`],
@@ -51,16 +50,11 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
 
   const scrollToSection = useCallback((e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
     e.preventDefault();
-    const isOnAuthorPage = authorId && location === basePath;
-    if (isOnAuthorPage || location === basePath) {
-      const element = document.getElementById(sectionId);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
-      }
-    } else {
-      window.location.href = `${basePath}#${sectionId}`;
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [authorId, location, basePath]);
+  }, []);
 
   const handleMobileNavClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
     scrollToSection(e, sectionId);
