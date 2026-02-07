@@ -11,7 +11,7 @@ import Newsletter from "@/components/newsletter";
 import { SEOHead, generateStructuredData } from "@/components/seo/seo-head";
 import { buildBackgroundStyle } from "@/lib/utils";
 import type { BookSeries, Book } from "@shared/schema";
-import asdLogoPath from "@assets/ASD_1770459384951.png";
+const asdLogoPath = "/images/asd-logo.png";
 
 function getYouTubeEmbedUrl(url: string): string {
   try {

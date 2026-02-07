@@ -13,7 +13,7 @@ import { buildBackgroundStyle } from "@/lib/utils";
 import type { Author, BookSeries, Book, Testimonial } from "@shared/schema";
 import { useState } from "react";
 import { apiRequest } from "@/lib/queryClient";
-import asdLogoPath from "@assets/ASD_1770459384951.png";
+const asdLogoPath = "/images/asd-logo.png";
 import { useUiText } from "@/contexts/ui-text-context";
 import { useLocale } from "@/contexts/locale-context";
 import { getAllLocalizedUrls } from "@/lib/localized-routes";

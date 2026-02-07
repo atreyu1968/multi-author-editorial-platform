@@ -9,7 +9,7 @@ import { buildBackgroundStyle } from "@/lib/utils";
 import { LatestBooksCarousel } from "@/components/latest-books-carousel";
 import { useUiText } from "@/contexts/ui-text-context";
 import { EditorialTheme } from "@/components/dynamic-theme";
-import asdLogoPath from "@assets/ASD_1770459384951.png";
+const asdLogoPath = "/images/asd-logo.png";
 import { useLocale } from "@/contexts/locale-context";
 import { getAllLocalizedUrls } from "@/lib/localized-routes";
 import type { Author, EditorialSettings, Book } from "@shared/schema";

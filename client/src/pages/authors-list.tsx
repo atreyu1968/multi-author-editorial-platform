@@ -7,7 +7,7 @@ import EditorialNavigation from "@/components/editorial-navigation";
 import { SEOHead } from "@/components/seo/seo-head";
 import type { Author, EditorialSettings, Book } from "@shared/schema";
 import { EditorialTheme } from "@/components/dynamic-theme";
-import asdLogoPath from "@assets/ASD_1770459384951.png";
+const asdLogoPath = "/images/asd-logo.png";
 
 export default function AuthorsListPage() {
   const [, setLocation] = useLocation();

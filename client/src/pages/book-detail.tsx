@@ -8,7 +8,7 @@ import { Link } from "wouter";
 import Navigation from "@/components/navigation";
 import Newsletter from "@/components/newsletter";
 import { SEOHead, generateStructuredData } from "@/components/seo/seo-head";
-import asdLogoPath from "@assets/ASD_1770459384951.png";
+const asdLogoPath = "/images/asd-logo.png";
 import type { Book } from "@shared/schema";
 
 export default function BookDetail() {
