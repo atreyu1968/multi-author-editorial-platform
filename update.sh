@@ -132,9 +132,9 @@ print_success "Dependencias actualizadas"
 print_status "Recompilando aplicación..."
 BUILD_LOG="/tmp/editorial_build_$BACKUP_DATE.log"
 
-# Agregar node_modules/.bin al PATH para que vite/esbuild se encuentren
-export PATH="$APP_DIR/node_modules/.bin:$PATH"
-sudo -u $APP_USER -E env PATH="$PATH" npm run build > "$BUILD_LOG" 2>&1
+# Ejecutar build como root (solo genera archivos) y luego corregir permisos
+cd "$APP_DIR"
+npm run build > "$BUILD_LOG" 2>&1
 BUILD_EXIT=$?
 
 if [ $BUILD_EXIT -ne 0 ]; then
@@ -160,6 +160,7 @@ if [ $BUILD_EXIT -ne 0 ]; then
 fi
 
 print_success "Aplicación compilada correctamente"
+chown -R $APP_USER:$APP_USER "$APP_DIR/dist"
 
 # Verificar que los archivos de build existen
 if [ ! -f "$APP_DIR/dist/index.js" ] || [ ! -f "$APP_DIR/dist/public/index.html" ]; then
