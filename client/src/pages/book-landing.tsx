@@ -12,6 +12,7 @@ import { SEOHead, generateStructuredData } from "@/components/seo/seo-head";
 import { buildBackgroundStyle } from "@/lib/utils";
 import { formatPriceWithConversionSync } from "@shared/currency-service";
 import type { Book, EditorialSettings, Author } from "@shared/schema";
+import SharedFooter from "@/components/shared-footer";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
@@ -807,11 +808,9 @@ export default function BookLanding() {
               )}
             </div>
           </div>
-          <div className="border-t border-border mt-8 pt-8 text-center text-muted-foreground">
-            <p>&copy; {new Date().getFullYear()} {author?.name || book.authorId}. Todos los derechos reservados.</p>
-          </div>
         </div>
       </footer>
+      <SharedFooter />
     </div>
   );
 }

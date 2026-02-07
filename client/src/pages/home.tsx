@@ -9,7 +9,7 @@ import { buildBackgroundStyle } from "@/lib/utils";
 import { LatestBooksCarousel } from "@/components/latest-books-carousel";
 import { useUiText } from "@/contexts/ui-text-context";
 import { EditorialTheme } from "@/components/dynamic-theme";
-const asdLogoPath = "/images/asd-logo.png";
+import SharedFooter from "@/components/shared-footer";
 import { useLocale } from "@/contexts/locale-context";
 import { getAllLocalizedUrls } from "@/lib/localized-routes";
 import type { Author, EditorialSettings, Book } from "@shared/schema";
@@ -394,14 +394,9 @@ export default function Home() {
               </ul>
             </div>
           </div>
-          <div className="border-t border-border mt-8 pt-8 text-center text-muted-foreground">
-            <div className="flex items-center justify-center gap-2">
-              <img src={asdLogoPath} alt="ASD" className="h-6 w-auto" />
-              <p>{settings?.footerCopyright || t.footerCopyrightDefault}</p>
-            </div>
-          </div>
         </div>
       </footer>
+      <SharedFooter />
     </div>
     </EditorialTheme>
   );

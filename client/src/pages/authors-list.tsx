@@ -7,7 +7,7 @@ import EditorialNavigation from "@/components/editorial-navigation";
 import { SEOHead } from "@/components/seo/seo-head";
 import type { Author, EditorialSettings, Book } from "@shared/schema";
 import { EditorialTheme } from "@/components/dynamic-theme";
-const asdLogoPath = "/images/asd-logo.png";
+import SharedFooter from "@/components/shared-footer";
 
 export default function AuthorsListPage() {
   const [, setLocation] = useLocation();
@@ -132,15 +132,10 @@ export default function AuthorsListPage() {
             <p className="text-muted-foreground mb-4">
               {settings?.footerDescription || "Descubriendo nuevas voces en la literatura"}
             </p>
-            <div className="border-t border-border mt-8 pt-8 text-muted-foreground">
-              <div className="flex items-center justify-center gap-2">
-                <img src={asdLogoPath} alt="ASD" className="h-6 w-auto" />
-                <p>&copy; 2026 Atreyu Servicios Digitales. Todos los derechos reservados.</p>
-              </div>
-            </div>
           </div>
         </div>
       </footer>
+      <SharedFooter />
     </div>
     </EditorialTheme>
   );

@@ -11,7 +11,7 @@ import Newsletter from "@/components/newsletter";
 import { SEOHead, generateStructuredData } from "@/components/seo/seo-head";
 import { buildBackgroundStyle } from "@/lib/utils";
 import type { BookSeries, Book } from "@shared/schema";
-const asdLogoPath = "/images/asd-logo.png";
+import SharedFooter from "@/components/shared-footer";
 
 function getYouTubeEmbedUrl(url: string): string {
   try {
@@ -515,14 +515,9 @@ export default function SeriesLanding() {
               </a>
             </div>
           </div>
-          <div className="border-t border-border mt-8 pt-8 text-center text-muted-foreground">
-            <div className="flex items-center justify-center gap-2">
-              <img src={asdLogoPath} alt="ASD" className="h-6 w-auto" />
-              <p>&copy; 2026 Atreyu Servicios Digitales. Todos los derechos reservados.</p>
-            </div>
-          </div>
         </div>
       </footer>
+      <SharedFooter />
     </div>
   );
 }

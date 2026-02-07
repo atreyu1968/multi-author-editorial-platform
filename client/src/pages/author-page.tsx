@@ -13,7 +13,7 @@ import { buildBackgroundStyle } from "@/lib/utils";
 import type { Author, BookSeries, Book, Testimonial } from "@shared/schema";
 import { useState } from "react";
 import { apiRequest } from "@/lib/queryClient";
-const asdLogoPath = "/images/asd-logo.png";
+import SharedFooter from "@/components/shared-footer";
 import { useUiText } from "@/contexts/ui-text-context";
 import { useLocale } from "@/contexts/locale-context";
 import { getAllLocalizedUrls } from "@/lib/localized-routes";
@@ -484,14 +484,9 @@ export default function AuthorPage() {
               </ul>
             </div>
           </div>
-          <div className="border-t border-border mt-8 pt-8 text-center text-muted-foreground">
-            <div className="flex items-center justify-center gap-2">
-              <img src={asdLogoPath} alt="ASD" className="h-6 w-auto" />
-              <p>&copy; 2026 Atreyu Servicios Digitales. {t.footerRights}</p>
-            </div>
-          </div>
         </div>
       </footer>
+      <SharedFooter />
       </div>
     </DynamicTheme>
   );
