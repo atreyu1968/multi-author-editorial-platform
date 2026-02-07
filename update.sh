@@ -46,7 +46,9 @@ echo -e "${CYAN}╚════════════════════�
 echo ""
 
 # Cargar configuración existente
+set -a
 source "$CONFIG_DIR/env"
+set +a
 print_success "Configuración cargada desde $CONFIG_DIR/env"
 
 # Crear backup
@@ -56,44 +58,104 @@ mkdir -p "$BACKUP_DIR"
 
 print_status "Creando backup de seguridad..."
 pg_dump "$DATABASE_URL" > "$BACKUP_DIR/db_backup_$BACKUP_DATE.sql" 2>/dev/null || true
-cp -r "$APP_DIR" "$BACKUP_DIR/code_backup_$BACKUP_DATE" 2>/dev/null || true
+cp -r "$APP_DIR/dist" "$BACKUP_DIR/dist_backup_$BACKUP_DATE" 2>/dev/null || true
 print_success "Backup creado en $BACKUP_DIR"
 
 # Detener servicio
 print_status "Deteniendo servicio..."
-systemctl stop $APP_NAME
+systemctl stop $APP_NAME 2>/dev/null || true
 
-# Actualizar código
+# ============================================================
+# ACTUALIZAR CÓDIGO
+# ============================================================
 print_status "Descargando última versión..."
 cd "$APP_DIR"
 git config --global --add safe.directory "$APP_DIR" 2>/dev/null || true
-git fetch origin
+git fetch origin 2>&1
 git reset --hard origin/main 2>/dev/null || git reset --hard origin/master 2>/dev/null
+CURRENT_COMMIT=$(git log --oneline -1)
 chown -R $APP_USER:$APP_USER "$APP_DIR"
-print_success "Código actualizado"
+print_success "Código actualizado: $CURRENT_COMMIT"
 
-# Instalar dependencias
+# ============================================================
+# AUTO-ACTUALIZAR ESTE SCRIPT
+# Si el update.sh del repo es más nuevo, copiarlo y reiniciar
+# ============================================================
+if [ -f "$APP_DIR/update.sh" ]; then
+    SCRIPT_PATH=$(realpath "$0")
+    REPO_SCRIPT="$APP_DIR/update.sh"
+    if ! diff -q "$SCRIPT_PATH" "$REPO_SCRIPT" > /dev/null 2>&1; then
+        print_warning "Se detectó una versión más nueva de update.sh"
+        cp "$REPO_SCRIPT" "$SCRIPT_PATH"
+        chmod +x "$SCRIPT_PATH"
+        print_status "Reiniciando con la versión actualizada..."
+        exec bash "$SCRIPT_PATH" "$@"
+    fi
+fi
+
+# ============================================================
+# INSTALAR DEPENDENCIAS
+# ============================================================
 print_status "Actualizando dependencias..."
 cd "$APP_DIR"
 
-set -a
-source "$CONFIG_DIR/env"
-set +a
-
-sudo -u $APP_USER npm install --legacy-peer-deps 2>&1 | tail -3
+sudo -u $APP_USER -E npm install --legacy-peer-deps 2>&1 | tail -5
 print_success "Dependencias actualizadas"
 
-# Recompilar
+# ============================================================
+# RECOMPILAR APLICACIÓN
+# ============================================================
 print_status "Recompilando aplicación..."
-sudo -u $APP_USER npm run build 2>&1 | tail -3
-print_success "Aplicación compilada"
+BUILD_LOG="/tmp/editorial_build_$BACKUP_DATE.log"
+sudo -u $APP_USER -E npm run build > "$BUILD_LOG" 2>&1
+BUILD_EXIT=$?
 
-# Actualizar esquema de base de datos
+if [ $BUILD_EXIT -ne 0 ]; then
+    print_error "Error al compilar la aplicación"
+    echo "Últimas líneas del log de compilación:"
+    tail -20 "$BUILD_LOG"
+    echo ""
+    echo "Log completo en: $BUILD_LOG"
+    echo ""
+    print_status "Restaurando versión anterior..."
+    if [ -d "$BACKUP_DIR/dist_backup_$BACKUP_DATE" ]; then
+        rm -rf "$APP_DIR/dist"
+        cp -r "$BACKUP_DIR/dist_backup_$BACKUP_DATE" "$APP_DIR/dist"
+        chown -R $APP_USER:$APP_USER "$APP_DIR/dist"
+        print_warning "Versión anterior restaurada"
+    fi
+    systemctl start $APP_NAME 2>/dev/null || true
+    exit 1
+fi
+
+print_success "Aplicación compilada correctamente"
+rm -f "$BUILD_LOG"
+
+# Verificar que los archivos de build existen
+if [ ! -f "$APP_DIR/dist/index.js" ] || [ ! -f "$APP_DIR/dist/public/index.html" ]; then
+    print_error "Los archivos compilados no se generaron correctamente"
+    if [ -d "$BACKUP_DIR/dist_backup_$BACKUP_DATE" ]; then
+        rm -rf "$APP_DIR/dist"
+        cp -r "$BACKUP_DIR/dist_backup_$BACKUP_DATE" "$APP_DIR/dist"
+        chown -R $APP_USER:$APP_USER "$APP_DIR/dist"
+        print_warning "Versión anterior restaurada"
+    fi
+    systemctl start $APP_NAME 2>/dev/null || true
+    exit 1
+fi
+print_success "Archivos compilados verificados"
+
+# ============================================================
+# ACTUALIZAR ESQUEMA DE BASE DE DATOS
+# ============================================================
 print_status "Actualizando esquema de base de datos..."
-sudo -u $APP_USER -E npm run db:push --force 2>&1 | tail -5
+cd "$APP_DIR"
+sudo -u $APP_USER -E npx drizzle-kit push --force 2>&1 | tail -10
 print_success "Base de datos actualizada"
 
-# Asegurar que existe usuario admin (no bloquea la actualización si falla)
+# ============================================================
+# VERIFICAR USUARIO ADMIN
+# ============================================================
 print_status "Verificando usuario administrador..."
 set +e
 sudo -u $APP_USER -E npx tsx scripts/create-admin.ts 2>&1
@@ -124,13 +186,15 @@ async function run() {
 run();
 ADMIN_EOF
     chown $APP_USER:$APP_USER "$ADMIN_SCRIPT"
-    sudo -u $APP_USER -E npx tsx "$ADMIN_SCRIPT" 2>&1 || print_warning "No se pudo crear admin automáticamente. Crear manualmente desde el panel."
+    sudo -u $APP_USER -E npx tsx "$ADMIN_SCRIPT" 2>&1 || print_warning "No se pudo crear admin automáticamente."
     rm -f "$ADMIN_SCRIPT"
 fi
 set -e
 print_success "Usuario administrador verificado"
 
-# Crear/verificar directorio de uploads
+# ============================================================
+# VERIFICAR DIRECTORIO DE UPLOADS
+# ============================================================
 print_status "Verificando directorio de uploads..."
 UPLOADS_DIR="$APP_DIR/uploads"
 mkdir -p "$UPLOADS_DIR/public"
@@ -145,7 +209,9 @@ if ! grep -q "UPLOADS_DIR" "$CONFIG_DIR/env"; then
     print_success "Variable UPLOADS_DIR agregada a configuración"
 fi
 
-# Reiniciar servicio
+# ============================================================
+# REINICIAR SERVICIO
+# ============================================================
 print_status "Reiniciando servicio..."
 systemctl start $APP_NAME
 sleep 3
@@ -156,9 +222,36 @@ else
     print_error "Error al reiniciar el servicio"
     echo "Revisa los logs: journalctl -u $APP_NAME -n 50"
     echo ""
-    echo "Para restaurar el backup:"
+    echo "Para restaurar el backup de la base de datos:"
     echo "  psql $DATABASE_URL < $BACKUP_DIR/db_backup_$BACKUP_DATE.sql"
     exit 1
+fi
+
+# ============================================================
+# LIMPIAR CACHÉ (importante para ver los cambios)
+# ============================================================
+print_status "Limpiando caché de Nginx..."
+systemctl reload nginx 2>/dev/null || systemctl restart nginx 2>/dev/null || true
+print_success "Caché de Nginx limpiado"
+
+# Verificar si hay Cloudflare
+if command -v cloudflared &> /dev/null; then
+    print_warning "Cloudflare detectado: limpia la caché desde el panel de Cloudflare"
+    echo "  https://one.dash.cloudflare.com → tu dominio → Caching → Purge Everything"
+fi
+
+# ============================================================
+# VERIFICACIÓN FINAL
+# ============================================================
+print_status "Verificando que la aplicación responde..."
+sleep 2
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/ 2>/dev/null || echo "000")
+if [ "$HTTP_CODE" = "200" ]; then
+    print_success "Aplicación respondiendo correctamente (HTTP $HTTP_CODE)"
+else
+    print_warning "La aplicación respondió con código HTTP $HTTP_CODE"
+    echo "  Puede necesitar unos segundos más para iniciar"
+    echo "  Verifica con: curl -I http://localhost:5000/"
 fi
 
 # Resumen
@@ -168,10 +261,16 @@ echo -e "${CYAN}║              ACTUALIZACIÓN COMPLETADA                      
 echo -e "${CYAN}╚══════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 echo -e "${GREEN}✓ La aplicación ha sido actualizada exitosamente${NC}"
+echo -e "${GREEN}  Commit: $CURRENT_COMMIT${NC}"
 echo ""
 echo -e "${BLUE}Backup guardado en:${NC}"
 echo "  Base de datos: $BACKUP_DIR/db_backup_$BACKUP_DATE.sql"
-echo "  Código:        $BACKUP_DIR/code_backup_$BACKUP_DATE/"
+echo "  Build anterior: $BACKUP_DIR/dist_backup_$BACKUP_DATE/"
+echo ""
+echo -e "${YELLOW}⚠️  IMPORTANTE: Si no ves los cambios en el navegador:${NC}"
+echo "  1. Pulsa Ctrl+Shift+R (o Cmd+Shift+R en Mac) para forzar recarga"
+echo "  2. O abre una ventana de incógnito/privada"
+echo "  3. Si usas Cloudflare, limpia la caché desde el panel"
 echo ""
 echo -e "${BLUE}Comandos útiles:${NC}"
 echo "  Estado:  systemctl status $APP_NAME"

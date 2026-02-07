@@ -4,7 +4,6 @@ set -e
 # ============================================================
 # AUTOINSTALADOR - Plataforma Editorial Multi-Autor
 # Para Ubuntu 22.04/24.04
-# Basado en las lecciones aprendidas (systemd, config externa, etc.)
 # ============================================================
 
 # Colores
@@ -21,7 +20,7 @@ print_warning() { echo -e "${YELLOW}[AVISO]${NC} $1"; }
 print_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 # ============================================================
-# CONFIGURACIÓN - MODIFICAR SEGÚN TU REPOSITORIO
+# CONFIGURACIÓN
 # ============================================================
 APP_NAME="editorial"
 APP_DIR="/var/www/$APP_NAME"
@@ -187,7 +186,7 @@ if ! command -v node &> /dev/null || [[ $(node -v) != v20* ]]; then
     apt-get install -y -qq nodejs
 fi
 
-# Asegurar permisos correctos (lección aprendida)
+# Asegurar permisos correctos
 chmod 755 /usr/bin/node 2>/dev/null || true
 chmod 755 /usr/bin/npm 2>/dev/null || true
 
@@ -212,7 +211,7 @@ if [ "$IS_UPDATE" = false ]; then
     sudo -u postgres psql -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;" 2>/dev/null
     sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;" 2>/dev/null
     
-    # Configurar autenticación md5 (lección aprendida: peer no funciona con password)
+    # Configurar autenticación md5
     PG_HBA=$(sudo -u postgres psql -t -c "SHOW hba_file;" | xargs)
     if [ -f "$PG_HBA" ]; then
         if ! grep -q "host.*all.*all.*127.0.0.1.*md5" "$PG_HBA" 2>/dev/null; then
@@ -240,14 +239,13 @@ else
 fi
 
 # ============================================================
-# GUARDAR CONFIGURACIÓN PERSISTENTE (fuera del repositorio)
+# GUARDAR CONFIGURACIÓN PERSISTENTE
 # ============================================================
 print_status "Guardando configuración en $CONFIG_DIR/env..."
 
 mkdir -p "$CONFIG_DIR"
 DATABASE_URL="postgresql://$DB_USER:$DB_PASS@localhost:5432/$DB_NAME"
 
-# Formato systemd: SIN comillas (lección aprendida)
 cat > "$CONFIG_DIR/env" << EOF
 NODE_ENV=production
 PORT=$APP_PORT
@@ -301,12 +299,33 @@ source "$CONFIG_DIR/env"
 set +a
 
 # Instalar dependencias
-sudo -u $APP_USER npm install --legacy-peer-deps 2>&1 | tail -3
+sudo -u $APP_USER -E npm install --legacy-peer-deps 2>&1 | tail -5
 
 print_status "Compilando aplicación..."
-sudo -u $APP_USER npm run build 2>&1 | tail -3
+BUILD_LOG="/tmp/editorial_build.log"
+sudo -u $APP_USER -E npm run build > "$BUILD_LOG" 2>&1
+BUILD_EXIT=$?
 
-print_success "Aplicación compilada"
+if [ $BUILD_EXIT -ne 0 ]; then
+    print_error "Error al compilar la aplicación"
+    echo "Últimas líneas del log de compilación:"
+    tail -20 "$BUILD_LOG"
+    echo ""
+    echo "Log completo en: $BUILD_LOG"
+    exit 1
+fi
+
+# Verificar que los archivos de build existen
+if [ ! -f "$APP_DIR/dist/index.js" ] || [ ! -f "$APP_DIR/dist/public/index.html" ]; then
+    print_error "Los archivos compilados no se generaron correctamente"
+    echo "Contenido de dist/:"
+    ls -la "$APP_DIR/dist/" 2>/dev/null || echo "  (directorio no existe)"
+    ls -la "$APP_DIR/dist/public/" 2>/dev/null || echo "  (directorio public no existe)"
+    exit 1
+fi
+
+print_success "Aplicación compilada y verificada"
+rm -f "$BUILD_LOG"
 
 # ============================================================
 # EJECUTAR MIGRACIONES DE BASE DE DATOS
@@ -315,15 +334,14 @@ print_status "Sincronizando esquema de base de datos..."
 
 cd "$APP_DIR"
 
-# Exportar variables para drizzle
-export DATABASE_URL
-
-# Ejecutar db:push
-sudo -u $APP_USER -E npm run db:push 2>&1 | tail -5
+# Ejecutar db:push con --force para evitar prompts interactivos
+sudo -u $APP_USER -E npx drizzle-kit push --force 2>&1 | tail -10
 
 print_success "Base de datos sincronizada"
 
-# Crear usuario admin por defecto (no bloquea la instalación si falla)
+# ============================================================
+# CREAR USUARIO ADMIN
+# ============================================================
 print_status "Creando usuario administrador..."
 set +e
 sudo -u $APP_USER -E npx tsx scripts/create-admin.ts 2>&1
@@ -374,14 +392,13 @@ chmod -R 755 "$UPLOADS_DIR"
 print_success "Directorio de uploads creado"
 
 # ============================================================
-# CONFIGURAR SERVICIO SYSTEMD (NO PM2 - lección aprendida)
+# CONFIGURAR SERVICIO SYSTEMD
 # ============================================================
 print_status "Configurando servicio systemd..."
 
 cat > "/etc/systemd/system/$APP_NAME.service" << EOF
 [Unit]
 Description=Plataforma Editorial Multi-Autor
-Documentation=https://github.com/TU_USUARIO/TU_REPOSITORIO
 After=network.target postgresql.service
 Requires=postgresql.service
 
@@ -391,18 +408,17 @@ User=$APP_USER
 Group=$APP_USER
 WorkingDirectory=$APP_DIR
 EnvironmentFile=$CONFIG_DIR/env
-ExecStart=/usr/bin/npm start
+ExecStart=/usr/bin/node dist/index.js
 Restart=always
 RestartSec=10
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=$APP_NAME
 
-# Seguridad adicional
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
-ReadWritePaths=$APP_DIR $APP_DIR/uploads
+ReadWritePaths=$APP_DIR $APP_DIR/uploads /tmp
 
 [Install]
 WantedBy=multi-user.target
@@ -434,10 +450,8 @@ server {
     listen 80;
     server_name $SERVER_NAME;
     
-    # Archivos grandes (subida de libros digitales)
     client_max_body_size 500M;
     
-    # Logs
     access_log /var/log/nginx/editorial_access.log;
     error_log /var/log/nginx/editorial_error.log;
     
@@ -470,12 +484,25 @@ server {
         try_files \$uri =404;
     }
     
-    # Cache para archivos estáticos
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+    # Cache para archivos estáticos (Vite usa hashes en nombres, safe to cache)
+    location ~* \.(?:js|css|woff|woff2|ttf|eot)$ {
         proxy_pass http://127.0.0.1:5000;
-        proxy_cache_valid 200 1d;
-        expires 1d;
+        expires 30d;
         add_header Cache-Control "public, immutable";
+    }
+    
+    # Imágenes con cache moderado
+    location ~* \.(?:png|jpg|jpeg|gif|ico|svg|webp)$ {
+        proxy_pass http://127.0.0.1:5000;
+        expires 7d;
+        add_header Cache-Control "public";
+    }
+    
+    # HTML sin cache (importante para SPA)
+    location ~* \.html$ {
+        proxy_pass http://127.0.0.1:5000;
+        expires -1;
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
     }
     
     # Bloquear acceso a archivos sensibles
@@ -596,6 +623,18 @@ else
 fi
 
 # ============================================================
+# VERIFICACIÓN FINAL
+# ============================================================
+print_status "Verificando que la aplicación responde..."
+sleep 2
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/ 2>/dev/null || echo "000")
+if [ "$HTTP_CODE" = "200" ]; then
+    print_success "Aplicación respondiendo correctamente (HTTP $HTTP_CODE)"
+else
+    print_warning "La aplicación respondió con código HTTP $HTTP_CODE (puede necesitar unos segundos más)"
+fi
+
+# ============================================================
 # RESUMEN FINAL
 # ============================================================
 SERVER_IP=$(hostname -I | awk '{print $1}')
@@ -628,8 +667,7 @@ echo "  Servicio:      /etc/systemd/system/$APP_NAME.service"
 echo "  Logs Nginx:    /var/log/nginx/editorial_*.log"
 echo ""
 echo -e "${BLUE}Para actualizar la aplicación:${NC}"
-echo "  curl -O https://raw.githubusercontent.com/atreyu1968/multi-author-editorial-platform/main/update.sh"
-echo "  sudo bash update.sh"
+echo "  cd /var/www/$APP_NAME && sudo bash update.sh"
 echo ""
 echo -e "${BLUE}O reinstalar desde cero (preserva datos):${NC}"
 echo "  curl -O https://raw.githubusercontent.com/atreyu1968/multi-author-editorial-platform/main/install.sh"
