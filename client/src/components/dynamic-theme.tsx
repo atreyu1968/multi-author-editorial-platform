@@ -50,6 +50,15 @@ function applyThemeColors(colors: {
   }
 }
 
+function resetToDefaults() {
+  const root = document.documentElement;
+  root.style.setProperty('--primary', CSS_DEFAULTS.primary);
+  root.style.setProperty('--secondary', CSS_DEFAULTS.secondary);
+  root.style.setProperty('--accent', CSS_DEFAULTS.accent);
+  root.style.setProperty('--background', CSS_DEFAULTS.background);
+  root.style.setProperty('--foreground', CSS_DEFAULTS.foreground);
+}
+
 interface DynamicThemeProps {
   children: ReactNode;
   authorId?: string;
@@ -112,6 +121,7 @@ export function EditorialTheme({ children }: EditorialThemeProps) {
   });
 
   useEffect(() => {
+    resetToDefaults();
     if (settings) {
       applyThemeColors({
         primaryColor: settings.primaryColor,
@@ -120,16 +130,8 @@ export function EditorialTheme({ children }: EditorialThemeProps) {
         backgroundColor: settings.backgroundColor,
         textColor: settings.textColor,
       });
-    } else {
-      applyThemeColors({});
     }
-  }, [
-    settings?.primaryColor,
-    settings?.secondaryColor,
-    settings?.accentColor,
-    settings?.backgroundColor,
-    settings?.textColor
-  ]);
+  });
 
   return <>{children}</>;
 }
