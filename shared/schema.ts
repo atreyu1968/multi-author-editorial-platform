@@ -226,6 +226,7 @@ export const editorialSettings = pgTable("editorial_settings", {
   featuredSectionTitle: text("featured_section_title").notNull(),
   featuredSectionDescription: text("featured_section_description").notNull(),
   // Footer
+  footerLogoUrl: text("footer_logo_url"),
   footerDescription: text("footer_description").notNull(),
   footerEmail: text("footer_email").notNull(),
   footerLocation: text("footer_location").notNull(),

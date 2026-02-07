@@ -253,6 +253,7 @@ export default function EditorialSettingsManagement() {
       feature3Icon: "Sparkles",
       featuredSectionTitle: "",
       featuredSectionDescription: "",
+      footerLogoUrl: "",
       footerDescription: "",
       footerEmail: "",
       footerLocation: "",
@@ -313,6 +314,7 @@ export default function EditorialSettingsManagement() {
         feature3Icon: settings.feature3Icon,
         featuredSectionTitle: settings.featuredSectionTitle,
         featuredSectionDescription: settings.featuredSectionDescription,
+        footerLogoUrl: settings.footerLogoUrl || "",
         footerDescription: settings.footerDescription,
         footerEmail: settings.footerEmail,
         footerLocation: settings.footerLocation,
@@ -1004,6 +1006,44 @@ export default function EditorialSettingsManagement() {
                   <CardTitle>{t.cardFooterTitle}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <FormLabel>Logo del Footer</FormLabel>
+                    {form.watch("footerLogoUrl") && (
+                      <div className="border rounded-lg p-4 bg-muted/50">
+                        <img 
+                          src={form.watch("footerLogoUrl")} 
+                          alt="Footer logo preview" 
+                          className="h-10 object-contain"
+                          data-testid="img-footer-logo-preview"
+                        />
+                      </div>
+                    )}
+                    <FileUploader
+                      onComplete={(result) => handleFileUploadComplete("footerLogoUrl", result)}
+                      allowedFileTypes={["image/png", "image/jpeg", "image/svg+xml"]}
+                      maxFileSize={2 * 1024 * 1024}
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Subir Logo Footer
+                    </FileUploader>
+                    <FormField
+                      control={form.control}
+                      name="footerLogoUrl"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>URL del Logo Footer</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="URL del logo para el pie de página" data-testid="input-footer-logo-url" />
+                          </FormControl>
+                          <FormDescription>
+                            Logo que aparece en el pie de página del sitio
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
                   <FormField
                     control={form.control}
                     name="footerDescription"
