@@ -34,7 +34,7 @@ export default function BlogPostDetail() {
     moreArticlesButton: useUiText("blog", "more_articles_button", "Ver más artículos"),
     footerName: useUiText("blog", "footer_name", "María González"),
     footerBio: useUiText("blog", "footer_bio", "Autora bestseller especializada en romance, thriller y fantasía. Creando historias que tocan el corazón desde 2012."),
-    footerCopyright: useUiText("blog", "footer_copyright", "© 2024 María González. Todos los derechos reservados."),
+    footerCopyright: useUiText("blog", "footer_copyright", "© 2026 Atreyu Servicios Digitales. Todos los derechos reservados."),
   };
 
   const { data: post, isLoading, error } = useQuery<BlogPost>({

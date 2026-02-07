@@ -237,6 +237,11 @@ export const editorialSettings = pgTable("editorial_settings", {
   seoTitle: text("seo_title").notNull(),
   seoDescription: text("seo_description").notNull(),
   seoKeywords: text("seo_keywords").notNull(),
+  // Theme Colors (independent from author colors)
+  primaryColor: text("primary_color"),
+  secondaryColor: text("secondary_color"),
+  accentColor: text("accent_color"),
+  textColor: text("text_color"),
   // Background customization
   backgroundImageUrl: text("background_image_url"),
   backgroundColor: text("background_color"),

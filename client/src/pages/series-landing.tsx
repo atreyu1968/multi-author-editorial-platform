@@ -11,6 +11,7 @@ import Newsletter from "@/components/newsletter";
 import { SEOHead, generateStructuredData } from "@/components/seo/seo-head";
 import { buildBackgroundStyle } from "@/lib/utils";
 import type { BookSeries, Book } from "@shared/schema";
+import asdLogoPath from "@assets/ASD_1770459384951.png";
 
 function getYouTubeEmbedUrl(url: string): string {
   try {
@@ -42,8 +43,9 @@ function getSpotifyEmbedUrl(url: string): string {
 }
 
 export default function SeriesLanding() {
-  const [match, params] = useRoute("/serie/:id");
-  const seriesId = params?.id;
+  const [matchSerie, paramsSerie] = useRoute("/:locale/serie/:id");
+  const [matchSeries, paramsSeries] = useRoute("/:locale/series/:id");
+  const seriesId = paramsSerie?.id || paramsSeries?.id;
 
   const { data: series, isLoading: seriesLoading, error: seriesError } = useQuery<BookSeries>({
     queryKey: [`/api/book-series/${seriesId}`],
@@ -514,7 +516,10 @@ export default function SeriesLanding() {
             </div>
           </div>
           <div className="border-t border-border mt-8 pt-8 text-center text-muted-foreground">
-            <p>&copy; 2024 María González. Todos los derechos reservados.</p>
+            <div className="flex items-center justify-center gap-2">
+              <img src={asdLogoPath} alt="ASD" className="h-6 w-auto" />
+              <p>&copy; 2026 Atreyu Servicios Digitales. Todos los derechos reservados.</p>
+            </div>
           </div>
         </div>
       </footer>

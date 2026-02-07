@@ -1,6 +1,54 @@
 import { useEffect, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { SiteSettings } from "@shared/schema";
+import type { SiteSettings, EditorialSettings } from "@shared/schema";
+
+const CSS_DEFAULTS = {
+  primary: '222.2 47.4% 11.2%',
+  secondary: '210 40% 96.1%',
+  accent: '210 40% 96.1%',
+  background: '0 0% 100%',
+  foreground: '222.2 47.4% 11.2%'
+};
+
+function applyThemeColors(colors: {
+  primaryColor?: string | null;
+  secondaryColor?: string | null;
+  accentColor?: string | null;
+  backgroundColor?: string | null;
+  textColor?: string | null;
+}) {
+  const root = document.documentElement;
+
+  if (colors.primaryColor) {
+    root.style.setProperty('--primary', hexToHSL(colors.primaryColor));
+  } else {
+    root.style.setProperty('--primary', CSS_DEFAULTS.primary);
+  }
+
+  if (colors.secondaryColor) {
+    root.style.setProperty('--secondary', hexToHSL(colors.secondaryColor));
+  } else {
+    root.style.setProperty('--secondary', CSS_DEFAULTS.secondary);
+  }
+
+  if (colors.accentColor) {
+    root.style.setProperty('--accent', hexToHSL(colors.accentColor));
+  } else {
+    root.style.setProperty('--accent', CSS_DEFAULTS.accent);
+  }
+
+  if (colors.backgroundColor) {
+    root.style.setProperty('--background', hexToHSL(colors.backgroundColor));
+  } else {
+    root.style.setProperty('--background', CSS_DEFAULTS.background);
+  }
+
+  if (colors.textColor) {
+    root.style.setProperty('--foreground', hexToHSL(colors.textColor));
+  } else {
+    root.style.setProperty('--foreground', CSS_DEFAULTS.foreground);
+  }
+}
 
 interface DynamicThemeProps {
   children: ReactNode;
@@ -30,68 +78,57 @@ export function DynamicTheme({ children, authorId }: DynamicThemeProps) {
     if (faviconUrl) {
       link.href = faviconUrl;
     } else {
-      // Restore default favicon if removed
       link.href = '/favicon.ico';
     }
   }, [settingsMap.faviconUrl]);
 
   useEffect(() => {
-    const root = document.documentElement;
-    
-    // Define default values for CSS variables
-    const defaults = {
-      primary: '222.2 47.4% 11.2%',
-      secondary: '210 40% 96.1%',
-      accent: '210 40% 96.1%',
-      background: '0 0% 100%',
-      foreground: '222.2 47.4% 11.2%'
-    };
-    
-    // Set or reset primary color
-    if (settingsMap.primaryColor) {
-      const hsl = hexToHSL(settingsMap.primaryColor);
-      root.style.setProperty('--primary', hsl);
-    } else {
-      root.style.setProperty('--primary', defaults.primary);
-    }
-    
-    // Set or reset secondary color
-    if (settingsMap.secondaryColor) {
-      const hsl = hexToHSL(settingsMap.secondaryColor);
-      root.style.setProperty('--secondary', hsl);
-    } else {
-      root.style.setProperty('--secondary', defaults.secondary);
-    }
-    
-    // Set or reset accent color
-    if (settingsMap.accentColor) {
-      const hsl = hexToHSL(settingsMap.accentColor);
-      root.style.setProperty('--accent', hsl);
-    } else {
-      root.style.setProperty('--accent', defaults.accent);
-    }
-
-    // Set or reset background color
-    if (settingsMap.backgroundColor) {
-      const hsl = hexToHSL(settingsMap.backgroundColor);
-      root.style.setProperty('--background', hsl);
-    } else {
-      root.style.setProperty('--background', defaults.background);
-    }
-
-    // Set or reset text color
-    if (settingsMap.textColor) {
-      const hsl = hexToHSL(settingsMap.textColor);
-      root.style.setProperty('--foreground', hsl);
-    } else {
-      root.style.setProperty('--foreground', defaults.foreground);
-    }
+    applyThemeColors({
+      primaryColor: settingsMap.primaryColor,
+      secondaryColor: settingsMap.secondaryColor,
+      accentColor: settingsMap.accentColor,
+      backgroundColor: settingsMap.backgroundColor,
+      textColor: settingsMap.textColor,
+    });
   }, [
     settingsMap.primaryColor,
     settingsMap.secondaryColor,
     settingsMap.accentColor,
     settingsMap.backgroundColor,
     settingsMap.textColor
+  ]);
+
+  return <>{children}</>;
+}
+
+interface EditorialThemeProps {
+  children: ReactNode;
+}
+
+export function EditorialTheme({ children }: EditorialThemeProps) {
+  const { data: settings } = useQuery<EditorialSettings>({
+    queryKey: ["/api/editorial-settings"],
+    staleTime: 1000 * 60 * 5,
+  });
+
+  useEffect(() => {
+    if (settings) {
+      applyThemeColors({
+        primaryColor: settings.primaryColor,
+        secondaryColor: settings.secondaryColor,
+        accentColor: settings.accentColor,
+        backgroundColor: settings.backgroundColor,
+        textColor: settings.textColor,
+      });
+    } else {
+      applyThemeColors({});
+    }
+  }, [
+    settings?.primaryColor,
+    settings?.secondaryColor,
+    settings?.accentColor,
+    settings?.backgroundColor,
+    settings?.textColor
   ]);
 
   return <>{children}</>;

@@ -6,6 +6,8 @@ import { Card } from "@/components/ui/card";
 import EditorialNavigation from "@/components/editorial-navigation";
 import { SEOHead } from "@/components/seo/seo-head";
 import type { Author, EditorialSettings, Book } from "@shared/schema";
+import { EditorialTheme } from "@/components/dynamic-theme";
+import asdLogoPath from "@assets/ASD_1770459384951.png";
 
 export default function AuthorsListPage() {
   const [, setLocation] = useLocation();
@@ -31,6 +33,7 @@ export default function AuthorsListPage() {
   }
 
   return (
+    <EditorialTheme>
     <div className="bg-background text-foreground font-sans min-h-screen">
       <SEOHead
         title={`Nuestros Autores - ${settings?.name || "Editorial"}`}
@@ -130,11 +133,15 @@ export default function AuthorsListPage() {
               {settings?.footerDescription || "Descubriendo nuevas voces en la literatura"}
             </p>
             <div className="border-t border-border mt-8 pt-8 text-muted-foreground">
-              <p>&copy; 2024 {settings?.name || "Editorial"}. Todos los derechos reservados.</p>
+              <div className="flex items-center justify-center gap-2">
+                <img src={asdLogoPath} alt="ASD" className="h-6 w-auto" />
+                <p>&copy; 2026 Atreyu Servicios Digitales. Todos los derechos reservados.</p>
+              </div>
             </div>
           </div>
         </div>
       </footer>
     </div>
+    </EditorialTheme>
   );
 }

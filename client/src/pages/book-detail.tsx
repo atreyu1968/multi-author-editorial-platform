@@ -8,6 +8,7 @@ import { Link } from "wouter";
 import Navigation from "@/components/navigation";
 import Newsletter from "@/components/newsletter";
 import { SEOHead, generateStructuredData } from "@/components/seo/seo-head";
+import asdLogoPath from "@assets/ASD_1770459384951.png";
 import type { Book } from "@shared/schema";
 
 export default function BookDetail() {
@@ -194,7 +195,10 @@ export default function BookDetail() {
             </div>
           </div>
           <div className="border-t border-border mt-8 pt-8 text-center text-muted-foreground">
-            <p>&copy; 2024 María González. Todos los derechos reservados.</p>
+            <div className="flex items-center justify-center gap-2">
+              <img src={asdLogoPath} alt="ASD" className="h-6 w-auto" />
+              <p>&copy; 2026 Atreyu Servicios Digitales. Todos los derechos reservados.</p>
+            </div>
           </div>
         </div>
       </footer>

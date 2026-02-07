@@ -8,6 +8,8 @@ import { SEOHead, generateStructuredData } from "@/components/seo/seo-head";
 import { buildBackgroundStyle } from "@/lib/utils";
 import { LatestBooksCarousel } from "@/components/latest-books-carousel";
 import { useUiText } from "@/contexts/ui-text-context";
+import { EditorialTheme } from "@/components/dynamic-theme";
+import asdLogoPath from "@assets/ASD_1770459384951.png";
 import { useLocale } from "@/contexts/locale-context";
 import { getAllLocalizedUrls } from "@/lib/localized-routes";
 import type { Author, EditorialSettings, Book } from "@shared/schema";
@@ -57,7 +59,7 @@ export default function Home() {
     featuredTitleDefault: useUiText("homepage", "featured_title_default", "Autores Destacados"),
     featuredDescDefault: useUiText("homepage", "featured_desc_default", "Conoce a algunos de los talentosos escritores que forman parte de nuestra editorial"),
     footerDescDefault: useUiText("homepage", "footer_desc_default", "Descubriendo nuevas voces en la literatura."),
-    footerCopyrightDefault: useUiText("homepage", "footer_copyright_default", "© 2024 Editorial. Todos los derechos reservados."),
+    footerCopyrightDefault: useUiText("homepage", "footer_copyright_default", "© 2026 Atreyu Servicios Digitales. Todos los derechos reservados."),
     latestPublicationsTitle: useUiText("homepage", "latest_publications_title", "Últimas Publicaciones"),
     latestPublicationsDesc: useUiText("homepage", "latest_publications_desc", "Descubre nuestros libros más recientes y sumérgete en nuevas historias"),
     loadingPublications: useUiText("homepage", "loading_publications", "Cargando publicaciones..."),
@@ -98,6 +100,7 @@ export default function Home() {
   };
 
   return (
+    <EditorialTheme>
     <div className="bg-background text-foreground font-sans" style={buildBackgroundStyle({ imageUrl: settings?.backgroundImageUrl, color: settings?.backgroundColor })}>
       <SEOHead
         title={settings?.seoTitle || `${settings?.name || t.seoTitleEditorial} - ${t.seoTitleSuffix}`}
@@ -392,10 +395,14 @@ export default function Home() {
             </div>
           </div>
           <div className="border-t border-border mt-8 pt-8 text-center text-muted-foreground">
-            <p>{settings?.footerCopyright || t.footerCopyrightDefault}</p>
+            <div className="flex items-center justify-center gap-2">
+              <img src={asdLogoPath} alt="ASD" className="h-6 w-auto" />
+              <p>{settings?.footerCopyright || t.footerCopyrightDefault}</p>
+            </div>
           </div>
         </div>
       </footer>
     </div>
+    </EditorialTheme>
   );
 }

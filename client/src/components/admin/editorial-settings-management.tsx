@@ -266,6 +266,10 @@ export default function EditorialSettingsManagement() {
       seoKeywords: "",
       backgroundImageUrl: "",
       backgroundColor: "",
+      primaryColor: "",
+      secondaryColor: "",
+      accentColor: "",
+      textColor: "",
       paypalClientId: "",
       paypalClientSecret: "",
       paypalEnvironment: "sandbox",
@@ -322,6 +326,10 @@ export default function EditorialSettingsManagement() {
         seoKeywords: settings.seoKeywords,
         backgroundImageUrl: settings.backgroundImageUrl || "",
         backgroundColor: settings.backgroundColor || "",
+        primaryColor: settings.primaryColor || "",
+        secondaryColor: settings.secondaryColor || "",
+        accentColor: settings.accentColor || "",
+        textColor: settings.textColor || "",
         paypalClientId: settings.paypalClientId || "",
         paypalClientSecret: settings.paypalClientSecret || "",
         paypalEnvironment: settings.paypalEnvironment || "sandbox",
@@ -624,6 +632,79 @@ export default function EditorialSettingsManagement() {
                       </FormItem>
                     )}
                   />
+
+                  <div className="border-t pt-4 mt-4">
+                    <h4 className="text-sm font-semibold mb-4">Colores del Tema Editorial (independiente de los autores)</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="primaryColor"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Color Primario</FormLabel>
+                            <FormControl>
+                              <div className="flex gap-2">
+                                <Input {...field} placeholder="#3b82f6" data-testid="input-primary-color" />
+                                <input type="color" value={field.value || "#3b82f6"} onChange={(e) => field.onChange(e.target.value)} className="h-10 w-10 rounded cursor-pointer border" />
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="secondaryColor"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Color Secundario</FormLabel>
+                            <FormControl>
+                              <div className="flex gap-2">
+                                <Input {...field} placeholder="#64748b" data-testid="input-secondary-color" />
+                                <input type="color" value={field.value || "#64748b"} onChange={(e) => field.onChange(e.target.value)} className="h-10 w-10 rounded cursor-pointer border" />
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="accentColor"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Color de Acento</FormLabel>
+                            <FormControl>
+                              <div className="flex gap-2">
+                                <Input {...field} placeholder="#f59e0b" data-testid="input-accent-color" />
+                                <input type="color" value={field.value || "#f59e0b"} onChange={(e) => field.onChange(e.target.value)} className="h-10 w-10 rounded cursor-pointer border" />
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="textColor"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Color de Texto</FormLabel>
+                            <FormControl>
+                              <div className="flex gap-2">
+                                <Input {...field} placeholder="#1e293b" data-testid="input-text-color" />
+                                <input type="color" value={field.value || "#1e293b"} onChange={(e) => field.onChange(e.target.value)} className="h-10 w-10 rounded cursor-pointer border" />
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
