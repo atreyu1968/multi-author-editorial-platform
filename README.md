@@ -1,6 +1,6 @@
 # Plataforma de Gestión Editorial Multi-Autor
 
-Una aplicación web completa de pila completa diseñada para gestionar hasta 30 autores dentro de una única plataforma editorial. Cada autor obtiene páginas de destino personalizables con temas personalizados, blogs, catálogos de libros y capacidades de comercio electrónico integradas.
+Una aplicación web completa diseñada para gestionar hasta 30 autores dentro de una única plataforma editorial. Cada autor obtiene páginas de destino personalizables con temas personalizados, blogs, catálogos de libros y capacidades de comercio electrónico integradas.
 
 ![Version](https://img.shields.io/badge/versión-1.0.0-blue.svg)
 ![Node](https://img.shields.io/badge/node-20.x-green.svg)
@@ -22,6 +22,7 @@ Una aplicación web completa de pila completa diseñada para gestionar hasta 30 
 - **Productos Físicos** - Gestión de inventario y envíos
 - **Libros de Regalo** - Sistema automatizado de entrega de libros de regalo
 - **Códigos QR** - Generación automática de códigos QR para promociones
+- **Audiolibros** - Enlace a plataformas externas de audiolibros (Audivia, etc.)
 
 ### Gestión de Contenido
 - **Libros** - Gestión completa de libros con metadatos, portadas y material promocional
@@ -29,6 +30,7 @@ Una aplicación web completa de pila completa diseñada para gestionar hasta 30 
 - **Sistema de Blog** - Blog individual para cada autor
 - **Testimonios** - Reseñas y respaldos de clientes
 - **Newsletter** - Sistema de suscripción de boletín integrado
+- **Próximamente** - Marca libros como "próximamente" con páginas promocionales sin opciones de compra
 
 ### Internacionalización (i18n)
 - **7 Idiomas** - Soporte completo para:
@@ -39,10 +41,10 @@ Una aplicación web completa de pila completa diseñada para gestionar hasta 30 
   - Italiano (it-IT)
   - Alemán (de-DE)
   - Portugués (pt-PT)
-- **10,205 Textos de UI** - Traducción completa de la interfaz
+- **11,238 Textos de UI** - Traducción completa de la interfaz en 25 namespaces
 - **URLs Localizadas** - Rutas específicas por idioma (ej: `/libro`, `/book`, `/livre`)
 - **Traducción de Contenido** - Soporte para traducir libros, autores, series y posts de blog
-- **Multi-Moneda** - Soporte para más de 23 monedas con conversión automática
+- **Multi-Moneda** - 8 monedas configurables con conversión automática de tasas de cambio
 
 ### Búsqueda y Descubrimiento
 - **Búsqueda Universal** - Busca entre autores, libros y series
@@ -91,18 +93,30 @@ El instalador te guiará para configurar:
 ### Actualización
 
 ```bash
-# Descargar el actualizador
-curl -O https://raw.githubusercontent.com/atreyu1968/multi-author-editorial-platform/main/update.sh
-
-# Ejecutar como root
+# Desde el directorio de la aplicación
+cd /var/www/editorial
 sudo bash update.sh
 ```
 
-El actualizador:
-- Crea backup automático de la base de datos y código
-- Descarga la última versión
-- Preserva toda la configuración y datos
-- Actualiza el esquema de base de datos si es necesario
+O si el script se actualizó en el repositorio:
+
+```bash
+# Descargar la última versión del actualizador
+curl -O https://raw.githubusercontent.com/atreyu1968/multi-author-editorial-platform/main/update.sh
+sudo bash update.sh
+```
+
+El script `update.sh` se encarga de todo automáticamente:
+1. Crea backup de la base de datos y del código anterior
+2. Descarga la última versión del código desde GitHub
+3. Instala las dependencias necesarias
+4. Compila la aplicación
+5. Aplica migraciones SQL pendientes (directorio `migrations/`)
+6. Verifica el usuario administrador
+7. Reinicia el servicio
+8. Limpia la caché de Nginx
+9. Verifica que la aplicación responde correctamente
+10. Si algo falla, restaura automáticamente la versión anterior
 
 ### Desinstalación Completa
 
@@ -177,13 +191,13 @@ sudo tar -czvf ~/editorial_uploads_$(date +%Y%m%d).tar.gz /var/www/editorial/upl
 
 ```bash
 # Estado del servicio
-systemctl status editorial
+sudo systemctl status editorial
 
 # Ver logs en tiempo real
-journalctl -u editorial -f
+sudo journalctl -u editorial -f
 
 # Reiniciar la aplicación
-systemctl restart editorial
+sudo systemctl restart editorial
 
 # Ver configuración
 cat /etc/editorial/env
@@ -267,42 +281,38 @@ sudo systemctl status editorial
 
 ```bash
 # Backup de base de datos
-pg_dump -U editorial_user editorial_platform > backup.sql
+pg_dump -U editorial editorial_platform > backup.sql
 
 # Restaurar base de datos
-psql -U editorial_user editorial_platform < backup.sql
+psql -U editorial editorial_platform < backup.sql
 
 # Acceder a la consola de base de datos
-psql -U editorial_user -d editorial_platform
+psql -U editorial -d editorial_platform
 ```
 
 ### Actualizaciones
 
-**Opción 1: Usando el script de actualización (recomendado)**
+**Usar siempre el script de actualización:**
 
 ```bash
+cd /var/www/editorial
 sudo bash update.sh
 ```
 
-**Opción 2: Manual**
+El script se encarga de todo: backup, descarga, dependencias, compilación, migraciones de base de datos y reinicio del servicio.
 
-```bash
-# Obtener últimos cambios
-git pull origin main
+### Sistema de Migraciones SQL
 
-# Instalar dependencias
-npm install --omit=dev
+Las migraciones de base de datos se gestionan mediante archivos SQL en el directorio `migrations/`:
 
-# Compilar la aplicación
-npm run build
-
-# Reiniciar servicio
-sudo systemctl restart editorial
+```
+migrations/
+├── 001_initial_schema_sync.sql    # Sincronización inicial del esquema
+├── 002_nueva_funcionalidad.sql    # Futuras migraciones...
+└── ...
 ```
 
-> **Nota sobre migraciones**: Si la actualización incluye cambios en la base de datos,
-> el script `update.sh` los aplica automáticamente. Si actualizas manualmente, consulta
-> las notas de la versión para los comandos SQL necesarios.
+El script `update.sh` aplica automáticamente las migraciones pendientes en orden. Cada migración se ejecuta una sola vez (se registra en la tabla `_migrations`). Los archivos SQL usan `IF NOT EXISTS` para ser idempotentes y seguros.
 
 ## 🏗️ Estructura del Proyecto
 
@@ -311,8 +321,11 @@ editorial-platform/
 ├── client/                 # Aplicación React frontend
 │   ├── src/
 │   │   ├── components/    # Componentes UI reutilizables
+│   │   │   ├── admin/     # Componentes del panel de administración
+│   │   │   ├── seo/       # Componentes SEO (meta tags, sitemap)
+│   │   │   └── ui/        # Componentes shadcn/ui
 │   │   ├── pages/         # Componentes de página
-│   │   ├── contexts/      # Contextos de React
+│   │   ├── contexts/      # Contextos de React (locale, cart, ui-text)
 │   │   ├── hooks/         # Hooks personalizados de React
 │   │   └── lib/           # Funciones de utilidad
 ├── server/                # Aplicación Express backend
@@ -321,16 +334,19 @@ editorial-platform/
 │   ├── storage.ts         # Interfaz de almacenamiento
 │   ├── auth.ts            # Lógica de autenticación
 │   └── paypal.ts          # Integración de PayPal
-├── shared/                # Código compartido
-│   └── schema.ts          # Schema de base de datos (Drizzle)
-├── scripts/               # Scripts de instalación
-│   ├── setup-database.sh
-│   ├── setup-environment.sh
-│   ├── init-database.sh
-│   └── setup-admin.sh
-├── install.sh             # Instalador principal
+├── shared/                # Código compartido frontend/backend
+│   ├── schema.ts          # Schema de base de datos (Drizzle)
+│   ├── currency-service.ts # Servicio de conversión de monedas
+│   └── utils.ts           # Utilidades compartidas
+├── migrations/            # Migraciones SQL incrementales
+│   └── 001_initial_schema_sync.sql
+├── install.sh             # Instalador automático para Ubuntu
+├── update.sh              # Actualizador automático
+├── uninstall.sh           # Desinstalador automático
+├── publish-to-github.sh   # Script para publicar en GitHub
 ├── .env.example           # Template de variables de entorno
-└── INSTALLATION.md        # Guía de instalación
+├── INSTALLATION.md        # Guía de instalación detallada
+└── DEPLOYMENT.md          # Guía de deployment
 ```
 
 ## 🤝 Contribuir
@@ -351,18 +367,31 @@ Este proyecto está licenciado bajo la Licencia MIT - consulta el archivo LICENS
 
 ### La aplicación no inicia
 - Revisa los logs: `sudo journalctl -u editorial -n 50`
-- Verifica la configuración de `.env`
+- Verifica la configuración: `cat /etc/editorial/env`
 - Asegúrate de que PostgreSQL esté corriendo: `sudo systemctl status postgresql`
 
 ### Errores de conexión a la base de datos
-- Verifica `DATABASE_URL` en `.env`
-- Prueba la conexión: `psql -U editorial_user -d editorial_platform`
+- Verifica `DATABASE_URL` en `/etc/editorial/env`
+- Prueba la conexión: `psql -U editorial -d editorial_platform`
 - Revisa los logs de PostgreSQL: `sudo tail -f /var/log/postgresql/postgresql-*-main.log`
 
 ### Fallos en pagos de PayPal
-- Verifica las credenciales en `.env`
+- Verifica las credenciales en el panel de administración
 - Comprueba que `PAYPAL_MODE` coincida con tus credenciales (sandbox/production)
 - Revisa el panel de PayPal para errores
+
+### La actualización falla
+- Si `update.sh` falla durante la compilación, restaura automáticamente la versión anterior
+- Los backups se guardan en `/var/backups/editorial/`
+- Para restaurar manualmente la base de datos:
+  ```bash
+  psql "$DATABASE_URL" < /var/backups/editorial/db_backup_FECHA.sql
+  ```
+
+### No se ven los cambios tras actualizar
+1. Pulsa Ctrl+Shift+R en el navegador para forzar recarga
+2. O abre una ventana de incógnito/privada
+3. Si usas Cloudflare, limpia la caché desde el panel de Cloudflare
 
 Para más consejos de solución de problemas, consulta [INSTALLATION.md](INSTALLATION.md#troubleshooting).
 
