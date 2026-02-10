@@ -119,6 +119,8 @@ export const books = pgTable("books", {
   saleFormatDigital: boolean("sale_format_digital").default(false),
   // Coming soon flag
   isComingSoon: boolean("is_coming_soon").default(false),
+  // Audiobook link (e.g. Audivia platform)
+  audiobookUrl: text("audiobook_url"),
 });
 
 export const testimonials = pgTable("testimonials", {
