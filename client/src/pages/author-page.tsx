@@ -281,63 +281,67 @@ export default function AuthorPage() {
                       </div>
                     )}
                     
-                    <div className={`grid lg:grid-cols-2 gap-8 p-8 lg:p-12 relative z-10 ${!serie.cardBackgroundImage ? 'bg-card' : ''}`}>
-                      <div>
+                    <div className={`p-8 lg:p-12 relative z-10 ${!serie.cardBackgroundImage ? 'bg-card' : ''}`}>
+                      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 justify-items-center mb-8">
+                        {publishedBooks.map((book: Book) => (
+                          <Link key={book.id} href={`/libro/${book.id}`} className="block">
+                            <div className="relative w-full aspect-[2/3] rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow hover:scale-105 transform duration-200">
+                              <img 
+                                src={book.coverImage || "https://images.unsplash.com/photo-1516414447565-b14be0adf13e?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=450"} 
+                                alt={`${t.altBookCoverPrefix} ${book.title}`}
+                                className="w-full h-full object-cover" 
+                                data-testid={`series-book-cover-${book.id}`}
+                              />
+                              {book.isComingSoon && (
+                                <div className="absolute top-1 left-1">
+                                  <Badge className="bg-blue-600 text-white shadow-lg text-xs px-1.5 py-0.5" data-testid={`badge-coming-soon-${book.id}`}>
+                                    {t.badgeComingSoon}
+                                  </Badge>
+                                </div>
+                              )}
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+
+                      <div className="text-center mb-6">
                         <h3 className="text-3xl font-serif font-bold text-primary mb-4">
                           {serie.title}
                         </h3>
-                        <p className="text-muted-foreground text-lg mb-6 leading-relaxed">
+                        <p className="text-muted-foreground text-lg mb-6 leading-relaxed max-w-3xl mx-auto">
                           {serie.description}
                         </p>
-                        <div className="flex flex-wrap gap-2 mb-6">
+                        <div className="flex flex-wrap justify-center gap-2 mb-6">
                           <Badge className="bg-accent/20 text-accent-foreground">{serie.genre}</Badge>
                           <Badge className="bg-accent/20 text-accent-foreground">
                             {publishedBooks.length} {publishedBooks.length === 1 ? t.seriesLibroSingular : t.seriesLibroPlural}
                           </Badge>
                         </div>
-                        <div className="flex flex-wrap gap-3">
-                          <Link href={`/serie/${serie.id}`}>
-                            <Button 
-                              variant="outline"
-                              className="transition-all transform hover:scale-105"
-                              data-testid={`button-view-series-${serie.id}`}
-                            >
-                              <ArrowRight className="h-4 w-4 mr-2" />
-                              {t.buttonViewSeries}
-                            </Button>
-                          </Link>
-                          {serie.amazonUrl && (
-                            <Button 
-                              className="bg-primary text-primary-foreground hover:bg-primary/90 transition-all transform hover:scale-105"
-                              asChild
-                              data-testid={`button-amazon-${serie.id}`}
-                            >
-                              <a href={serie.amazonUrl} target="_blank" rel="noopener noreferrer">
-                                <ShoppingCart className="h-4 w-4 mr-2" />
-                                {t.buttonAmazon}
-                              </a>
-                            </Button>
-                          )}
-                        </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        {publishedBooks.slice(0, 4).map((book: Book) => (
-                          <div key={book.id} className="relative aspect-[2/3] rounded-lg shadow-lg overflow-hidden">
-                            <img 
-                              src={book.coverImage || "https://images.unsplash.com/photo-1516414447565-b14be0adf13e?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=450"} 
-                              alt={`${t.altBookCoverPrefix} ${book.title}`}
-                              className="w-full h-full object-cover" 
-                              data-testid={`series-book-cover-${book.id}`}
-                            />
-                            {book.isComingSoon && (
-                              <div className="absolute top-2 left-2">
-                                <Badge className="bg-blue-600 text-white shadow-lg" data-testid={`badge-coming-soon-${book.id}`}>
-                                  {t.badgeComingSoon}
-                                </Badge>
-                              </div>
-                            )}
-                          </div>
-                        ))}
+
+                      <div className="flex flex-wrap justify-center gap-3">
+                        <Link href={`/serie/${serie.id}`}>
+                          <Button 
+                            variant="outline"
+                            className="transition-all transform hover:scale-105"
+                            data-testid={`button-view-series-${serie.id}`}
+                          >
+                            <ArrowRight className="h-4 w-4 mr-2" />
+                            {t.buttonViewSeries}
+                          </Button>
+                        </Link>
+                        {serie.amazonUrl && (
+                          <Button 
+                            className="bg-primary text-primary-foreground hover:bg-primary/90 transition-all transform hover:scale-105"
+                            asChild
+                            data-testid={`button-amazon-${serie.id}`}
+                          >
+                            <a href={serie.amazonUrl} target="_blank" rel="noopener noreferrer">
+                              <ShoppingCart className="h-4 w-4 mr-2" />
+                              {t.buttonAmazon}
+                            </a>
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </Card>

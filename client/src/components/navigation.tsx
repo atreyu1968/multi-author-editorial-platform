@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { Author, SiteSettings, EditorialSettings } from "@shared/schema";
 import { useUiText } from "@/contexts/ui-text-context";
 import { useCart } from "@/contexts/CartContext";
+import { useLocale } from "@/contexts/locale-context";
 import SearchBar from "@/components/search-bar";
 
 interface NavigationProps {
@@ -16,6 +17,7 @@ interface NavigationProps {
 export default function Navigation({ authorId }: NavigationProps = {}) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { totalItems } = useCart();
+  const { locale } = useLocale();
   
   const { data: author } = useQuery<Author>({
     queryKey: [`/api/authors/${authorId}`],
@@ -46,15 +48,17 @@ export default function Navigation({ authorId }: NavigationProps = {}) {
   const navTestimonials = useUiText("navigation", "testimonials", "Reseñas");
   const commonLoading = useUiText("common", "loading", "Cargando...");
 
-  const basePath = author?.slug ? `/autor/${author.slug}` : "/";
+  const basePath = author?.slug ? `/${locale}/autor/${author.slug}` : "/";
 
   const scrollToSection = useCallback((e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
     e.preventDefault();
     const element = document.getElementById(sectionId);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
+    } else if (basePath && basePath !== "/") {
+      window.location.href = `${basePath}#${sectionId}`;
     }
-  }, []);
+  }, [basePath]);
 
   const handleMobileNavClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
     scrollToSection(e, sectionId);
