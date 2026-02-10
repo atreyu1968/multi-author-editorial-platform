@@ -248,19 +248,19 @@ Consulta [.env.example](.env.example) para todas las opciones disponibles.
 
 ```bash
 # Iniciar el servicio
-sudo systemctl start editorial-platform
+sudo systemctl start editorial
 
 # Detener el servicio
-sudo systemctl stop editorial-platform
+sudo systemctl stop editorial
 
 # Reiniciar el servicio
-sudo systemctl restart editorial-platform
+sudo systemctl restart editorial
 
 # Ver logs
-sudo journalctl -u editorial-platform -f
+sudo journalctl -u editorial -f
 
 # Verificar estado
-sudo systemctl status editorial-platform
+sudo systemctl status editorial
 ```
 
 ### Gestión de Base de Datos
@@ -278,19 +278,31 @@ psql -U editorial_user -d editorial_platform
 
 ### Actualizaciones
 
+**Opción 1: Usando el script de actualización (recomendado)**
+
+```bash
+sudo bash update.sh
+```
+
+**Opción 2: Manual**
+
 ```bash
 # Obtener últimos cambios
 git pull origin main
 
 # Instalar dependencias
-npm install --production
+npm install --omit=dev
 
-# Ejecutar migraciones
-npm run db:push
+# Compilar la aplicación
+npm run build
 
 # Reiniciar servicio
-sudo systemctl restart editorial-platform
+sudo systemctl restart editorial
 ```
+
+> **Nota sobre migraciones**: Si la actualización incluye cambios en la base de datos,
+> el script `update.sh` los aplica automáticamente. Si actualizas manualmente, consulta
+> las notas de la versión para los comandos SQL necesarios.
 
 ## 🏗️ Estructura del Proyecto
 
@@ -338,7 +350,7 @@ Este proyecto está licenciado bajo la Licencia MIT - consulta el archivo LICENS
 ## 🐛 Solución de Problemas
 
 ### La aplicación no inicia
-- Revisa los logs: `sudo journalctl -u editorial-platform -n 50`
+- Revisa los logs: `sudo journalctl -u editorial -n 50`
 - Verifica la configuración de `.env`
 - Asegúrate de que PostgreSQL esté corriendo: `sudo systemctl status postgresql`
 
