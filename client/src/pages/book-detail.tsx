@@ -3,7 +3,7 @@ import { useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Star, ExternalLink, Calendar, BookOpen } from "lucide-react";
+import { ArrowLeft, Star, ExternalLink, Calendar, BookOpen, Headphones } from "lucide-react";
 import { Link } from "wouter";
 import Navigation from "@/components/navigation";
 import Newsletter from "@/components/newsletter";
@@ -148,6 +148,14 @@ export default function BookDetail() {
                     </a>
                   </Button>
                 ) : null}
+                {!book.isComingSoon && book.audiobookUrl && (
+                  <Button asChild size="lg" variant="outline" data-testid="button-audiobook">
+                    <a href={book.audiobookUrl} target="_blank" rel="noopener noreferrer">
+                      <Headphones className="mr-2 h-4 w-4" />
+                      Escuchar Audiolibro
+                    </a>
+                  </Button>
+                )}
               </div>
             </div>
           </div>

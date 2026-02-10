@@ -136,6 +136,7 @@ export default function BookManagement() {
     descriptionComingSoon: useUiText("admin.books", "description_coming_soon", "Muestra el libro como 'Próximamente' sin opciones de compra"),
     labelCoverImage: useUiText("admin.books", "label_cover_image", "Imagen de Portada"),
     labelAmazonUrl: useUiText("admin.books", "label_amazon_url", "URL de Amazon"),
+    labelAudiobookUrl: useUiText("admin.books", "label_audiobook_url", "URL del Audiolibro"),
     // Basic Info - Placeholders
     placeholderTitle: useUiText("admin.books", "placeholder_title", "Título del libro"),
     placeholderDescription: useUiText("admin.books", "placeholder_description", "Descripción detallada del libro..."),
@@ -145,6 +146,7 @@ export default function BookManagement() {
     placeholderOrder: useUiText("admin.books", "placeholder_order", "1"),
     placeholderCoverUrl: useUiText("admin.books", "placeholder_cover_url", "URL de la portada"),
     placeholderAmazonUrl: useUiText("admin.books", "placeholder_amazon_url", "https://amazon.com/..."),
+    placeholderAudiobookUrl: useUiText("admin.books", "placeholder_audiobook_url", "https://audivia.com/..."),
     // Basic Info - Descriptions
     descriptionStandalone: useUiText("admin.books", "description_standalone", "Si el libro no pertenece a ninguna serie"),
     descriptionPublished: useUiText("admin.books", "description_published", "Controla si el libro es visible en el sitio público"),
@@ -389,6 +391,7 @@ export default function BookManagement() {
       genre: "",
       price: 0,
       amazonUrl: "",
+      audiobookUrl: "",
       seriesId: "none",
       orderInSeries: undefined,
       isStandalone: false,
@@ -645,6 +648,7 @@ export default function BookManagement() {
       genre: "",
       price: 0,
       amazonUrl: "",
+      audiobookUrl: "",
       seriesId: "none",
       orderInSeries: undefined,
       isStandalone: false,
@@ -718,6 +722,7 @@ export default function BookManagement() {
       genre: book.genre,
       price: book.price || 0,
       amazonUrl: book.amazonUrl || "",
+      audiobookUrl: book.audiobookUrl || "",
       seriesId: book.seriesId || "none",
       orderInSeries: book.orderInSeries || undefined,
       isStandalone: book.isStandalone ?? false,
@@ -1139,6 +1144,25 @@ export default function BookManagement() {
                           <Input 
                             placeholder={t.placeholderAmazonUrl}
                             data-testid="input-book-amazon"
+                            {...field}
+                            value={field.value || ""} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="audiobookUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t.labelAudiobookUrl}</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder={t.placeholderAudiobookUrl}
+                            data-testid="input-book-audiobook-url"
                             {...field}
                             value={field.value || ""} 
                           />

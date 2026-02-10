@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Star, ExternalLink, Calendar, BookOpen, Award, Quote, MapPin, Users, Newspaper, Image as ImageIcon, Music, Video, ShoppingCart, Package, FileText } from "lucide-react";
+import { ArrowLeft, Star, ExternalLink, Calendar, BookOpen, Award, Quote, MapPin, Users, Newspaper, Image as ImageIcon, Music, Video, ShoppingCart, Package, FileText, Headphones } from "lucide-react";
 import { Link } from "wouter";
 import Navigation from "@/components/navigation";
 import Newsletter from "@/components/newsletter";
@@ -80,6 +80,7 @@ export default function BookLanding() {
     comprarAhora: useUiText("book_landing", "comprar_ahora", "Comprar ahora"),
     agotado: useUiText("book_landing", "agotado", "Agotado"),
     comprarAmazon: useUiText("book_landing", "comprar_amazon", "Comprar en Amazon"),
+    escucharAudiolibro: useUiText("book_landing", "escuchar_audiolibro", "Escuchar Audiolibro"),
     verMasDetalles: useUiText("book_landing", "ver_mas_detalles", "Ver más detalles"),
     sinopsis: useUiText("book_landing", "sinopsis", "Sinopsis"),
     sinopsisNoDisponible: useUiText("book_landing", "sinopsis_no_disponible", "Sinopsis no disponible"),
@@ -391,6 +392,15 @@ export default function BookLanding() {
                       <a href={book.amazonUrl} target="_blank" rel="noopener noreferrer">
                         <ExternalLink className="mr-2 h-5 w-5" />
                         {book.landingCTA || t.comprarAmazon}
+                      </a>
+                    </Button>
+                  )}
+
+                  {book.audiobookUrl && (
+                    <Button asChild size="lg" variant="outline" className="text-lg px-8 py-6" data-testid="button-audiobook">
+                      <a href={book.audiobookUrl} target="_blank" rel="noopener noreferrer">
+                        <Headphones className="mr-2 h-5 w-5" />
+                        {t.escucharAudiolibro}
                       </a>
                     </Button>
                   )}
@@ -751,6 +761,15 @@ export default function BookLanding() {
                   <a href={book.amazonUrl} target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="mr-2 h-5 w-5" />
                     {t.comprarAhora}
+                  </a>
+                </Button>
+              )}
+
+              {book.audiobookUrl && (
+                <Button asChild size="lg" variant="secondary" className="text-lg px-10 py-6" data-testid="button-cta-audiobook">
+                  <a href={book.audiobookUrl} target="_blank" rel="noopener noreferrer">
+                    <Headphones className="mr-2 h-5 w-5" />
+                    {t.escucharAudiolibro}
                   </a>
                 </Button>
               )}
