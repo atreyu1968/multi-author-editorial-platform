@@ -68,12 +68,12 @@ function isPlatformHost(host: string): boolean {
 const LOCALE_ROOTS = new Set(['es-ES', 'en-US', 'ca-ES', 'fr-FR', 'it-IT', 'de-DE', 'pt-PT']);
 
 // Server-side host-based routing for custom author domains.
-// On a custom (non-platform) host the server resolves the author and exposes
-// the slug + locale to the SPA via response headers + a meta tag injected into
-// the served index.html, so the author landing renders at the bare root URL
-// (no client redirect, URL stays at "/" or "/:locale"). Other paths pass
-// through unchanged. The endpoint /api/authors/by-domain/:host is the
-// canonical lookup for clients.
+// On a custom (non-platform) host we resolve the matching author and expose
+// the slug + locale on the response as `x-author-slug` / `x-author-locale`
+// headers (useful for crawlers, CDN routing, and server-side log inspection).
+// The SPA fetches `/api/authors/by-domain/:host` on mount and renders the
+// AuthorPage inline at the bare root, so the URL stays at "/" or "/:locale"
+// without any redirect. Other paths pass through unchanged.
 async function customDomainRouter(req: Request, res: Response, next: NextFunction) {
   try {
     if (req.method !== 'GET') return next();
@@ -103,9 +103,10 @@ async function customDomainRouter(req: Request, res: Response, next: NextFunctio
     const author = await storage.getAuthorByDomain(cleanHost);
     if (!author || !author.isActive) return next();
 
-    // Expose the resolved author to downstream handlers and the SPA. Vite's
-    // index transform reads x-author-slug to inject a <meta name="author-slug">
-    // tag so the client renders the AuthorPage at the bare root.
+    // Expose the resolved author to downstream handlers and HTTP clients.
+    // The SPA itself looks up the author via /api/authors/by-domain/:host on
+    // mount; these headers exist so crawlers, CDNs, and ops tooling can see
+    // which author this hostname maps to without making an extra API call.
     res.setHeader('x-author-slug', author.slug);
     if (locale) res.setHeader('x-author-locale', locale);
     (req as Request & { customAuthor?: { slug: string; locale: string } })

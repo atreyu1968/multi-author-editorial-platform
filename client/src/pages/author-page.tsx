@@ -17,10 +17,15 @@ import SharedFooter from "@/components/shared-footer";
 import { useUiText } from "@/contexts/ui-text-context";
 import { useLocale } from "@/contexts/locale-context";
 import { getAllLocalizedUrls } from "@/lib/localized-routes";
+import { AVAILABLE_LOCALES } from "@/contexts/locale-context";
 
 export default function AuthorPage({ slugOverride }: { slugOverride?: string } = {}) {
   const params = useParams<{ slug: string }>();
   const slug = slugOverride ?? params.slug;
+  // When slugOverride is provided we are rendering as the root of a custom
+  // domain, so canonical/hreflang must point to "/" and "/:locale" rather than
+  // the standard "/:locale/autor/:slug" path.
+  const isCustomDomainRoot = !!slugOverride;
   const { locale } = useLocale();
   
   const { data: author, isLoading: authorLoading, error: authorError } = useQuery<Author>({
@@ -136,8 +141,14 @@ export default function AuthorPage({ slugOverride }: { slugOverride?: string } =
   const activeSeries = (seriesWithBooks.data || []).filter((s: { series: BookSeries; books: Book[] }) => s.series.isActive !== false);
   const publishedStandaloneBooks = standaloneBooks.filter(b => b.isPublished);
 
-  // Generate hreflang alternates for all languages
-  const alternates = slug ? getAllLocalizedUrls('author', { slug }) : [];
+  // Generate hreflang alternates. On a custom domain the author page IS the
+  // site root, so we emit "/" and "/:locale" rather than "/:locale/autor/:slug".
+  const alternates = isCustomDomainRoot
+    ? AVAILABLE_LOCALES.map((l) => ({ locale: l, url: `/${l}` }))
+    : (slug ? getAllLocalizedUrls('author', { slug }) : []);
+  const canonicalUrl = isCustomDomainRoot && typeof window !== 'undefined'
+    ? `${window.location.origin}/${locale}`
+    : undefined;
 
   return (
     <DynamicTheme authorId={author.id}>
@@ -147,6 +158,7 @@ export default function AuthorPage({ slugOverride }: { slugOverride?: string } =
           description={author.seoDescription || author.bioParagraph1.substring(0, 160)}
           keywords={author.seoKeywords ? author.seoKeywords.split(',').map(k => k.trim()) : [t.seoKeywordAutor, t.seoKeywordEscritor, t.seoKeywordLibros, author.name]}
           alternates={alternates}
+          canonicalUrl={canonicalUrl}
           ogType="website"
           ogLocale={locale.replace('-', '_')}
           ogImage={author.photo || undefined}

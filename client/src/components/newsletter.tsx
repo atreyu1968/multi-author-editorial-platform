@@ -97,6 +97,12 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
   if (scopedAuthor && scopedAuthor.mailingListEnabled === false) {
     return null;
   }
+  // Strict per-author gating: only surface the public free-book form when the
+  // scoped author actually has a free book file configured. This prevents
+  // showing a "claim your free book" CTA that the author hasn't set up.
+  if (scopedAuthor && !scopedAuthor.freeBookFile) {
+    return null;
+  }
 
   const freeBookTitle = scopedAuthor?.freeBookTitle || 'Libro digital gratuito';
   const freeBookDescription = scopedAuthor?.freeBookDescription;
