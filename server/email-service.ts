@@ -299,6 +299,34 @@ export class EmailService {
     }
   }
 
+  /**
+   * Configure from a per-author override. Falls back to editorial settings if author lacks fields.
+   * Returns true if configuration succeeded.
+   */
+  configureForAuthor(
+    type: 'newsletter' | 'digital' | 'invoice',
+    author: any,
+    editorialSettings: any
+  ): boolean {
+    // Per-author override (only for newsletter type)
+    if (type === 'newsletter' && author?.emailProvider && author?.emailApiKey && author?.emailFromName && author?.emailFromEmail) {
+      this.configure({
+        provider: author.emailProvider,
+        apiKey: author.emailApiKey,
+        fromName: author.emailFromName,
+        fromEmail: author.emailFromEmail,
+      });
+      return true;
+    }
+    // Fallback to editorial settings
+    try {
+      this.configureFromSettings(type, editorialSettings);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   configureFromSettings(type: 'newsletter' | 'digital' | 'invoice', settings: any) {
     let provider = '';
     let apiKey = '';

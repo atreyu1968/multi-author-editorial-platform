@@ -35,6 +35,9 @@ Preferred communication style: Simple, everyday language.
 - **Public Pages**: Customizable author landing pages at `/autor/:slug` with SEO support.
 - **Multi-Author Series/Collections**: Series are global entities that can contain books from multiple authors.
 - **Promotional Content**: System for adding optional promotional materials (concept maps, family trees, press notes, media, Spotify playlists, YouTube booktrailers) to books/series.
+- **Per-Author Custom Domains**: Each author can be assigned a unique hostname; requests to that host auto-route the root to the author's landing via `GET /api/authors/by-domain/:host` and a client-side `CustomDomainRedirect` (skips platform hosts like `*.replit.dev`).
+- **Per-Author Mailing List & Email Sender**: Each author has an independent mailing list toggle, sender name/email, provider (Resend/SendGrid/Brevo/etc.) and API key. Email service uses `configureForAuthor()` with global fallback when fields are empty.
+- **Per-Author Free Book**: Each author can ship a dedicated gift book (file, cover, title, description, CTA). Newsletter signup picks the author's book first, falling back to the global free book.
 
 ### Admin Dashboard
 - **Comprehensive Management**: Interfaces for authors, books, series, biographies, testimonials, blog posts, newsletter subscribers, site settings, UI text, visual appearance, and editorial homepage content.

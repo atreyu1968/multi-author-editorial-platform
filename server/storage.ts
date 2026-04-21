@@ -70,6 +70,7 @@ export interface IStorage {
   getAuthors(): Promise<Author[]>;
   getAuthorById(id: string): Promise<Author | undefined>;
   getAuthorBySlug(slug: string): Promise<Author | undefined>;
+  getAuthorByDomain(domain: string): Promise<Author | undefined>;
   createAuthor(author: InsertAuthor): Promise<Author>;
   updateAuthor(id: string, author: Partial<InsertAuthor>): Promise<Author | undefined>;
   deleteAuthor(id: string): Promise<boolean>;
@@ -300,7 +301,18 @@ export class MemStorage {
       seoDescription: null,
       seoKeywords: null,
       backgroundImageUrl: null,
-      backgroundColor: null
+      backgroundColor: null,
+      mailingListEnabled: true,
+      emailFromName: null,
+      emailFromEmail: null,
+      emailProvider: null,
+      emailApiKey: null,
+      customDomain: null,
+      freeBookFile: null,
+      freeBookCover: null,
+      freeBookTitle: null,
+      freeBookDescription: null,
+      freeBookCtaText: null,
     };
     this.authors.set(authorId, author);
 
@@ -645,10 +657,26 @@ export class MemStorage {
       seoDescription: insertAuthor.seoDescription ?? null,
       seoKeywords: insertAuthor.seoKeywords ?? null,
       backgroundImageUrl: insertAuthor.backgroundImageUrl ?? null,
-      backgroundColor: insertAuthor.backgroundColor ?? null
+      backgroundColor: insertAuthor.backgroundColor ?? null,
+      mailingListEnabled: insertAuthor.mailingListEnabled ?? null,
+      emailFromName: insertAuthor.emailFromName ?? null,
+      emailFromEmail: insertAuthor.emailFromEmail ?? null,
+      emailProvider: insertAuthor.emailProvider ?? null,
+      emailApiKey: insertAuthor.emailApiKey ?? null,
+      customDomain: insertAuthor.customDomain ?? null,
+      freeBookFile: insertAuthor.freeBookFile ?? null,
+      freeBookCover: insertAuthor.freeBookCover ?? null,
+      freeBookTitle: insertAuthor.freeBookTitle ?? null,
+      freeBookDescription: insertAuthor.freeBookDescription ?? null,
+      freeBookCtaText: insertAuthor.freeBookCtaText ?? null,
     };
     this.authors.set(id, author);
     return author;
+  }
+
+  async getAuthorByDomain(domain: string): Promise<Author | undefined> {
+    const normalized = domain.toLowerCase().replace(/^www\./, '');
+    return Array.from(this.authors.values()).find(a => a.customDomain === normalized);
   }
 
   async updateAuthor(id: string, updateAuthor: Partial<InsertAuthor>): Promise<Author | undefined> {

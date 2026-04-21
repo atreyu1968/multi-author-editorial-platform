@@ -112,6 +112,15 @@ export class DatabaseStorage implements IStorage {
     return author || undefined;
   }
 
+  async getAuthorByDomain(domain: string): Promise<Author | undefined> {
+    const normalized = domain.toLowerCase().replace(/^www\./, '');
+    const [author] = await db
+      .select()
+      .from(authors)
+      .where(eq(authors.customDomain, normalized));
+    return author || undefined;
+  }
+
   async createAuthor(insertAuthor: InsertAuthor): Promise<Author> {
     const [author] = await db
       .insert(authors)

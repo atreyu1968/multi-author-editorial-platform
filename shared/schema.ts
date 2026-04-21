@@ -26,6 +26,20 @@ export const authors = pgTable("authors", {
   // Background customization
   backgroundImageUrl: text("background_image_url"),
   backgroundColor: text("background_color"),
+  // Per-author mailing list configuration
+  mailingListEnabled: boolean("mailing_list_enabled").default(true),
+  emailFromName: text("email_from_name"),
+  emailFromEmail: text("email_from_email"),
+  emailProvider: text("email_provider"), // "Resend" | "SendGrid" | "Mailchimp" | "Brevo" | "Postmark" | "Mailgun" | "Gmail"
+  emailApiKey: text("email_api_key"),
+  // Custom domain (e.g. authorname.com)
+  customDomain: text("custom_domain").unique(),
+  // Free book offered by this author
+  freeBookFile: text("free_book_file"),
+  freeBookCover: text("free_book_cover"),
+  freeBookTitle: text("free_book_title"),
+  freeBookDescription: text("free_book_description"),
+  freeBookCtaText: text("free_book_cta_text"),
 });
 
 export const bookSeries = pgTable("book_series", {

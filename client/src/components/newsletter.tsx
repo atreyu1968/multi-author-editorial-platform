@@ -29,6 +29,12 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
 
   const defaultAuthorId = authorId || authors[0]?.id;
 
+  // Fetch the author so we can surface per-author free book + mailing list flag
+  const { data: scopedAuthor } = useQuery<Author>({
+    queryKey: [`/api/authors/${defaultAuthorId}`],
+    enabled: !!defaultAuthorId,
+  });
+
   const subscribeMutation = useMutation({
     mutationFn: async (data: InsertNewsletter) => {
       const response = await apiRequest("POST", "/api/newsletter", data);
@@ -77,6 +83,16 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
     });
   };
 
+  // Hide newsletter section entirely if this author opted out
+  if (scopedAuthor && scopedAuthor.mailingListEnabled === false) {
+    return null;
+  }
+
+  const freeBookTitle = scopedAuthor?.freeBookTitle || 'Libro digital gratuito';
+  const freeBookDescription = scopedAuthor?.freeBookDescription;
+  const freeBookCover = scopedAuthor?.freeBookCover;
+  const freeBookCtaText = scopedAuthor?.freeBookCtaText || 'Quiero Mi Libro Gratis';
+
   return (
     <section className="py-20 bg-primary text-primary-foreground">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -99,9 +115,9 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
                   Al suscribirte recibirás inmediatamente:
                 </p>
                 <ul className="space-y-2 opacity-90">
-                  <li className="flex items-center">
+                  <li className="flex items-center" data-testid="text-free-book-title">
                     <Check className="h-5 w-5 mr-3 text-accent" />
-                    Libro digital gratuito "Primeros Encuentros"
+                    {freeBookTitle}
                   </li>
                   <li className="flex items-center">
                     <Check className="h-5 w-5 mr-3 text-accent" />
@@ -112,6 +128,17 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
                     Descuentos especiales en próximos lanzamientos
                   </li>
                 </ul>
+                {freeBookDescription && (
+                  <p className="text-sm opacity-80 mt-3" data-testid="text-free-book-description">{freeBookDescription}</p>
+                )}
+                {freeBookCover && (
+                  <img
+                    src={freeBookCover}
+                    alt={freeBookTitle}
+                    className="mt-4 rounded-lg shadow-lg max-h-48 object-contain"
+                    data-testid="img-free-book-cover"
+                  />
+                )}
               </div>
               <div>
                 <form onSubmit={handleSubmit} className="space-y-4" data-testid="newsletter-form">
@@ -142,7 +169,7 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
                     data-testid="button-subscribe"
                   >
                     <Gift className="h-4 w-4 mr-2" />
-                    {subscribeMutation.isPending ? "Suscribiendo..." : "Quiero Mi Libro Gratis"}
+                    {subscribeMutation.isPending ? "Suscribiendo..." : freeBookCtaText}
                   </Button>
                 </form>
                 <p className="text-sm opacity-70 mt-4">

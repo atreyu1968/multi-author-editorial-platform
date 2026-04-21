@@ -566,44 +566,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/newsletter", newsletterLimiter, async (req, res) => {
     try {
       const validatedSubscriber = insertNewsletterSchema.parse(req.body);
+
+      // Resolve author (if scoped) and respect mailingListEnabled flag
+      let author: any = null;
+      if (validatedSubscriber.authorId) {
+        author = await storage.getAuthorById(validatedSubscriber.authorId);
+        if (author && author.mailingListEnabled === false) {
+          res.status(403).json({ message: "Mailing list disabled for this author" });
+          return;
+        }
+      }
+
       const subscriber = await storage.createNewsletterSubscriber(validatedSubscriber);
-      
+
       // Try to send welcome email with free book
       try {
-        const siteSettings = await storage.getSiteSettings();
-        const settingsMap = siteSettings.reduce((acc, setting) => {
-          acc[setting.key] = setting.value;
-          return acc;
-        }, {} as Record<string, string>);
-
         const editorialSettings = await storage.getEditorialSettings();
-        const freeBookFile = settingsMap.freeBookFile;
-        const freeBookTitle = settingsMap.freeBookTitle || 'Libro de Regalo';
-        const freeBookDescription = settingsMap.freeBookDescription || 'Disfruta de este libro exclusivo como regalo de bienvenida.';
 
-        if (editorialSettings && freeBookFile) {
+        // Per-author free book takes priority; fall back to global site settings
+        let freeBookFile: string | undefined = author?.freeBookFile || undefined;
+        let freeBookTitle: string = author?.freeBookTitle || 'Libro de Regalo';
+        let freeBookDescription: string = author?.freeBookDescription || 'Disfruta de este libro exclusivo como regalo de bienvenida.';
+
+        if (!freeBookFile) {
+          const siteSettings = await storage.getSiteSettings();
+          const settingsMap = siteSettings.reduce((acc, setting) => {
+            acc[setting.key] = setting.value;
+            return acc;
+          }, {} as Record<string, string>);
+          freeBookFile = settingsMap.freeBookFile;
+          if (settingsMap.freeBookTitle) freeBookTitle = settingsMap.freeBookTitle;
+          if (settingsMap.freeBookDescription) freeBookDescription = settingsMap.freeBookDescription;
+        }
+
+        if (freeBookFile) {
           const { emailService } = await import('./email-service.js');
-          
-          // Configure email service from editorial settings
-          emailService.configureFromSettings('newsletter', editorialSettings);
-          
-          // Construct full download URL
-          const baseUrl = process.env.REPL_SLUG 
-            ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
-            : 'http://localhost:5000';
-          const downloadUrl = freeBookFile.startsWith('http') 
-            ? freeBookFile 
-            : `${baseUrl}${freeBookFile}`;
+          const configured = emailService.configureForAuthor('newsletter', author, editorialSettings);
 
-          const from = emailService.getDefaultFrom();
-          await emailService.sendWelcomeEmail(
-            validatedSubscriber.email,
-            validatedSubscriber.name,
-            freeBookTitle,
-            freeBookDescription,
-            downloadUrl,
-            from
-          );
+          if (configured) {
+            const baseUrl = process.env.PUBLIC_BASE_URL
+              || (process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : 'http://localhost:5000');
+            const downloadUrl = freeBookFile.startsWith('http')
+              ? freeBookFile
+              : `${baseUrl}${freeBookFile}`;
+
+            const from = emailService.getDefaultFrom();
+            await emailService.sendWelcomeEmail(
+              validatedSubscriber.email,
+              validatedSubscriber.name,
+              freeBookTitle,
+              freeBookDescription,
+              downloadUrl,
+              from
+            );
+          }
         }
       } catch (emailError) {
         console.error('Failed to send welcome email:', emailError);
@@ -613,6 +629,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(subscriber);
     } catch (error) {
       res.status(400).json({ message: "Invalid newsletter data" });
+    }
+  });
+
+  // Author lookup by custom domain (for SPA host-based routing)
+  app.get("/api/authors/by-domain/:host", async (req, res) => {
+    try {
+      const host = (req.params.host || "").toLowerCase().replace(/:.*$/, "");
+      const author = await storage.getAuthorByDomain(host);
+      if (!author || !author.isActive) {
+        res.status(404).json({ message: "Not found" });
+        return;
+      }
+      res.json(author);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to lookup domain" });
     }
   });
 

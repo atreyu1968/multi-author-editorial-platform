@@ -13,6 +13,8 @@ import { CartProvider } from "@/contexts/CartContext";
 import { getLocaleFromPath } from "@/lib/localized-routes";
 import Home from "@/pages/home";
 import Admin from "@/pages/admin";
+import { useQuery } from "@tanstack/react-query";
+import type { Author } from "@shared/schema";
 import AuthPage from "@/pages/auth-page";
 import BlogList from "@/pages/blog";
 import BlogPost from "@/pages/blog-post";
@@ -38,6 +40,41 @@ function LocaleSync() {
   }, [location, setLocale]);
 
   return null;
+}
+
+function CustomDomainRedirect({ children }: { children: React.ReactNode }) {
+  const [location, setLocation] = useLocation();
+  const { locale } = useLocale();
+  const host = typeof window !== "undefined" ? window.location.hostname.replace(/^www\./, "") : "";
+
+  // Skip custom-domain detection on the platform's own domains
+  const isPlatformHost = !host
+    || host === "localhost"
+    || host.endsWith(".replit.dev")
+    || host.endsWith(".repl.co")
+    || host.endsWith(".replit.app")
+    || host.endsWith(".repl.run");
+
+  const { data: customAuthor, isLoading } = useQuery<Author>({
+    queryKey: [`/api/authors/by-domain/${host}`],
+    enabled: !isPlatformHost,
+    retry: false,
+  });
+
+  useEffect(() => {
+    if (!customAuthor) return;
+    // Only redirect when on the root, root with locale, or non-author/admin paths
+    const isRootOrLocaleRoot = /^\/((es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)\/?)?$/.test(location);
+    if (isRootOrLocaleRoot) {
+      setLocation(`/${locale}/autor/${customAuthor.slug}`);
+    }
+  }, [customAuthor, location, locale, setLocation]);
+
+  if (!isPlatformHost && isLoading) {
+    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Cargando...</div>;
+  }
+
+  return <>{children}</>;
 }
 
 function Router() {
@@ -159,7 +196,9 @@ function App() {
                   <TooltipProvider>
                     <Toaster />
                     <LocaleSync />
-                    <Router />
+                    <CustomDomainRedirect>
+                      <Router />
+                    </CustomDomainRedirect>
                   </TooltipProvider>
                 </CartProvider>
               </AuthProvider>

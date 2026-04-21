@@ -142,6 +142,17 @@ export default function AuthorManagement() {
       seoKeywords: "",
       backgroundImageUrl: "",
       backgroundColor: "",
+      mailingListEnabled: true,
+      emailFromName: "",
+      emailFromEmail: "",
+      emailProvider: "",
+      emailApiKey: "",
+      customDomain: "",
+      freeBookFile: "",
+      freeBookCover: "",
+      freeBookTitle: "",
+      freeBookDescription: "",
+      freeBookCtaText: "",
     },
   });
 
@@ -261,6 +272,17 @@ export default function AuthorManagement() {
       seoKeywords: "",
       backgroundImageUrl: "",
       backgroundColor: "",
+      mailingListEnabled: true,
+      emailFromName: "",
+      emailFromEmail: "",
+      emailProvider: "",
+      emailApiKey: "",
+      customDomain: "",
+      freeBookFile: "",
+      freeBookCover: "",
+      freeBookTitle: "",
+      freeBookDescription: "",
+      freeBookCtaText: "",
     });
     setIsModalOpen(true);
   };
@@ -287,6 +309,17 @@ export default function AuthorManagement() {
       seoKeywords: author.seoKeywords || "",
       backgroundImageUrl: author.backgroundImageUrl || "",
       backgroundColor: author.backgroundColor || "",
+      mailingListEnabled: author.mailingListEnabled ?? true,
+      emailFromName: author.emailFromName || "",
+      emailFromEmail: author.emailFromEmail || "",
+      emailProvider: author.emailProvider || "",
+      emailApiKey: author.emailApiKey || "",
+      customDomain: author.customDomain || "",
+      freeBookFile: author.freeBookFile || "",
+      freeBookCover: author.freeBookCover || "",
+      freeBookTitle: author.freeBookTitle || "",
+      freeBookDescription: author.freeBookDescription || "",
+      freeBookCtaText: author.freeBookCtaText || "",
     });
     setIsModalOpen(true);
   };
@@ -747,6 +780,233 @@ export default function AuthorManagement() {
                       <div className="text-xs text-muted-foreground">
                         {t.descriptionBgColor}
                       </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Mailing list */}
+              <div className="space-y-4 border-t pt-6 mt-6">
+                <h3 className="text-lg font-semibold">Lista de correo del autor</h3>
+                <p className="text-sm text-muted-foreground">
+                  Configura un proveedor de email exclusivo para este autor. Si se deja vacío, se utilizará la configuración global.
+                </p>
+                <FormField
+                  control={form.control}
+                  name="mailingListEnabled"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Lista de correo activa</FormLabel>
+                        <div className="text-sm text-muted-foreground">
+                          Si se desactiva, no se mostrará el formulario de suscripción del autor
+                        </div>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value ?? true}
+                          onCheckedChange={field.onChange}
+                          data-testid="switch-author-mailing-list"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="emailFromName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nombre del remitente</FormLabel>
+                        <FormControl>
+                          <Input {...field} value={field.value || ""} placeholder="Newsletter del autor" data-testid="input-author-email-from-name" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="emailFromEmail"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email del remitente</FormLabel>
+                        <FormControl>
+                          <Input {...field} value={field.value || ""} type="email" placeholder="newsletter@dominio.com" data-testid="input-author-email-from-email" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="emailProvider"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Proveedor de email</FormLabel>
+                        <Select value={field.value || ""} onValueChange={field.onChange}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-author-email-provider">
+                              <SelectValue placeholder="Usar configuración global" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="resend">Resend</SelectItem>
+                            <SelectItem value="sendgrid">SendGrid</SelectItem>
+                            <SelectItem value="mailchimp">Mailchimp Transactional</SelectItem>
+                            <SelectItem value="brevo">Brevo</SelectItem>
+                            <SelectItem value="postmark">Postmark</SelectItem>
+                            <SelectItem value="mailgun">Mailgun</SelectItem>
+                            <SelectItem value="gmail">Gmail</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="emailApiKey"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>API Key</FormLabel>
+                        <FormControl>
+                          <Input {...field} value={field.value || ""} type="password" placeholder="Clave API del proveedor" data-testid="input-author-email-api-key" />
+                        </FormControl>
+                        <p className="text-xs text-muted-foreground">
+                          Mailgun: usa el formato "APIKEY:DOMINIO". Gmail: "email:app-password".
+                        </p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Custom domain */}
+              <div className="space-y-4 border-t pt-6 mt-6">
+                <h3 className="text-lg font-semibold">Dominio personalizado</h3>
+                <p className="text-sm text-muted-foreground">
+                  Vincula un dominio propio (por ejemplo nombredelautor.com) que apuntará directamente a la página del autor. Configura el DNS para que el dominio resuelva a este servidor.
+                </p>
+                <FormField
+                  control={form.control}
+                  name="customDomain"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Dominio</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          value={field.value || ""}
+                          placeholder="nombredelautor.com"
+                          data-testid="input-author-custom-domain"
+                          onChange={(e) => field.onChange(e.target.value.toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/^www\./, ""))}
+                        />
+                      </FormControl>
+                      <p className="text-xs text-muted-foreground">
+                        Sin "https://" ni "www.". El dominio debe ser único en toda la plataforma.
+                      </p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Free book */}
+              <div className="space-y-4 border-t pt-6 mt-6">
+                <h3 className="text-lg font-semibold">Libro de regalo</h3>
+                <p className="text-sm text-muted-foreground">
+                  Libro gratuito que el autor entregará automáticamente cuando un lector se suscriba a su lista de correo.
+                </p>
+                <FormField
+                  control={form.control}
+                  name="freeBookFile"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Archivo del libro (URL o ruta)</FormLabel>
+                      <FormControl>
+                        <div className="flex gap-2">
+                          <Input {...field} value={field.value || ""} placeholder="/objects/... o https://..." data-testid="input-author-free-book-file" />
+                          <FileUploader
+                            onComplete={(result) => form.setValue("freeBookFile", result.objectPath)}
+                            allowedFileTypes={["application/pdf", "application/epub+zip", "application/x-mobipocket-ebook", "application/octet-stream"]}
+                            buttonClassName="shrink-0"
+                          >
+                            <Upload className="h-4 w-4 mr-2" />
+                            Subir
+                          </FileUploader>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="freeBookCover"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Portada del libro</FormLabel>
+                      <FormControl>
+                        <div className="flex gap-2">
+                          <Input {...field} value={field.value || ""} placeholder="https://... o /objects/..." data-testid="input-author-free-book-cover" />
+                          <FileUploader
+                            onComplete={(result) => form.setValue("freeBookCover", result.objectPath)}
+                            allowedFileTypes={["image/jpeg", "image/png", "image/webp"]}
+                            buttonClassName="shrink-0"
+                          >
+                            <Upload className="h-4 w-4 mr-2" />
+                            Subir
+                          </FileUploader>
+                        </div>
+                      </FormControl>
+                      {field.value && (
+                        <img src={field.value} alt="Portada del libro" className="mt-2 h-32 object-contain rounded" data-testid="img-author-free-book-cover-preview" />
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="freeBookTitle"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Título del libro</FormLabel>
+                      <FormControl>
+                        <Input {...field} value={field.value || ""} placeholder="Mi libro de regalo" data-testid="input-author-free-book-title" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="freeBookDescription"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Descripción</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} value={field.value || ""} rows={3} placeholder="Una breve descripción del libro de regalo" data-testid="textarea-author-free-book-description" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="freeBookCtaText"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Texto del botón</FormLabel>
+                      <FormControl>
+                        <Input {...field} value={field.value || ""} placeholder="Quiero Mi Libro Gratis" data-testid="input-author-free-book-cta" />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
