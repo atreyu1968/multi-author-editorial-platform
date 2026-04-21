@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useUiText } from "@/contexts/ui-text-context";
+import { useLocale } from "@/contexts/locale-context";
 import type { Author } from "@shared/schema";
 
 interface NewsletterProps {
@@ -21,6 +22,7 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
   const [email, setEmail] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { locale } = useLocale();
 
   const { data: authors = [] } = useQuery<Author[]>({
     queryKey: ["/api/authors"],
@@ -47,9 +49,11 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
       const endpoint = scopedAuthor?.freeBookFile
         ? `/api/authors/${data.authorId}/free-book/claim`
         : `/api/newsletter`;
+      // Always send the active UI locale so subscribers/tokens are tagged
+      // with the language they signed up in (used for downstream emails).
       const body = scopedAuthor?.freeBookFile
-        ? { name: data.name, email: data.email }
-        : { name: data.name, email: data.email, authorId: data.authorId };
+        ? { name: data.name, email: data.email, locale }
+        : { name: data.name, email: data.email, authorId: data.authorId, locale };
       const response = await apiRequest("POST", endpoint, body);
       return response.json();
     },

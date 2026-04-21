@@ -155,9 +155,15 @@ export default function AuthorPage(props: AuthorPageProps = {}) {
   const alternates = isCustomDomainRoot
     ? AVAILABLE_LOCALES.map((l) => ({ locale: l.code, url: `/${l.code}` }))
     : (slug ? getAllLocalizedUrls('author', { slug }) : []);
-  const canonicalUrl = isCustomDomainRoot && typeof window !== 'undefined'
-    ? `${window.location.origin}/${locale}`
-    : undefined;
+  // Canonical for the custom-domain root mirrors the actual URL path the
+  // visitor sees: bare "/" stays as "/", "/es-ES" stays as "/es-ES". This
+  // avoids forcing a canonical of "/${locale}" when the visitor is already
+  // on the bare root (which would create two URLs that point at each other).
+  let canonicalUrl: string | undefined;
+  if (isCustomDomainRoot && typeof window !== 'undefined') {
+    const path = window.location.pathname.replace(/\/+$/, '') || '/';
+    canonicalUrl = `${window.location.origin}${path}`;
+  }
 
   return (
     <DynamicTheme authorId={author.id}>
