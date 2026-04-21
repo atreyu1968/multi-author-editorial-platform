@@ -35,15 +35,22 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
     enabled: !!defaultAuthorId,
   });
 
-  // Always use the per-author tokenized claim endpoint so the welcome email
-  // ships a one-time, expiring download link instead of the raw file URL.
+  // Endpoint depends on whether the scoped author has a free book configured:
+  //   - With a free book: POST /api/authors/:id/free-book/claim, which
+  //     subscribes AND emails a one-time tokenized download link (raw file
+  //     URL is never sent).
+  //   - Without a free book: POST /api/newsletter for a plain subscription
+  //     (so authors with mailingListEnabled=true but no gift can still
+  //     collect signups).
   const subscribeMutation = useMutation({
     mutationFn: async (data: { name: string; email: string; authorId: string }) => {
-      const response = await apiRequest(
-        "POST",
-        `/api/authors/${data.authorId}/free-book/claim`,
-        { name: data.name, email: data.email },
-      );
+      const endpoint = scopedAuthor?.freeBookFile
+        ? `/api/authors/${data.authorId}/free-book/claim`
+        : `/api/newsletter`;
+      const body = scopedAuthor?.freeBookFile
+        ? { name: data.name, email: data.email }
+        : { name: data.name, email: data.email, authorId: data.authorId };
+      const response = await apiRequest("POST", endpoint, body);
       return response.json();
     },
     onSuccess: () => {
