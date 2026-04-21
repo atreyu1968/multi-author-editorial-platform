@@ -348,6 +348,18 @@ export const downloadTokens = pgTable("download_tokens", {
   createdAt: text("created_at").default(sql`current_timestamp`),
 });
 
+// Free Book Tokens - one-time/expiring secure links emailed to newsletter subscribers
+export const freeBookTokens = pgTable("free_book_tokens", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  authorId: varchar("author_id").notNull(),
+  email: text("email").notNull(),
+  fileUrl: text("file_url").notNull(),
+  token: varchar("token").notNull().unique(),
+  expiresAt: text("expires_at").notNull(),
+  usedAt: text("used_at"),
+  createdAt: text("created_at").default(sql`current_timestamp`),
+});
+
 export const analyticsSessions = pgTable("analytics_sessions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   sessionId: text("session_id").notNull().unique(), // Browser-generated session ID

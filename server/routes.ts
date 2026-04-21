@@ -44,6 +44,26 @@ function requireAuth(req: any, res: any, next: any) {
   next();
 }
 
+// Strip sensitive sender credentials from public author payloads.
+// Authenticated admins still get the full record so they can see the saved key.
+function sanitizeAuthorForResponse<T extends Record<string, any>>(
+  author: T,
+  req: { isAuthenticated?: () => boolean }
+): T | Omit<T, 'emailApiKey'> {
+  if (req.isAuthenticated && req.isAuthenticated()) return author;
+  if (!author || typeof author !== 'object') return author;
+  const { emailApiKey: _ignored, ...rest } = author as any;
+  return rest as Omit<T, 'emailApiKey'>;
+}
+
+function sanitizeAuthorsForResponse<T extends Record<string, any>>(
+  authors: T[],
+  req: { isAuthenticated?: () => boolean }
+): (T | Omit<T, 'emailApiKey'>)[] {
+  if (req.isAuthenticated && req.isAuthenticated()) return authors;
+  return authors.map(a => sanitizeAuthorForResponse(a, req));
+}
+
 // Validation helpers
 function isValidUrl(url: string): boolean {
   if (!url) return true; // Empty strings are allowed (for clearing settings)
@@ -107,7 +127,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/authors", async (req, res) => {
     try {
       const authors = await storage.getAuthors();
-      res.json(authors);
+      res.json(sanitizeAuthorsForResponse(authors, req));
     } catch (error) {
       res.status(500).json({ message: "Failed to get authors" });
     }
@@ -142,7 +162,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return hasPublishedBook || hasActiveSeries;
       });
       
-      res.json(authorsWithContent);
+      res.json(sanitizeAuthorsForResponse(authorsWithContent, req));
     } catch (error) {
       res.status(500).json({ message: "Failed to get authors with content" });
     }
@@ -155,7 +175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(404).json({ message: "Author not found" });
         return;
       }
-      res.json(author);
+      res.json(sanitizeAuthorForResponse(author, req));
     } catch (error) {
       res.status(500).json({ message: "Failed to get author" });
     }
@@ -168,7 +188,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(404).json({ message: "Author not found" });
         return;
       }
-      res.json(author);
+      res.json(sanitizeAuthorForResponse(author, req));
     } catch (error) {
       res.status(500).json({ message: "Failed to get author" });
     }
@@ -632,6 +652,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/authors/:id/free-book/claim
+  // Subscribes the visitor under the author scope and emails a one-time, expiring
+  // tokenized download link. Never returns the file URL directly.
+  app.post("/api/authors/:id/free-book/claim", newsletterLimiter, async (req, res) => {
+    try {
+      const { id: authorId } = req.params;
+      const claimSchema = z.object({
+        email: z.string().email(),
+        name: z.string().min(1).max(120),
+        locale: z.string().min(2).max(10).optional(),
+      });
+      const { email, name, locale } = claimSchema.parse(req.body);
+
+      const author = await storage.getAuthorById(authorId);
+      if (!author || !author.isActive) {
+        res.status(404).json({ message: "Author not found" });
+        return;
+      }
+      if (author.mailingListEnabled === false) {
+        res.status(403).json({ message: "Mailing list disabled for this author" });
+        return;
+      }
+
+      // Resolve the file URL: per-author first, then global fallback
+      let freeBookFile: string | undefined = author.freeBookFile || undefined;
+      let freeBookTitle: string = author.freeBookTitle || 'Libro de Regalo';
+      let freeBookDescription: string = author.freeBookDescription || 'Disfruta de este libro exclusivo como regalo de bienvenida.';
+      if (!freeBookFile) {
+        const siteSettings = await storage.getSiteSettings();
+        const settingsMap = siteSettings.reduce((acc, s) => { acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
+        freeBookFile = settingsMap.freeBookFile;
+        if (settingsMap.freeBookTitle) freeBookTitle = settingsMap.freeBookTitle;
+        if (settingsMap.freeBookDescription) freeBookDescription = settingsMap.freeBookDescription;
+      }
+      if (!freeBookFile) {
+        res.status(404).json({ message: "No free book configured" });
+        return;
+      }
+
+      // Subscribe under author scope (idempotent: ignore duplicate errors)
+      try {
+        await storage.createNewsletterSubscriber({ email, name, authorId, locale: locale || 'es-ES' } as any);
+      } catch {
+        // already subscribed - continue with the claim
+      }
+
+      // Create a one-time, expiring token (7 days)
+      const { randomUUID } = await import('crypto');
+      const token = randomUUID();
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      await storage.createFreeBookToken({ authorId, email, fileUrl: freeBookFile, token, expiresAt });
+
+      // Email tokenized URL only - never the raw file URL
+      try {
+        const editorialSettings = await storage.getEditorialSettings();
+        const { emailService } = await import('./email-service.js');
+        const configured = emailService.configureForAuthor('newsletter', author, editorialSettings);
+        if (configured) {
+          const baseUrl = process.env.PUBLIC_BASE_URL
+            || `${req.protocol}://${req.get('host')}`;
+          const downloadUrl = `${baseUrl}/api/free-book/download/${token}`;
+          const from = emailService.getDefaultFrom();
+          await emailService.sendWelcomeEmail(email, name, freeBookTitle, freeBookDescription, downloadUrl, from);
+        }
+      } catch (emailError) {
+        console.error('Failed to send free-book email:', emailError);
+      }
+
+      res.status(201).json({ success: true });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid claim data" });
+        return;
+      }
+      console.error('Free book claim error:', error);
+      res.status(500).json({ message: "Failed to process claim" });
+    }
+  });
+
+  // GET /api/free-book/download/:token - one-time, expiring secure redirect
+  app.get("/api/free-book/download/:token", downloadLimiter, async (req, res) => {
+    try {
+      const { token } = req.params;
+      const row = await storage.getFreeBookToken(token);
+      if (!row) {
+        res.status(404).json({ message: "Invalid download token" });
+        return;
+      }
+      if (row.usedAt) {
+        res.status(401).json({ message: "This download link has already been used" });
+        return;
+      }
+      if (new Date() > new Date(row.expiresAt)) {
+        res.status(403).json({ message: "This download link has expired" });
+        return;
+      }
+      await storage.markFreeBookTokenUsed(token);
+      const target = row.fileUrl.startsWith('http') ? row.fileUrl : `${req.protocol}://${req.get('host')}${row.fileUrl}`;
+      res.redirect(target);
+    } catch (error) {
+      console.error('Free book download error:', error);
+      res.status(500).json({ message: "Failed to download file" });
+    }
+  });
+
   // Author lookup by custom domain (for SPA host-based routing)
   app.get("/api/authors/by-domain/:host", async (req, res) => {
     try {
@@ -641,7 +766,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(404).json({ message: "Not found" });
         return;
       }
-      res.json(author);
+      res.json(sanitizeAuthorForResponse(author, req));
     } catch (error) {
       res.status(500).json({ message: "Failed to lookup domain" });
     }

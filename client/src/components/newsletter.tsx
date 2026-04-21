@@ -30,7 +30,7 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
   const defaultAuthorId = authorId || authors[0]?.id;
 
   // Fetch the author so we can surface per-author free book + mailing list flag
-  const { data: scopedAuthor } = useQuery<Author>({
+  const { data: scopedAuthor, isLoading: isAuthorLoading } = useQuery<Author>({
     queryKey: [`/api/authors/${defaultAuthorId}`],
     enabled: !!defaultAuthorId,
   });
@@ -83,6 +83,10 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
     });
   };
 
+  // Hide while loading the author so we never flash a form for an opted-out author.
+  if (defaultAuthorId && (isAuthorLoading || !scopedAuthor)) {
+    return null;
+  }
   // Hide newsletter section entirely if this author opted out
   if (scopedAuthor && scopedAuthor.mailingListEnabled === false) {
     return null;

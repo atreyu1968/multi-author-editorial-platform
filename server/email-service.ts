@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import type { Author, EditorialSettings } from '@shared/schema';
 
 interface EmailOptions {
   to: string;
@@ -305,8 +306,8 @@ export class EmailService {
    */
   configureForAuthor(
     type: 'newsletter' | 'digital' | 'invoice',
-    author: any,
-    editorialSettings: any
+    author: Author | null | undefined,
+    editorialSettings: EditorialSettings | null | undefined
   ): boolean {
     // Per-author override (only for newsletter type)
     if (type === 'newsletter' && author?.emailProvider && author?.emailApiKey && author?.emailFromName && author?.emailFromEmail) {
@@ -327,7 +328,10 @@ export class EmailService {
     }
   }
 
-  configureFromSettings(type: 'newsletter' | 'digital' | 'invoice', settings: any) {
+  configureFromSettings(type: 'newsletter' | 'digital' | 'invoice', settings: EditorialSettings | null | undefined) {
+    if (!settings) {
+      throw new Error(`Email configuration for ${type} is incomplete. Please configure it in editorial settings.`);
+    }
     let provider = '';
     let apiKey = '';
     let fromName = '';

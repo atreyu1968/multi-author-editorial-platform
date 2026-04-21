@@ -20,6 +20,7 @@ import {
   merchandiseProducts,
   cartItems,
   downloadTokens,
+  freeBookTokens,
   authorTranslations,
   bookTranslations,
   seriesTranslations,
@@ -1099,6 +1100,30 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(downloadTokens)
       .where(eq(downloadTokens.orderId, orderId));
+  }
+
+  // Free Book Tokens (one-time, expiring secure links emailed to subscribers)
+  async createFreeBookToken(input: { authorId: string; email: string; fileUrl: string; token: string; expiresAt: string }) {
+    const [row] = await db
+      .insert(freeBookTokens)
+      .values(input)
+      .returning();
+    return { id: row.id, token: row.token, expiresAt: row.expiresAt };
+  }
+
+  async getFreeBookToken(token: string) {
+    const [row] = await db
+      .select()
+      .from(freeBookTokens)
+      .where(eq(freeBookTokens.token, token));
+    return row || undefined;
+  }
+
+  async markFreeBookTokenUsed(token: string): Promise<void> {
+    await db
+      .update(freeBookTokens)
+      .set({ usedAt: new Date().toISOString() })
+      .where(eq(freeBookTokens.token, token));
   }
 
   // Translation methods

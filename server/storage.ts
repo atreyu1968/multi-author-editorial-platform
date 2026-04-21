@@ -35,6 +35,7 @@ import {
   type InsertCartItem,
   type DownloadToken,
   type InsertDownloadToken,
+  freeBookTokens,
   type AuthorTranslation,
   type InsertAuthorTranslation,
   type BookTranslation,
@@ -194,6 +195,11 @@ export interface IStorage {
   getDownloadToken(token: string): Promise<DownloadToken | undefined>;
   markTokenAsUsed(token: string): Promise<void>;
   getDownloadTokensByOrderId(orderId: string): Promise<DownloadToken[]>;
+
+  // Free Book Token methods (one-time, expiring links emailed to subscribers)
+  createFreeBookToken(input: { authorId: string; email: string; fileUrl: string; token: string; expiresAt: string }): Promise<{ id: string; token: string; expiresAt: string }>;
+  getFreeBookToken(token: string): Promise<{ id: string; authorId: string; email: string; fileUrl: string; token: string; expiresAt: string; usedAt: string | null } | undefined>;
+  markFreeBookTokenUsed(token: string): Promise<void>;
 
   // Translation methods
   // Author translations

@@ -55,8 +55,62 @@ app.use((req, res, next) => {
   next();
 });
 
+// Hosts that are NOT custom author domains (Replit/dev/local).
+const PLATFORM_HOST_SUFFIXES = ['.replit.dev', '.repl.co', '.replit.app', '.repl.run', '.kirk.replit.dev'];
+function isPlatformHost(host: string): boolean {
+  if (!host) return true;
+  const h = host.toLowerCase().split(':')[0];
+  if (h === 'localhost' || h === '127.0.0.1' || h === '0.0.0.0') return true;
+  return PLATFORM_HOST_SUFFIXES.some(s => h.endsWith(s));
+}
+
+// Locale segments we allow at the URL root (must match SUPPORTED_LOCALES on the client).
+const LOCALE_ROOTS = new Set(['es-ES', 'en-US', 'ca-ES', 'fr-FR', 'it-IT', 'de-DE', 'pt-PT']);
+
+// Server-side host-based routing for custom author domains.
+// On a custom domain, the bare root (and any locale root) is rewritten via 302
+// redirect to the matching author landing so /  ->  /autor/:slug (or /:locale/autor/:slug),
+// preserving SEO canonicals on the author's own domain.
+async function customDomainRouter(req: Request, res: Response, next: NextFunction) {
+  try {
+    if (req.method !== 'GET') return next();
+    const host = (req.get('host') || '').toLowerCase();
+    if (!host || isPlatformHost(host)) return next();
+
+    // Skip API/asset/HMR paths so they always work on custom domains
+    const p = req.path;
+    if (p.startsWith('/api') || p.startsWith('/assets') || p.startsWith('/@') || p.startsWith('/src/') || p.includes('.')) {
+      return next();
+    }
+
+    // Only redirect bare root or a bare locale root - other paths (e.g. /libros) pass through
+    const trimmed = p.replace(/\/+$/, '');
+    const seg = trimmed.split('/').filter(Boolean);
+    let localePrefix = '';
+    if (seg.length === 0) {
+      localePrefix = '';
+    } else if (seg.length === 1 && LOCALE_ROOTS.has(seg[0])) {
+      localePrefix = `/${seg[0]}`;
+    } else {
+      return next();
+    }
+
+    const cleanHost = host.split(':')[0];
+    const { storage } = await import('./storage');
+    const author = await storage.getAuthorByDomain(cleanHost);
+    if (!author || !author.isActive) return next();
+
+    const target = `${localePrefix}/autor/${author.slug}`;
+    return res.redirect(302, target);
+  } catch (err) {
+    console.error('customDomainRouter error:', err);
+    return next();
+  }
+}
+
 // Main server initialization function
 async function startServer() {
+  app.use(customDomainRouter);
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
