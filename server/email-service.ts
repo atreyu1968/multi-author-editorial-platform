@@ -309,15 +309,25 @@ export class EmailService {
     author: Author | null | undefined,
     editorialSettings: EditorialSettings | null | undefined
   ): boolean {
-    // Per-author override (only for newsletter type)
-    if (type === 'newsletter' && author?.emailProvider && author?.emailApiKey && author?.emailFromName && author?.emailFromEmail) {
-      this.configure({
-        provider: author.emailProvider,
-        apiKey: author.emailApiKey,
-        fromName: author.emailFromName,
-        fromEmail: author.emailFromEmail,
-      });
-      return true;
+    // Per-author override (only for newsletter type). The author's sender
+    // identity (fromName/fromEmail) and provider/apiKey are independent: when
+    // the author only filled in a sender we still want emails to go out as
+    // that sender, but transported by the editorial provider/API key.
+    if (type === 'newsletter' && author) {
+      const editorialProvider = editorialSettings?.emailNewsletterProvider || '';
+      const editorialApiKey = editorialSettings?.emailNewsletterApiKey || '';
+      const editorialFromName = editorialSettings?.emailNewsletterFromName || '';
+      const editorialFromEmail = editorialSettings?.emailNewsletterFromEmail || '';
+
+      const provider = author.emailProvider || editorialProvider;
+      const apiKey = author.emailApiKey || editorialApiKey;
+      const fromName = author.emailFromName || editorialFromName;
+      const fromEmail = author.emailFromEmail || editorialFromEmail;
+
+      if (provider && apiKey && fromName && fromEmail) {
+        this.configure({ provider, apiKey, fromName, fromEmail });
+        return true;
+      }
     }
     // Fallback to editorial settings
     try {

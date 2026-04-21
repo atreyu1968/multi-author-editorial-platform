@@ -93,16 +93,14 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
   if (defaultAuthorId && (isAuthorLoading || !scopedAuthor)) {
     return null;
   }
-  // Hide newsletter section entirely if this author opted out
+  // Hide newsletter section entirely if this author opted out of mailing list
   if (scopedAuthor && scopedAuthor.mailingListEnabled === false) {
     return null;
   }
-  // Strict per-author gating: only surface the public free-book form when the
-  // scoped author actually has a free book file configured. This prevents
-  // showing a "claim your free book" CTA that the author hasn't set up.
-  if (scopedAuthor && !scopedAuthor.freeBookFile) {
-    return null;
-  }
+  // The free-book CTA itself is gated separately below: when the author has no
+  // free-book file configured we still render the signup form (subscription is
+  // a standalone feature) but suppress the gift-themed copy and cover.
+  const hasFreeBook = !!scopedAuthor?.freeBookFile;
 
   const freeBookTitle = scopedAuthor?.freeBookTitle || 'Libro digital gratuito';
   const freeBookDescription = scopedAuthor?.freeBookDescription;
@@ -124,17 +122,19 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
             <div className="grid md:grid-cols-2 gap-8 items-center">
               <div className="text-left">
                 <h3 className="text-2xl font-serif font-bold mb-4 flex items-center">
-                  <Gift className="h-6 w-6 mr-2" />
-                  Regalo de Bienvenida
+                  {hasFreeBook ? <Gift className="h-6 w-6 mr-2" /> : <Mail className="h-6 w-6 mr-2" />}
+                  {hasFreeBook ? "Regalo de Bienvenida" : "Suscríbete a la newsletter"}
                 </h3>
                 <p className="opacity-90 mb-4">
-                  Al suscribirte recibirás inmediatamente:
+                  {hasFreeBook ? "Al suscribirte recibirás inmediatamente:" : "Al suscribirte recibirás:"}
                 </p>
                 <ul className="space-y-2 opacity-90">
-                  <li className="flex items-center" data-testid="text-free-book-title">
-                    <Check className="h-5 w-5 mr-3 text-accent" />
-                    {freeBookTitle}
-                  </li>
+                  {hasFreeBook && (
+                    <li className="flex items-center" data-testid="text-free-book-title">
+                      <Check className="h-5 w-5 mr-3 text-accent" />
+                      {freeBookTitle}
+                    </li>
+                  )}
                   <li className="flex items-center">
                     <Check className="h-5 w-5 mr-3 text-accent" />
                     Acceso a contenido exclusivo
@@ -144,10 +144,10 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
                     Descuentos especiales en próximos lanzamientos
                   </li>
                 </ul>
-                {freeBookDescription && (
+                {hasFreeBook && freeBookDescription && (
                   <p className="text-sm opacity-80 mt-3" data-testid="text-free-book-description">{freeBookDescription}</p>
                 )}
-                {freeBookCover && (
+                {hasFreeBook && freeBookCover && (
                   <img
                     src={freeBookCover}
                     alt={freeBookTitle}
@@ -184,8 +184,10 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
                     className="w-full bg-accent text-accent-foreground font-semibold hover:bg-accent/90 transition-all transform hover:scale-105"
                     data-testid="button-subscribe"
                   >
-                    <Gift className="h-4 w-4 mr-2" />
-                    {subscribeMutation.isPending ? "Suscribiendo..." : freeBookCtaText}
+                    {hasFreeBook ? <Gift className="h-4 w-4 mr-2" /> : <Mail className="h-4 w-4 mr-2" />}
+                    {subscribeMutation.isPending
+                      ? "Suscribiendo..."
+                      : (hasFreeBook ? freeBookCtaText : "Suscribirme")}
                   </Button>
                 </form>
                 <p className="text-sm opacity-70 mt-4">

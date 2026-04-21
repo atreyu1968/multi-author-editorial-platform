@@ -210,13 +210,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Nullable/unique-constrained columns (e.g. customDomain, emailFrom) must
+  // Nullable/unique-constrained columns (e.g. customDomain, emailFromEmail) must
   // never receive an empty string from the admin form because the DB has
   // UNIQUE(customDomain) and `""` is a real value, not NULL. Normalize blanks
   // to NULL so multiple authors can leave these fields unset without colliding.
   const NULLABLE_AUTHOR_FIELDS = [
     'customDomain',
-    'emailFrom',
+    'emailFromEmail',
     'emailFromName',
     'emailProvider',
     'emailApiKey',
