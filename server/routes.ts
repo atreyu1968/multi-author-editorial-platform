@@ -210,9 +210,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Nullable/unique-constrained columns (e.g. customDomain, emailFrom) must
+  // never receive an empty string from the admin form because the DB has
+  // UNIQUE(customDomain) and `""` is a real value, not NULL. Normalize blanks
+  // to NULL so multiple authors can leave these fields unset without colliding.
+  const NULLABLE_AUTHOR_FIELDS = [
+    'customDomain',
+    'emailFrom',
+    'emailFromName',
+    'emailProvider',
+    'emailApiKey',
+    'freeBookFile',
+    'freeBookCover',
+    'freeBookTitle',
+    'freeBookDescription',
+    'freeBookCtaText',
+  ] as const;
+  function normalizeAuthorPayload<T extends Record<string, unknown>>(body: T): T {
+    const out: Record<string, unknown> = { ...body };
+    for (const f of NULLABLE_AUTHOR_FIELDS) {
+      if (typeof out[f] === 'string' && (out[f] as string).trim() === '') {
+        out[f] = null;
+      }
+    }
+    if (typeof out.customDomain === 'string') {
+      out.customDomain = (out.customDomain as string).toLowerCase().trim() || null;
+    }
+    return out as T;
+  }
+
   app.post("/api/authors", requireAuth, async (req, res) => {
     try {
-      const validatedAuthor = insertAuthorSchema.parse(req.body);
+      const validatedAuthor = insertAuthorSchema.parse(normalizeAuthorPayload(req.body));
       const author = await storage.createAuthor(validatedAuthor);
       res.status(201).json(author);
     } catch (error) {
@@ -222,7 +251,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/authors/:id", requireAuth, async (req, res) => {
     try {
-      const validatedAuthor = insertAuthorSchema.parse(req.body);
+      const validatedAuthor = insertAuthorSchema.parse(normalizeAuthorPayload(req.body));
       const author = await storage.updateAuthor(req.params.id, validatedAuthor);
       if (!author) {
         res.status(404).json({ message: "Author not found" });

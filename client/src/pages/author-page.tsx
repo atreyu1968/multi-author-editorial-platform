@@ -19,13 +19,22 @@ import { useLocale } from "@/contexts/locale-context";
 import { getAllLocalizedUrls } from "@/lib/localized-routes";
 import { AVAILABLE_LOCALES } from "@/contexts/locale-context";
 
-export default function AuthorPage({ slugOverride }: { slugOverride?: string } = {}) {
-  const params = useParams<{ slug: string }>();
-  const slug = slugOverride ?? params.slug;
+// Wouter passes `{ params, ... }` when used as `<Route component={AuthorPage} />`,
+// but we also render this component manually from CustomDomainRedirect with a
+// `slugOverride` prop (so the URL can stay at "/" on a custom domain). The
+// signature is intentionally permissive to support both call sites.
+type AuthorPageProps = {
+  params?: { slug?: string };
+  slugOverride?: string;
+};
+
+export default function AuthorPage(props: AuthorPageProps = {}) {
+  const routeParams = useParams<{ slug: string }>();
+  const slug = props.slugOverride ?? props.params?.slug ?? routeParams.slug;
   // When slugOverride is provided we are rendering as the root of a custom
   // domain, so canonical/hreflang must point to "/" and "/:locale" rather than
   // the standard "/:locale/autor/:slug" path.
-  const isCustomDomainRoot = !!slugOverride;
+  const isCustomDomainRoot = !!props.slugOverride;
   const { locale } = useLocale();
   
   const { data: author, isLoading: authorLoading, error: authorError } = useQuery<Author>({
@@ -144,7 +153,7 @@ export default function AuthorPage({ slugOverride }: { slugOverride?: string } =
   // Generate hreflang alternates. On a custom domain the author page IS the
   // site root, so we emit "/" and "/:locale" rather than "/:locale/autor/:slug".
   const alternates = isCustomDomainRoot
-    ? AVAILABLE_LOCALES.map((l) => ({ locale: l, url: `/${l}` }))
+    ? AVAILABLE_LOCALES.map((l) => ({ locale: l.code, url: `/${l.code}` }))
     : (slug ? getAllLocalizedUrls('author', { slug }) : []);
   const canonicalUrl = isCustomDomainRoot && typeof window !== 'undefined'
     ? `${window.location.origin}/${locale}`
