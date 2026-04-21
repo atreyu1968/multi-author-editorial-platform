@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useUiText } from "@/contexts/ui-text-context";
-import type { InsertNewsletter, Author } from "@shared/schema";
+import type { Author } from "@shared/schema";
 
 interface NewsletterProps {
   authorId?: string;
@@ -35,9 +35,15 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
     enabled: !!defaultAuthorId,
   });
 
+  // Always use the per-author tokenized claim endpoint so the welcome email
+  // ships a one-time, expiring download link instead of the raw file URL.
   const subscribeMutation = useMutation({
-    mutationFn: async (data: InsertNewsletter) => {
-      const response = await apiRequest("POST", "/api/newsletter", data);
+    mutationFn: async (data: { name: string; email: string; authorId: string }) => {
+      const response = await apiRequest(
+        "POST",
+        `/api/authors/${data.authorId}/free-book/claim`,
+        { name: data.name, email: data.email },
+      );
       return response.json();
     },
     onSuccess: () => {

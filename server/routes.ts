@@ -5,7 +5,7 @@ import express from "express";
 import path from "path";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
-import type { Book } from "@shared/schema";
+import type { Book, Author, InsertNewsletter } from "@shared/schema";
 import { 
   insertAuthorSchema,
   insertBookSeriesSchema,
@@ -46,17 +46,17 @@ function requireAuth(req: any, res: any, next: any) {
 
 // Strip sensitive sender credentials from public author payloads.
 // Authenticated admins still get the full record so they can see the saved key.
-function sanitizeAuthorForResponse<T extends Record<string, any>>(
+function sanitizeAuthorForResponse<T extends { emailApiKey?: string | null }>(
   author: T,
   req: { isAuthenticated?: () => boolean }
 ): T | Omit<T, 'emailApiKey'> {
   if (req.isAuthenticated && req.isAuthenticated()) return author;
   if (!author || typeof author !== 'object') return author;
-  const { emailApiKey: _ignored, ...rest } = author as any;
-  return rest as Omit<T, 'emailApiKey'>;
+  const { emailApiKey: _ignored, ...rest } = author;
+  return rest;
 }
 
-function sanitizeAuthorsForResponse<T extends Record<string, any>>(
+function sanitizeAuthorsForResponse<T extends { emailApiKey?: string | null }>(
   authors: T[],
   req: { isAuthenticated?: () => boolean }
 ): (T | Omit<T, 'emailApiKey'>)[] {
@@ -178,6 +178,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(sanitizeAuthorForResponse(author, req));
     } catch (error) {
       res.status(500).json({ message: "Failed to get author" });
+    }
+  });
+
+  // Author lookup by custom domain - MUST be registered before /api/authors/:id
+  // so that the literal "by-domain" segment doesn't get matched as an :id.
+  app.get("/api/authors/by-domain/:host", async (req, res) => {
+    try {
+      const host = (req.params.host || "").toLowerCase().replace(/:.*$/, "");
+      const author = await storage.getAuthorByDomain(host);
+      if (!author || !author.isActive) {
+        res.status(404).json({ message: "Not found" });
+        return;
+      }
+      res.json(sanitizeAuthorForResponse(author, req));
+    } catch (error) {
+      res.status(500).json({ message: "Failed to lookup domain" });
     }
   });
 
@@ -588,7 +604,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedSubscriber = insertNewsletterSchema.parse(req.body);
 
       // Resolve author (if scoped) and respect mailingListEnabled flag
-      let author: any = null;
+      let author: Author | undefined;
       if (validatedSubscriber.authorId) {
         author = await storage.getAuthorById(validatedSubscriber.authorId);
         if (author && author.mailingListEnabled === false) {
@@ -692,8 +708,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Subscribe under author scope (idempotent: ignore duplicate errors)
+      const subscriberPayload: InsertNewsletter = insertNewsletterSchema.parse({
+        email,
+        name,
+        authorId,
+        locale: locale || 'es-ES',
+      });
       try {
-        await storage.createNewsletterSubscriber({ email, name, authorId, locale: locale || 'es-ES' } as any);
+        await storage.createNewsletterSubscriber(subscriberPayload);
       } catch {
         // already subscribed - continue with the claim
       }
@@ -754,21 +776,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Free book download error:', error);
       res.status(500).json({ message: "Failed to download file" });
-    }
-  });
-
-  // Author lookup by custom domain (for SPA host-based routing)
-  app.get("/api/authors/by-domain/:host", async (req, res) => {
-    try {
-      const host = (req.params.host || "").toLowerCase().replace(/:.*$/, "");
-      const author = await storage.getAuthorByDomain(host);
-      if (!author || !author.isActive) {
-        res.status(404).json({ message: "Not found" });
-        return;
-      }
-      res.json(sanitizeAuthorForResponse(author, req));
-    } catch (error) {
-      res.status(500).json({ message: "Failed to lookup domain" });
     }
   });
 

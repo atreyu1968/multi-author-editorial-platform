@@ -18,8 +18,9 @@ import { useUiText } from "@/contexts/ui-text-context";
 import { useLocale } from "@/contexts/locale-context";
 import { getAllLocalizedUrls } from "@/lib/localized-routes";
 
-export default function AuthorPage() {
-  const { slug } = useParams<{ slug: string }>();
+export default function AuthorPage({ slugOverride }: { slugOverride?: string } = {}) {
+  const params = useParams<{ slug: string }>();
+  const slug = slugOverride ?? params.slug;
   const { locale } = useLocale();
   
   const { data: author, isLoading: authorLoading, error: authorError } = useQuery<Author>({

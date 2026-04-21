@@ -42,12 +42,15 @@ function LocaleSync() {
   return null;
 }
 
+// On a custom (non-platform) host, render the matched AuthorPage directly at
+// the bare URL root (and any bare locale root) without changing the URL. The
+// SPA's own routes still serve everything else (e.g. /libros, /admin) as
+// usual. The server-side customDomainRouter middleware also tags the response
+// headers so crawlers/CDNs know which author this hostname maps to.
 function CustomDomainRedirect({ children }: { children: React.ReactNode }) {
-  const [location, setLocation] = useLocation();
-  const { locale } = useLocale();
+  const [location] = useLocation();
   const host = typeof window !== "undefined" ? window.location.hostname.replace(/^www\./, "") : "";
 
-  // Skip custom-domain detection on the platform's own domains
   const isPlatformHost = !host
     || host === "localhost"
     || host.endsWith(".replit.dev")
@@ -61,17 +64,17 @@ function CustomDomainRedirect({ children }: { children: React.ReactNode }) {
     retry: false,
   });
 
-  useEffect(() => {
-    if (!customAuthor) return;
-    // Only redirect when on the root, root with locale, or non-author/admin paths
-    const isRootOrLocaleRoot = /^\/((es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)\/?)?$/.test(location);
-    if (isRootOrLocaleRoot) {
-      setLocation(`/${locale}/autor/${customAuthor.slug}`);
-    }
-  }, [customAuthor, location, locale, setLocation]);
-
   if (!isPlatformHost && isLoading) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Cargando...</div>;
+  }
+
+  // If we're on a custom domain AND at the bare root or a bare locale root,
+  // render the AuthorPage inline so the URL stays at "/" (or "/es-ES").
+  if (customAuthor) {
+    const isRootOrLocaleRoot = /^\/((es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)\/?)?$/.test(location);
+    if (isRootOrLocaleRoot) {
+      return <AuthorPage slugOverride={customAuthor.slug} />;
+    }
   }
 
   return <>{children}</>;

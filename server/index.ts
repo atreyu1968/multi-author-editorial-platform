@@ -68,29 +68,32 @@ function isPlatformHost(host: string): boolean {
 const LOCALE_ROOTS = new Set(['es-ES', 'en-US', 'ca-ES', 'fr-FR', 'it-IT', 'de-DE', 'pt-PT']);
 
 // Server-side host-based routing for custom author domains.
-// On a custom domain, the bare root (and any locale root) is rewritten via 302
-// redirect to the matching author landing so /  ->  /autor/:slug (or /:locale/autor/:slug),
-// preserving SEO canonicals on the author's own domain.
+// On a custom (non-platform) host the server resolves the author and exposes
+// the slug + locale to the SPA via response headers + a meta tag injected into
+// the served index.html, so the author landing renders at the bare root URL
+// (no client redirect, URL stays at "/" or "/:locale"). Other paths pass
+// through unchanged. The endpoint /api/authors/by-domain/:host is the
+// canonical lookup for clients.
 async function customDomainRouter(req: Request, res: Response, next: NextFunction) {
   try {
     if (req.method !== 'GET') return next();
     const host = (req.get('host') || '').toLowerCase();
     if (!host || isPlatformHost(host)) return next();
 
-    // Skip API/asset/HMR paths so they always work on custom domains
+    // Skip API/asset/HMR paths so they always work on custom domains.
     const p = req.path;
     if (p.startsWith('/api') || p.startsWith('/assets') || p.startsWith('/@') || p.startsWith('/src/') || p.includes('.')) {
       return next();
     }
 
-    // Only redirect bare root or a bare locale root - other paths (e.g. /libros) pass through
+    // Only annotate bare root or a bare locale root; other paths pass through.
     const trimmed = p.replace(/\/+$/, '');
     const seg = trimmed.split('/').filter(Boolean);
-    let localePrefix = '';
+    let locale = '';
     if (seg.length === 0) {
-      localePrefix = '';
+      locale = '';
     } else if (seg.length === 1 && LOCALE_ROOTS.has(seg[0])) {
-      localePrefix = `/${seg[0]}`;
+      locale = seg[0];
     } else {
       return next();
     }
@@ -100,8 +103,14 @@ async function customDomainRouter(req: Request, res: Response, next: NextFunctio
     const author = await storage.getAuthorByDomain(cleanHost);
     if (!author || !author.isActive) return next();
 
-    const target = `${localePrefix}/autor/${author.slug}`;
-    return res.redirect(302, target);
+    // Expose the resolved author to downstream handlers and the SPA. Vite's
+    // index transform reads x-author-slug to inject a <meta name="author-slug">
+    // tag so the client renders the AuthorPage at the bare root.
+    res.setHeader('x-author-slug', author.slug);
+    if (locale) res.setHeader('x-author-locale', locale);
+    (req as Request & { customAuthor?: { slug: string; locale: string } })
+      .customAuthor = { slug: author.slug, locale };
+    return next();
   } catch (err) {
     console.error('customDomainRouter error:', err);
     return next();
