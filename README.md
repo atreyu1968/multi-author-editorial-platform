@@ -14,9 +14,9 @@ Una aplicación web completa diseñada para gestionar hasta 30 autores dentro de
 - **Páginas de Autor Personalizadas** - Cada autor obtiene `/autor/[slug]` con branding personalizado
 - **Temas Individuales** - Colores, logotipos y favicons personalizables por autor
 - **Series Multi-Autor** - Soporte para series de libros con múltiples autores contribuyentes
-- **Dominios Personalizados por Autor** - Cada autor puede tener su propio dominio (ej: `miautor.com`) que apunta automáticamente a su landing
-- **Lista de Correo por Autor** - Cada autor puede activar su propia lista, con remitente, proveedor de email (Resend, SendGrid, Brevo, etc.) y API key independientes
-- **Libro de Regalo por Autor** - Cada autor puede ofrecer su propio libro gratuito a sus suscriptores (con título, descripción, portada y archivo dedicados); fallback al libro global si no se configura
+- **Dominios Personalizados por Autor** - Cada autor puede tener su propio dominio único (ej: `miautor.com`) y la landing del autor se renderiza directamente en la raíz (`/`), sin redirecciones; los enlaces canónicos y `hreflang` se ajustan automáticamente para evitar duplicados de SEO
+- **Lista de Correo por Autor** - Activa/desactiva la lista por autor con remitente (nombre + email), proveedor (Resend, SendGrid, Brevo, Postmark, Mailgun, Mailchimp Transactional o Gmail) y API key independientes; los campos de remitente y los de transporte (proveedor + API key) hacen fallback de forma **independiente** a la configuración editorial, así un autor puede mantener su identidad de envío usando el proveedor global. La API key del autor nunca se expone en respuestas públicas
+- **Libro de Regalo por Autor** - Cada autor puede ofrecer su propio libro gratuito (título, descripción, portada y archivo dedicados). El formulario de suscripción detecta automáticamente si hay regalo configurado: si lo hay, envía un enlace **único de un solo uso con caducidad** (no se expone nunca la URL del archivo); si no, hace una suscripción simple. Si el autor no configura regalo, se usa el libro global como fallback
 
 ### Comercio Electrónico
 - **Carrito de Compras Completo** - Sistema de carrito basado en sesiones
