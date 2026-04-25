@@ -254,7 +254,12 @@ export interface IStorage {
   // Free Book Token methods (one-time, expiring links emailed to subscribers)
   createFreeBookToken(input: { authorId: string; email: string; fileUrl: string; token: string; expiresAt: string }): Promise<{ id: string; token: string; expiresAt: string }>;
   getFreeBookToken(token: string): Promise<{ id: string; authorId: string; email: string; fileUrl: string; token: string; expiresAt: string; usedAt: string | null } | undefined>;
-  markFreeBookTokenUsed(token: string): Promise<void>;
+  // Atomically marks a token as used. Returns true ONLY when this call
+  // was the one that flipped `usedAt` from null to now() — i.e. when the
+  // single download right belongs to this caller. Returns false when the
+  // token is unknown or was already consumed (by a previous call or a
+  // concurrent request that won the race).
+  markFreeBookTokenUsed(token: string): Promise<boolean>;
 
   // Translation methods
   // Author translations

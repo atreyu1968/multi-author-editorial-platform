@@ -1477,7 +1477,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(410).type('html').send(renderFreeBookPage({ token, status: 'expired', ...ctx }));
         return;
       }
-      await storage.markFreeBookTokenUsed(token);
+      // Atomic claim: only the request that flips usedAt from null to now()
+      // gets to redirect to the file. Two near-simultaneous POSTs (e.g. user
+      // double-clicks the button) cannot both win.
+      const claimed = await storage.markFreeBookTokenUsed(token);
+      if (!claimed) {
+        res.status(410).type('html').send(renderFreeBookPage({ token, status: 'used', ...ctx }));
+        return;
+      }
       const target = row.fileUrl.startsWith('http') ? row.fileUrl : `${req.protocol}://${req.get('host')}${row.fileUrl}`;
       res.redirect(target);
     } catch (error) {

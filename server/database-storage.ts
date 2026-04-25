@@ -1391,11 +1391,19 @@ export class DatabaseStorage implements IStorage {
     return row || undefined;
   }
 
-  async markFreeBookTokenUsed(token: string): Promise<void> {
-    await db
+  async markFreeBookTokenUsed(token: string): Promise<boolean> {
+    // Atomic single-use enforcement: the WHERE clause includes
+    // `usedAt IS NULL`, so two concurrent requests racing for the same
+    // token will both run the UPDATE but only the first will return a
+    // row. The loser sees an empty `returning()` and we report false so
+    // the caller can render the "already used" page instead of streaming
+    // the file twice.
+    const updated = await db
       .update(freeBookTokens)
       .set({ usedAt: new Date().toISOString() })
-      .where(eq(freeBookTokens.token, token));
+      .where(and(eq(freeBookTokens.token, token), isNull(freeBookTokens.usedAt)))
+      .returning({ id: freeBookTokens.id });
+    return updated.length > 0;
   }
 
   // Translation methods
