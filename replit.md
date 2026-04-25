@@ -78,6 +78,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Email and Newsletter
 - **Custom Email Service**: Supports 7 email providers - Resend, SendGrid, Mailchimp Transactional, Brevo, Postmark, Mailgun, Gmail.
+- **Author-branded mailing-list emails**: All newsletter / free-book emails are rendered through `renderAuthorBrandedEmail()` in `server/email-service.ts`, which mirrors the public `/autor/:slug` look — warm gold `.hero-gradient`, Playfair Display serif headlines, cream `#faf6ee` background, accent-coloured rounded CTA — and shows the author's circular avatar (`author.photo`) at the top of the hero. The author's `backgroundColor` (when set) overrides the wallpaper. Relative photo URLs are absolutized via `process.env.PUBLIC_BASE_URL` so they load in the inbox. The `sendWelcomeEmail()` signature accepts an optional `author` argument; both `POST /api/newsletter` and `POST /api/authors/:id/free-book/claim` pass the resolved author so per-author branding shows up end-to-end.
 
 ### File Storage
 - **Replit Object Storage**: For all file uploads and digital product storage.

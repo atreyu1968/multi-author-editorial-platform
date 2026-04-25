@@ -26,7 +26,9 @@ import {
   insertBookTranslationSchema,
   insertSeriesTranslationSchema,
   insertTestimonialTranslationSchema,
-  insertBlogPostTranslationSchema
+  insertBlogPostTranslationSchema,
+  insertNewsletterListSchema,
+  insertEmailTemplateSchema
 } from "@shared/schema";
 import { z } from "zod";
 // Referenced from blueprint:javascript_object_storage
@@ -682,7 +684,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               freeBookTitle,
               freeBookDescription,
               downloadUrl,
-              from
+              from,
+              author,
             );
           }
         }
@@ -765,7 +768,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             || `${req.protocol}://${req.get('host')}`;
           const downloadUrl = `${baseUrl}/api/free-book/download/${token}`;
           const from = emailService.getDefaultFrom();
-          await emailService.sendWelcomeEmail(email, name, freeBookTitle, freeBookDescription, downloadUrl, from);
+          await emailService.sendWelcomeEmail(email, name, freeBookTitle, freeBookDescription, downloadUrl, from, author);
         }
       } catch (emailError) {
         console.error('Failed to send free-book email:', emailError);

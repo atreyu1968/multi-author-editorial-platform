@@ -9,6 +9,12 @@ import {
   type InsertTestimonial,
   type Newsletter,
   type InsertNewsletter,
+  type NewsletterList,
+  type InsertNewsletterList,
+  type NewsletterListSubscription,
+  type InsertNewsletterListSubscription,
+  type EmailTemplate,
+  type InsertEmailTemplate,
   type SiteSettings,
   type InsertSiteSettings,
   type User,
@@ -104,6 +110,29 @@ export interface IStorage {
   // Newsletter methods
   getNewsletterSubscribers(authorId?: string): Promise<Newsletter[]>;
   createNewsletterSubscriber(subscriber: InsertNewsletter): Promise<Newsletter>;
+  getNewsletterSubscriberByEmail(authorId: string, email: string): Promise<Newsletter | undefined>;
+  getNewsletterSubscriberByToken(token: string): Promise<Newsletter | undefined>;
+  updateNewsletterSubscriber(id: string, patch: Partial<Newsletter>): Promise<Newsletter | undefined>;
+
+  // Newsletter list (interest topic) methods
+  getNewsletterLists(authorId: string, opts?: { activeOnly?: boolean }): Promise<NewsletterList[]>;
+  getNewsletterListById(id: string): Promise<NewsletterList | undefined>;
+  createNewsletterList(list: InsertNewsletterList): Promise<NewsletterList>;
+  updateNewsletterList(id: string, patch: Partial<InsertNewsletterList>): Promise<NewsletterList | undefined>;
+  deleteNewsletterList(id: string): Promise<boolean>;
+
+  // Subscriber<->List membership methods
+  getSubscriberListIds(subscriberId: string): Promise<string[]>;
+  setSubscriberLists(subscriberId: string, listIds: string[]): Promise<void>;
+
+  // Email template methods
+  getEmailTemplates(authorId?: string | null): Promise<EmailTemplate[]>;
+  getEmailTemplateById(id: string): Promise<EmailTemplate | undefined>;
+  // Lookup the active template for `type`. Per-author template wins; falls back to global (authorId IS NULL).
+  resolveEmailTemplate(type: string, authorId?: string | null): Promise<EmailTemplate | undefined>;
+  createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate>;
+  updateEmailTemplate(id: string, patch: Partial<InsertEmailTemplate>): Promise<EmailTemplate | undefined>;
+  deleteEmailTemplate(id: string): Promise<boolean>;
 
   // Site Settings methods
   getSiteSettings(authorId?: string): Promise<SiteSettings[]>;
@@ -891,11 +920,47 @@ export class MemStorage {
     const newsletter: Newsletter = { 
       ...insertNewsletter, 
       id,
+      preferencesToken: randomUUID(),
+      unsubscribedAt: null,
       subscribedAt: new Date().toISOString()
     };
     this.newsletters.set(id, newsletter);
     return newsletter;
   }
+
+  // The methods below are deprecated stubs satisfying IStorage; production
+  // uses DatabaseStorage. They keep MemStorage compilable without persisting
+  // multi-list / template state.
+  async getNewsletterSubscriberByEmail(authorId: string, email: string): Promise<Newsletter | undefined> {
+    return Array.from(this.newsletters.values()).find(n => n.authorId === authorId && n.email === email);
+  }
+  async getNewsletterSubscriberByToken(token: string): Promise<Newsletter | undefined> {
+    return Array.from(this.newsletters.values()).find(n => n.preferencesToken === token);
+  }
+  async updateNewsletterSubscriber(id: string, patch: Partial<Newsletter>): Promise<Newsletter | undefined> {
+    const existing = this.newsletters.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...patch };
+    this.newsletters.set(id, updated);
+    return updated;
+  }
+  async getNewsletterLists(): Promise<NewsletterList[]> { return []; }
+  async getNewsletterListById(): Promise<NewsletterList | undefined> { return undefined; }
+  async createNewsletterList(list: InsertNewsletterList): Promise<NewsletterList> {
+    return { ...list, id: randomUUID(), createdAt: new Date().toISOString() } as NewsletterList;
+  }
+  async updateNewsletterList(): Promise<NewsletterList | undefined> { return undefined; }
+  async deleteNewsletterList(): Promise<boolean> { return false; }
+  async getSubscriberListIds(): Promise<string[]> { return []; }
+  async setSubscriberLists(): Promise<void> { /* no-op */ }
+  async getEmailTemplates(): Promise<EmailTemplate[]> { return []; }
+  async getEmailTemplateById(): Promise<EmailTemplate | undefined> { return undefined; }
+  async resolveEmailTemplate(): Promise<EmailTemplate | undefined> { return undefined; }
+  async createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate> {
+    return { ...template, id: randomUUID(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as EmailTemplate;
+  }
+  async updateEmailTemplate(): Promise<EmailTemplate | undefined> { return undefined; }
+  async deleteEmailTemplate(): Promise<boolean> { return false; }
 
   // Site Settings methods
   async getSiteSettings(): Promise<SiteSettings[]> {

@@ -7,6 +7,9 @@ import {
   books,
   testimonials,
   newsletters,
+  newsletterLists,
+  newsletterListSubscriptions,
+  emailTemplates,
   siteSettings,
   users,
   blogPosts,
@@ -36,6 +39,12 @@ import {
   type InsertTestimonial,
   type Newsletter,
   type InsertNewsletter,
+  type NewsletterList,
+  type InsertNewsletterList,
+  type NewsletterListSubscription,
+  type InsertNewsletterListSubscription,
+  type EmailTemplate,
+  type InsertEmailTemplate,
   type SiteSettings,
   type InsertSiteSettings,
   type User,
@@ -350,11 +359,149 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createNewsletterSubscriber(insertSubscriber: InsertNewsletter): Promise<Newsletter> {
+    const { randomUUID } = await import('crypto');
     const [subscriber] = await db
       .insert(newsletters)
-      .values(insertSubscriber)
+      .values({ ...insertSubscriber, preferencesToken: randomUUID() })
       .returning();
     return subscriber;
+  }
+
+  async getNewsletterSubscriberByEmail(authorId: string, email: string): Promise<Newsletter | undefined> {
+    const [row] = await db
+      .select()
+      .from(newsletters)
+      .where(and(eq(newsletters.authorId, authorId), eq(newsletters.email, email)))
+      .limit(1);
+    return row;
+  }
+
+  async getNewsletterSubscriberByToken(token: string): Promise<Newsletter | undefined> {
+    const [row] = await db
+      .select()
+      .from(newsletters)
+      .where(eq(newsletters.preferencesToken, token))
+      .limit(1);
+    return row;
+  }
+
+  async updateNewsletterSubscriber(id: string, patch: Partial<Newsletter>): Promise<Newsletter | undefined> {
+    const [row] = await db
+      .update(newsletters)
+      .set(patch)
+      .where(eq(newsletters.id, id))
+      .returning();
+    return row;
+  }
+
+  // Newsletter list methods
+  async getNewsletterLists(authorId: string, opts?: { activeOnly?: boolean }): Promise<NewsletterList[]> {
+    const where = opts?.activeOnly
+      ? and(eq(newsletterLists.authorId, authorId), eq(newsletterLists.isActive, true))
+      : eq(newsletterLists.authorId, authorId);
+    return await db
+      .select()
+      .from(newsletterLists)
+      .where(where)
+      .orderBy(newsletterLists.sortOrder, newsletterLists.name);
+  }
+
+  async getNewsletterListById(id: string): Promise<NewsletterList | undefined> {
+    const [row] = await db.select().from(newsletterLists).where(eq(newsletterLists.id, id)).limit(1);
+    return row;
+  }
+
+  async createNewsletterList(list: InsertNewsletterList): Promise<NewsletterList> {
+    const [row] = await db.insert(newsletterLists).values(list).returning();
+    return row;
+  }
+
+  async updateNewsletterList(id: string, patch: Partial<InsertNewsletterList>): Promise<NewsletterList | undefined> {
+    const [row] = await db.update(newsletterLists).set(patch).where(eq(newsletterLists.id, id)).returning();
+    return row;
+  }
+
+  async deleteNewsletterList(id: string): Promise<boolean> {
+    // Cascade memberships first; the table doesn't declare a FK so we clean up manually.
+    await db.delete(newsletterListSubscriptions).where(eq(newsletterListSubscriptions.listId, id));
+    const result = await db.delete(newsletterLists).where(eq(newsletterLists.id, id)).returning();
+    return result.length > 0;
+  }
+
+  async getSubscriberListIds(subscriberId: string): Promise<string[]> {
+    const rows = await db
+      .select({ listId: newsletterListSubscriptions.listId })
+      .from(newsletterListSubscriptions)
+      .where(eq(newsletterListSubscriptions.subscriberId, subscriberId));
+    return rows.map((r) => r.listId);
+  }
+
+  async setSubscriberLists(subscriberId: string, listIds: string[]): Promise<void> {
+    // Replace-all semantics: simplest correct behavior for a preference center save.
+    await db.delete(newsletterListSubscriptions).where(eq(newsletterListSubscriptions.subscriberId, subscriberId));
+    if (listIds.length === 0) return;
+    await db.insert(newsletterListSubscriptions).values(
+      listIds.map((listId) => ({ subscriberId, listId }))
+    );
+  }
+
+  // Email template methods
+  async getEmailTemplates(authorId?: string | null): Promise<EmailTemplate[]> {
+    if (authorId === undefined) {
+      return await db.select().from(emailTemplates).orderBy(emailTemplates.type, emailTemplates.name);
+    }
+    const where = authorId === null ? isNull(emailTemplates.authorId) : eq(emailTemplates.authorId, authorId);
+    return await db.select().from(emailTemplates).where(where).orderBy(emailTemplates.type, emailTemplates.name);
+  }
+
+  async getEmailTemplateById(id: string): Promise<EmailTemplate | undefined> {
+    const [row] = await db.select().from(emailTemplates).where(eq(emailTemplates.id, id)).limit(1);
+    return row;
+  }
+
+  async resolveEmailTemplate(type: string, authorId?: string | null): Promise<EmailTemplate | undefined> {
+    // Per-author template wins; fall back to global (authorId IS NULL).
+    if (authorId) {
+      const [perAuthor] = await db
+        .select()
+        .from(emailTemplates)
+        .where(and(
+          eq(emailTemplates.type, type),
+          eq(emailTemplates.authorId, authorId),
+          eq(emailTemplates.isActive, true),
+        ))
+        .limit(1);
+      if (perAuthor) return perAuthor;
+    }
+    const [globalRow] = await db
+      .select()
+      .from(emailTemplates)
+      .where(and(
+        eq(emailTemplates.type, type),
+        isNull(emailTemplates.authorId),
+        eq(emailTemplates.isActive, true),
+      ))
+      .limit(1);
+    return globalRow;
+  }
+
+  async createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate> {
+    const [row] = await db.insert(emailTemplates).values(template).returning();
+    return row;
+  }
+
+  async updateEmailTemplate(id: string, patch: Partial<InsertEmailTemplate>): Promise<EmailTemplate | undefined> {
+    const [row] = await db
+      .update(emailTemplates)
+      .set({ ...patch, updatedAt: sql`current_timestamp` })
+      .where(eq(emailTemplates.id, id))
+      .returning();
+    return row;
+  }
+
+  async deleteEmailTemplate(id: string): Promise<boolean> {
+    const result = await db.delete(emailTemplates).where(eq(emailTemplates.id, id)).returning();
+    return result.length > 0;
   }
 
   // Site Settings methods

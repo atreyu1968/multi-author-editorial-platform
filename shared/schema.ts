@@ -154,7 +154,61 @@ export const newsletters = pgTable("newsletters", {
   authorId: varchar("author_id").notNull(),
   name: text("name").notNull(),
   email: text("email").notNull(),
+  // Token used by subscriber-facing preference center & unsubscribe URLs.
+  // Generated lazily for older rows by the storage layer.
+  preferencesToken: varchar("preferences_token").unique(),
+  // Soft-unsubscribe: when set, subscriber is globally unsubscribed from
+  // this author. Granular per-list opt-outs live in newsletterListSubscriptions.
+  unsubscribedAt: text("unsubscribed_at"),
   subscribedAt: text("subscribed_at").default(sql`current_timestamp`),
+});
+
+// Per-author topical lists subscribers can opt into (e.g. "Histórica",
+// "Thriller", "Romántica"). Lists are author-scoped because each author
+// publishes in different genres.
+export const newsletterLists = pgTable("newsletter_lists", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  authorId: varchar("author_id").notNull(),
+  name: text("name").notNull(),
+  // Stable slug used in URLs and as a sync key with external providers.
+  slug: text("slug").notNull(),
+  description: text("description"),
+  // Pre-checked in the public signup form when true.
+  isDefault: boolean("is_default").default(false),
+  isActive: boolean("is_active").default(true),
+  sortOrder: integer("sort_order").default(0),
+  // Optional sync metadata for external providers (e.g. Resend Audience id).
+  externalAudienceId: text("external_audience_id"),
+  createdAt: text("created_at").default(sql`current_timestamp`),
+});
+
+// M2M: which lists a given subscriber has opted into. Deleting a subscriber
+// or list cascades; we keep this row even if the subscriber is globally
+// unsubscribed, so re-subscribing restores their preferences.
+export const newsletterListSubscriptions = pgTable("newsletter_list_subscriptions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  subscriberId: varchar("subscriber_id").notNull(),
+  listId: varchar("list_id").notNull(),
+  subscribedAt: text("subscribed_at").default(sql`current_timestamp`),
+});
+
+// Editable email templates. Author-scoped when authorId is set; falls back
+// to the global (authorId = NULL) template of the same `type` when no
+// per-author template exists. The HTML is a Handlebars-style template:
+// {{name}}, {{book_title}}, {{download_url}}, {{preferences_url}}, etc.
+export const emailTemplates = pgTable("email_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  authorId: varchar("author_id"),
+  // Known types: "welcome" (plain newsletter signup), "free_book"
+  // (signup with gift download), "broadcast" (admin-sent campaign),
+  // "preferences" (subscriber preferences confirmation), "custom".
+  type: text("type").notNull(),
+  name: text("name").notNull(),
+  subject: text("subject").notNull(),
+  html: text("html").notNull(),
+  isActive: boolean("is_active").default(true),
+  createdAt: text("created_at").default(sql`current_timestamp`),
+  updatedAt: text("updated_at").default(sql`current_timestamp`),
 });
 
 // Customers - registered users with billing information
@@ -553,6 +607,24 @@ export const insertTestimonialSchema = createInsertSchema(testimonials).omit({
 export const insertNewsletterSchema = createInsertSchema(newsletters).omit({
   id: true,
   subscribedAt: true,
+  preferencesToken: true,
+  unsubscribedAt: true,
+});
+
+export const insertNewsletterListSchema = createInsertSchema(newsletterLists).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertNewsletterListSubscriptionSchema = createInsertSchema(newsletterListSubscriptions).omit({
+  id: true,
+  subscribedAt: true,
+});
+
+export const insertEmailTemplateSchema = createInsertSchema(emailTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
 });
 
 export const insertCustomerSchema = createInsertSchema(customers).omit({
@@ -599,6 +671,15 @@ export type InsertTestimonial = z.infer<typeof insertTestimonialSchema>;
 
 export type Newsletter = typeof newsletters.$inferSelect;
 export type InsertNewsletter = z.infer<typeof insertNewsletterSchema>;
+
+export type NewsletterList = typeof newsletterLists.$inferSelect;
+export type InsertNewsletterList = z.infer<typeof insertNewsletterListSchema>;
+
+export type NewsletterListSubscription = typeof newsletterListSubscriptions.$inferSelect;
+export type InsertNewsletterListSubscription = z.infer<typeof insertNewsletterListSubscriptionSchema>;
+
+export type EmailTemplate = typeof emailTemplates.$inferSelect;
+export type InsertEmailTemplate = z.infer<typeof insertEmailTemplateSchema>;
 
 export type Customer = typeof customers.$inferSelect;
 export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
