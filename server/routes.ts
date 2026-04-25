@@ -1371,29 +1371,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // `preferencesToken` so the action does not require the subscriber to
   // log in.
 
-  // GET /api/preferences/:token - lightweight subscriber summary used by a
-  // future SPA preference page (and by the unsubscribe confirmation page
-  // below). Does NOT leak fields like `emailApiKey` (those live on the
-  // author, not on subscribers).
-  app.get("/api/preferences/:token", async (req, res) => {
-    try {
-      const subscriber = await storage.getNewsletterSubscriberByToken(req.params.token);
-      if (!subscriber) {
-        res.status(404).json({ message: "Suscriptor no encontrado" });
-        return;
-      }
-      res.json({
-        email: subscriber.email,
-        name: subscriber.name,
-        authorId: subscriber.authorId,
-        unsubscribed: !!subscriber.unsubscribedAt,
-        consentedAt: subscriber.consentedAt,
-      });
-    } catch (error) {
-      console.error('Preferences lookup failed:', error);
-      res.status(500).json({ message: "Failed to load preferences" });
-    }
-  });
+  // (Note: the canonical GET /api/preferences/:token handler is registered
+  // further down — see "Subscriber preference center (public)". A previous
+  // lightweight version that lived here was removed because Express picks
+  // the first matching route and it shadowed the richer handler.)
 
   // GET /api/unsubscribe/:token - friendly HTML confirmation page. Pressing
   // the form button POSTs back to this same path. We render server-side
