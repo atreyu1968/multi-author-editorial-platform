@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { ArrowLeft, Home, BookOpen, Users, User, Star, Settings, FileText, HelpCircle, Type, UserCircle, Building2, BarChart3, ShoppingCart, Languages } from "lucide-react";
+import { ArrowLeft, Home, BookOpen, Users, User, Star, Settings, FileText, HelpCircle, Type, UserCircle, Building2, BarChart3, ShoppingCart, Languages, Mail } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DynamicTheme } from "@/components/dynamic-theme";
 import { SEOHead } from "@/components/seo/seo-head";
@@ -19,10 +19,11 @@ import AuthorManagement from "@/components/admin/author-management";
 import EditorialSettingsManagement from "@/components/admin/editorial-settings-management";
 import AnalyticsManagement from "@/components/admin/analytics-management";
 import OrdersManagement from "@/components/admin/orders-management";
+import BroadcastManagement from "@/components/admin/broadcast-management";
 import { AdminAuthorProvider, useAdminAuthor } from "@/contexts/admin-author-context";
 import { useUiText } from "@/contexts/ui-text-context";
 
-type AdminSection = 'dashboard' | 'books' | 'series' | 'authors' | 'bio' | 'testimonials' | 'blog' | 'settings' | 'ui-texts' | 'translations' | 'editorial-settings' | 'analytics' | 'orders' | 'help';
+type AdminSection = 'dashboard' | 'books' | 'series' | 'authors' | 'bio' | 'testimonials' | 'blog' | 'settings' | 'ui-texts' | 'translations' | 'editorial-settings' | 'analytics' | 'orders' | 'broadcasts' | 'help';
 
 function AdminContent() {
   const [currentSection, setCurrentSection] = useState<AdminSection>('dashboard');
@@ -80,6 +81,8 @@ function AdminContent() {
         return <AnalyticsManagement />;
       case 'orders':
         return <OrdersManagement />;
+      case 'broadcasts':
+        return <BroadcastManagement />;
       case 'help':
         return <HelpInstructions />;
       default:
@@ -332,6 +335,18 @@ function AdminContent() {
                 >
                   <ShoppingCart className="h-5 w-5" />
                   {t.navOrders}
+                </button>
+                <button
+                  onClick={() => setCurrentSection('broadcasts')}
+                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
+                    currentSection === 'broadcasts'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'hover:bg-primary hover:text-primary-foreground'
+                  }`}
+                  data-testid="nav-broadcasts"
+                >
+                  <Mail className="h-5 w-5" />
+                  Campañas
                 </button>
                 <button 
                   onClick={() => setCurrentSection('help')}

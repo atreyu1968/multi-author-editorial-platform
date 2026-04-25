@@ -15,6 +15,8 @@ import {
   type InsertNewsletterListSubscription,
   type EmailTemplate,
   type InsertEmailTemplate,
+  type Broadcast,
+  type InsertBroadcast,
   type SiteSettings,
   type InsertSiteSettings,
   type User,
@@ -133,6 +135,17 @@ export interface IStorage {
   createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate>;
   updateEmailTemplate(id: string, patch: Partial<InsertEmailTemplate>): Promise<EmailTemplate | undefined>;
   deleteEmailTemplate(id: string): Promise<boolean>;
+
+  // Broadcast (campaign) methods
+  getBroadcasts(authorId: string): Promise<Broadcast[]>;
+  getBroadcastById(id: string): Promise<Broadcast | undefined>;
+  createBroadcast(broadcast: InsertBroadcast): Promise<Broadcast>;
+  updateBroadcast(id: string, patch: Partial<Broadcast>): Promise<Broadcast | undefined>;
+  // Returns active subscribers (unsubscribedAt IS NULL) for the author.
+  // When `listIds` is non-empty, only subscribers opted into at least one
+  // of those lists are returned. When empty/omitted, returns every active
+  // subscriber for that author regardless of list membership.
+  getActiveSubscribersForBroadcast(authorId: string, listIds?: string[]): Promise<Newsletter[]>;
 
   // Site Settings methods
   getSiteSettings(authorId?: string): Promise<SiteSettings[]>;
@@ -961,6 +974,25 @@ export class MemStorage {
   }
   async updateEmailTemplate(): Promise<EmailTemplate | undefined> { return undefined; }
   async deleteEmailTemplate(): Promise<boolean> { return false; }
+
+  // Broadcast methods (in-memory stubs)
+  async getBroadcasts(): Promise<Broadcast[]> { return []; }
+  async getBroadcastById(): Promise<Broadcast | undefined> { return undefined; }
+  async createBroadcast(broadcast: InsertBroadcast): Promise<Broadcast> {
+    return {
+      ...broadcast,
+      id: randomUUID(),
+      status: "draft",
+      recipientCount: 0,
+      successCount: 0,
+      failureCount: 0,
+      errorMessage: null,
+      sentAt: null,
+      createdAt: new Date().toISOString(),
+    } as Broadcast;
+  }
+  async updateBroadcast(): Promise<Broadcast | undefined> { return undefined; }
+  async getActiveSubscribersForBroadcast(): Promise<Newsletter[]> { return []; }
 
   // Site Settings methods
   async getSiteSettings(): Promise<SiteSettings[]> {

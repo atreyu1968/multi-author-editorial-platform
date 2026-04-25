@@ -28,7 +28,8 @@ import {
   insertTestimonialTranslationSchema,
   insertBlogPostTranslationSchema,
   insertNewsletterListSchema,
-  insertEmailTemplateSchema
+  insertEmailTemplateSchema,
+  insertBroadcastSchema
 } from "@shared/schema";
 import { z } from "zod";
 // Referenced from blueprint:javascript_object_storage
@@ -808,6 +809,215 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Free book download error:', error);
       res.status(500).json({ message: "Failed to download file" });
+    }
+  });
+
+  // ----- Email broadcast (campaign) routes ---------------------------
+  // Admin composes a campaign for one of their authors and we render the
+  // author-branded email body, then deliver it to every active subscriber
+  // (optionally filtered by mailing-list). The send pipeline is best-effort
+  // per-recipient: a single bounce does not abort the rest of the run.
+
+  // GET /api/authors/:id/broadcasts - list past campaigns (admin only)
+  app.get("/api/authors/:id/broadcasts", requireAuth, async (req, res) => {
+    try {
+      const broadcasts = await storage.getBroadcasts(req.params.id);
+      res.json(broadcasts);
+    } catch (error) {
+      console.error('Failed to fetch broadcasts:', error);
+      res.status(500).json({ message: "Failed to fetch broadcasts" });
+    }
+  });
+
+  // POST /api/authors/:id/broadcasts/preview - render the HTML for the
+  // current draft without sending or persisting anything. Returns
+  // `{ subject, html, recipientCount }` so the admin UI can show an
+  // accurate "ready to send to N people" hint next to the preview.
+  app.post("/api/authors/:id/broadcasts/preview", requireAuth, async (req, res) => {
+    try {
+      const authorId = req.params.id;
+      const author = await storage.getAuthorById(authorId);
+      if (!author) {
+        res.status(404).json({ message: "Author not found" });
+        return;
+      }
+      const payload = insertBroadcastSchema.parse({ ...req.body, authorId });
+
+      if (!payload.bookId) {
+        res.status(400).json({ message: "bookId is required" });
+        return;
+      }
+      const book = await storage.getBookById(payload.bookId);
+      if (!book || book.authorId !== authorId) {
+        res.status(404).json({ message: "Book not found for this author" });
+        return;
+      }
+
+      // Previous-in-series books (only those before this book's order).
+      let previousBooks: typeof book[] = [];
+      if (book.seriesId) {
+        const all = await storage.getBooksBySeriesId(book.seriesId);
+        const myOrder = book.orderInSeries ?? Number.MAX_SAFE_INTEGER;
+        previousBooks = all
+          .filter(b => b.id !== book.id && (b.orderInSeries ?? 0) < myOrder)
+          .sort((a, b) => (a.orderInSeries ?? 0) - (b.orderInSeries ?? 0));
+      }
+
+      const baseUrl = process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get('host')}`;
+      const authorPageUrl = `${baseUrl}/autor/${author.slug}`;
+      const { EmailService } = await import('./email-service.js');
+      const html = EmailService.renderBroadcast({
+        type: payload.type,
+        author,
+        from: { name: author.emailFromName || author.name, email: author.emailFromEmail || 'noreply@example.com' },
+        book,
+        previousBooks,
+        customMessage: payload.customMessage,
+        promo: payload.type === 'promotion' && payload.promoPriceCents !== null && payload.promoPriceCents !== undefined && payload.promoCurrency
+          ? {
+              priceCents: payload.promoPriceCents,
+              currency: payload.promoCurrency,
+              startsAt: payload.promoStartsAt,
+              endsAt: payload.promoEndsAt,
+            }
+          : undefined,
+        baseUrl,
+        authorPageUrl,
+      });
+
+      const recipients = await storage.getActiveSubscribersForBroadcast(authorId, payload.listIds || []);
+
+      res.json({
+        subject: payload.subject,
+        html,
+        recipientCount: recipients.length,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid broadcast data", errors: error.errors });
+        return;
+      }
+      console.error('Broadcast preview error:', error);
+      res.status(500).json({ message: "Failed to render preview" });
+    }
+  });
+
+  // POST /api/authors/:id/broadcasts - persist the campaign and send it
+  // synchronously. We wait for the send loop to finish so the admin UI gets
+  // accurate success/failure counts; volumes are small (≤ a few thousand
+  // subscribers per author) which keeps this well under the request budget.
+  app.post("/api/authors/:id/broadcasts", requireAuth, async (req, res) => {
+    try {
+      const authorId = req.params.id;
+      const author = await storage.getAuthorById(authorId);
+      if (!author) {
+        res.status(404).json({ message: "Author not found" });
+        return;
+      }
+      const payload = insertBroadcastSchema.parse({ ...req.body, authorId });
+
+      if (!payload.bookId) {
+        res.status(400).json({ message: "bookId is required" });
+        return;
+      }
+      const book = await storage.getBookById(payload.bookId);
+      if (!book || book.authorId !== authorId) {
+        res.status(404).json({ message: "Book not found for this author" });
+        return;
+      }
+
+      if (payload.type === 'promotion') {
+        if (payload.promoPriceCents === null || payload.promoPriceCents === undefined || !payload.promoCurrency) {
+          res.status(400).json({ message: "Promotions require promoPriceCents and promoCurrency" });
+          return;
+        }
+      }
+
+      // Persist as draft → send → mark sent (or failed).
+      const draft = await storage.createBroadcast(payload);
+
+      // Resolve recipients and series tail outside the per-recipient loop.
+      const recipients = await storage.getActiveSubscribersForBroadcast(authorId, payload.listIds || []);
+      let previousBooks: typeof book[] = [];
+      if (book.seriesId) {
+        const all = await storage.getBooksBySeriesId(book.seriesId);
+        const myOrder = book.orderInSeries ?? Number.MAX_SAFE_INTEGER;
+        previousBooks = all
+          .filter(b => b.id !== book.id && (b.orderInSeries ?? 0) < myOrder)
+          .sort((a, b) => (a.orderInSeries ?? 0) - (b.orderInSeries ?? 0));
+      }
+
+      await storage.updateBroadcast(draft.id, { status: 'sending', recipientCount: recipients.length });
+
+      const editorialSettings = await storage.getEditorialSettings();
+      const { emailService } = await import('./email-service.js');
+      const configured = emailService.configureForAuthor('newsletter', author, editorialSettings);
+      if (!configured) {
+        await storage.updateBroadcast(draft.id, { status: 'failed', errorMessage: 'Email provider not configured for this author' });
+        res.status(500).json({ message: "Email provider not configured for this author" });
+        return;
+      }
+
+      const baseUrl = process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get('host')}`;
+      const authorPageUrl = `${baseUrl}/autor/${author.slug}`;
+      const from = emailService.getDefaultFrom();
+
+      let success = 0;
+      let failure = 0;
+      for (const subscriber of recipients) {
+        try {
+          const preferencesUrl = subscriber.preferencesToken
+            ? `${baseUrl}/preferencias/${subscriber.preferencesToken}`
+            : undefined;
+          await emailService.sendBroadcastEmail({
+            to: subscriber.email,
+            subject: payload.subject,
+            from,
+            listUnsubscribeUrl: preferencesUrl,
+            tags: { broadcast: draft.id, type: payload.type },
+            rendererOpts: {
+              type: payload.type,
+              author,
+              from,
+              book,
+              previousBooks,
+              customMessage: payload.customMessage,
+              promo: payload.type === 'promotion' && payload.promoPriceCents !== null && payload.promoPriceCents !== undefined && payload.promoCurrency
+                ? {
+                    priceCents: payload.promoPriceCents,
+                    currency: payload.promoCurrency,
+                    startsAt: payload.promoStartsAt,
+                    endsAt: payload.promoEndsAt,
+                  }
+                : undefined,
+              preferencesUrl,
+              baseUrl,
+              authorPageUrl,
+            },
+          });
+          success++;
+        } catch (err) {
+          console.error(`Broadcast send failed for ${subscriber.email}:`, err);
+          failure++;
+        }
+      }
+
+      const updated = await storage.updateBroadcast(draft.id, {
+        status: failure === 0 ? 'sent' : (success === 0 ? 'failed' : 'sent'),
+        successCount: success,
+        failureCount: failure,
+        sentAt: new Date().toISOString(),
+        errorMessage: failure > 0 && success === 0 ? 'All recipients failed' : null,
+      });
+
+      res.status(201).json(updated);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid broadcast data", errors: error.errors });
+        return;
+      }
+      console.error('Broadcast send error:', error);
+      res.status(500).json({ message: "Failed to send broadcast" });
     }
   });
 

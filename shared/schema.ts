@@ -211,6 +211,44 @@ export const emailTemplates = pgTable("email_templates", {
   updatedAt: text("updated_at").default(sql`current_timestamp`),
 });
 
+// Email broadcasts - admin-composed campaigns sent to mailing-list
+// subscribers. A broadcast can announce a new release (`type = "new_release"`)
+// or a price promotion (`type = "promotion"`). For promotions we capture
+// the discounted price and validity window so the email can show the
+// "before / now / valid until" block. `bookId` points at the catalog book
+// the campaign is about; when that book belongs to a series the email
+// will also surface the previous books from that series. `listIds` is the
+// set of newsletterLists targeted (NULL or empty = the author's whole
+// active mailing list, regardless of list membership).
+export const broadcasts = pgTable("broadcasts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  authorId: varchar("author_id").notNull(),
+  type: text("type").notNull(), // "new_release" | "promotion"
+  bookId: varchar("book_id"),
+  subject: text("subject").notNull(),
+  previewText: text("preview_text"),
+  // Optional admin-written intro that appears above the auto-generated
+  // book block (e.g. "¡Por fin tengo noticias para vosotros!").
+  customMessage: text("custom_message"),
+  // Price stored as integer cents to avoid float drift; currency is the
+  // ISO-4217 code (e.g. "EUR"). Both are NULL for "new_release" campaigns.
+  promoPriceCents: integer("promo_price_cents"),
+  promoCurrency: text("promo_currency"),
+  promoStartsAt: text("promo_starts_at"), // ISO date YYYY-MM-DD
+  promoEndsAt: text("promo_ends_at"),
+  // Targeting: array of newsletterLists.id. NULL/empty = send to every
+  // active subscriber of this author.
+  listIds: text("list_ids").array(),
+  // Lifecycle: draft → sending → sent | failed.
+  status: text("status").notNull().default("draft"),
+  recipientCount: integer("recipient_count").default(0),
+  successCount: integer("success_count").default(0),
+  failureCount: integer("failure_count").default(0),
+  errorMessage: text("error_message"),
+  sentAt: text("sent_at"),
+  createdAt: text("created_at").default(sql`current_timestamp`),
+});
+
 // Customers - registered users with billing information
 export const customers = pgTable("customers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -627,6 +665,22 @@ export const insertEmailTemplateSchema = createInsertSchema(emailTemplates).omit
   updatedAt: true,
 });
 
+export const insertBroadcastSchema = createInsertSchema(broadcasts).omit({
+  id: true,
+  createdAt: true,
+  sentAt: true,
+  status: true,
+  recipientCount: true,
+  successCount: true,
+  failureCount: true,
+  errorMessage: true,
+}).extend({
+  type: z.enum(["new_release", "promotion"]),
+  // listIds is optional and omits empty arrays
+  listIds: z.array(z.string().uuid()).optional().nullable(),
+  promoPriceCents: z.number().int().nonnegative().optional().nullable(),
+});
+
 export const insertCustomerSchema = createInsertSchema(customers).omit({
   id: true,
   createdAt: true,
@@ -680,6 +734,9 @@ export type InsertNewsletterListSubscription = z.infer<typeof insertNewsletterLi
 
 export type EmailTemplate = typeof emailTemplates.$inferSelect;
 export type InsertEmailTemplate = z.infer<typeof insertEmailTemplateSchema>;
+
+export type Broadcast = typeof broadcasts.$inferSelect;
+export type InsertBroadcast = z.infer<typeof insertBroadcastSchema>;
 
 export type Customer = typeof customers.$inferSelect;
 export type InsertCustomer = z.infer<typeof insertCustomerSchema>;

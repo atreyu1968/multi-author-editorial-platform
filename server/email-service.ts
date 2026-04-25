@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import type { Author, EditorialSettings } from '@shared/schema';
+import type { Author, Book, EditorialSettings } from '@shared/schema';
 
 interface EmailOptions {
   to: string;
@@ -468,6 +468,196 @@ interface EmailConfig {
   fromEmail: string;
 }
 
+// ----- Broadcast (campaign) rendering ----------------------------------
+//
+// Renders the body block for a "new release" or "promotion" broadcast,
+// reusing `renderAuthorBrandedEmail` for the wrapper so the inbox piece
+// matches the public author page (gold gradient hero, Playfair, avatar,
+// cream wallpaper). The body always contains:
+//
+//   * Optional admin intro paragraph (`customMessage`).
+//   * Featured book card: cover image (left/top) + title + description.
+//   * For promotions: was/now price block with the validity dates.
+//   * Primary CTA: Amazon link if the book has one (with a fallback to
+//     the public author page so the email always has somewhere to go).
+//   * For series books: a "Si te perdiste los anteriores" grid with the
+//     previous books in the same series, ordered by `orderInSeries`.
+//
+// All inputs are escaped before interpolation; URLs are absolutized
+// against `PUBLIC_BASE_URL` so relative `/objects/...` paths resolve in
+// the inbox.
+
+interface BroadcastEmailOpts {
+  type: 'new_release' | 'promotion';
+  author: Author | null | undefined;
+  from: { name: string; email: string };
+  book: Book;
+  previousBooks?: Book[]; // previous entries in the same series
+  customMessage?: string | null;
+  promo?: {
+    priceCents: number;
+    currency: string;
+    startsAt?: string | null;
+    endsAt?: string | null;
+  };
+  preferencesUrl?: string;
+  baseUrl?: string;
+  authorPageUrl?: string;
+  // Optional explicit hero copy (defaults derived from `type` + book).
+  heroTitle?: string;
+  heroSubtitle?: string;
+  previewText?: string;
+}
+
+function formatPrice(cents: number, currency: string): string {
+  // Always render with two decimals using a dot, currency suffix to keep
+  // it readable in clients that strip locale-specific spaces.
+  return `${(cents / 100).toFixed(2)} ${currency.toUpperCase()}`;
+}
+
+function formatDateEs(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function renderBookCard(book: Book, baseUrl: string | undefined): string {
+  const cover = absolutize(book.coverImage, baseUrl);
+  const coverHtml = cover
+    ? `<img src="${escapeHtml(cover)}" alt="${escapeHtml(book.title)}" width="160"
+            style="display: block; width: 160px; height: auto; border-radius: 8px; box-shadow: 0 4px 16px rgba(43,29,16,0.18); margin: 0 auto 16px auto;" />`
+    : '';
+  const description = book.description
+    ? `<p style="margin: 8px 0 0 0; color: #6b5a47; line-height: 1.6;">${escapeHtml(book.description)}</p>`
+    : '';
+  return `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+           style="background: #ffffff; border: 1px solid #e9dcc4; border-left: 4px solid hsl(40, 65%, 50%); border-radius: 8px; margin: 0 0 24px 0;">
+      <tr>
+        <td align="center" style="padding: 24px;">
+          ${coverHtml}
+          <h3 style="margin: 0; font-family: 'Playfair Display', Georgia, 'Times New Roman', serif; font-size: 22px; color: #2b1d10; text-align: center;">
+            ${escapeHtml(book.title)}
+          </h3>
+          ${description}
+        </td>
+      </tr>
+    </table>
+  `;
+}
+
+function renderPromoBlock(book: Book, promo: NonNullable<BroadcastEmailOpts['promo']>): string {
+  // book.price is stored as a decimal (e.g. 9.99) so we convert to the same
+  // cents-based formatting we use for the promo price for visual parity.
+  const original = (book.price ?? null) !== null
+    ? formatPrice(Math.round((book.price as number) * 100), promo.currency)
+    : null;
+  const now = formatPrice(promo.priceCents, promo.currency);
+  const validity = (promo.startsAt || promo.endsAt)
+    ? `<p style="margin: 8px 0 0 0; color: #6b5a47; font-size: 14px;">Oferta válida ${promo.startsAt ? `del <strong>${escapeHtml(formatDateEs(promo.startsAt))}</strong> ` : ''}${promo.endsAt ? `hasta el <strong>${escapeHtml(formatDateEs(promo.endsAt))}</strong>` : ''}.</p>`
+    : '';
+  const wasBlock = original
+    ? `<span style="color: #8a7560; text-decoration: line-through; margin-right: 12px; font-size: 18px;">${escapeHtml(original)}</span>`
+    : '';
+  return `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+           style="background: #fff8e6; border: 1px solid #f0d68c; border-radius: 8px; margin: 0 0 24px 0;">
+      <tr>
+        <td align="center" style="padding: 20px 16px;">
+          <p style="margin: 0; font-family: 'Playfair Display', Georgia, 'Times New Roman', serif; font-size: 14px; color: hsl(28, 50%, 40%); letter-spacing: 0.12em; text-transform: uppercase;">Oferta especial</p>
+          <p style="margin: 6px 0 0 0;">
+            ${wasBlock}<strong style="color: hsl(28, 50%, 30%); font-size: 28px; font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;">${escapeHtml(now)}</strong>
+          </p>
+          ${validity}
+        </td>
+      </tr>
+    </table>
+  `;
+}
+
+function renderPreviousBooksGrid(previous: Book[], baseUrl: string | undefined): string {
+  if (!previous || previous.length === 0) return '';
+  const cells = previous.slice(0, 6).map((b) => {
+    const cover = absolutize(b.coverImage, baseUrl);
+    const link = b.amazonUrl || '#';
+    const coverHtml = cover
+      ? `<img src="${escapeHtml(cover)}" alt="${escapeHtml(b.title)}" width="120"
+              style="display: block; width: 120px; height: auto; border-radius: 6px; box-shadow: 0 2px 10px rgba(43,29,16,0.18); margin: 0 auto 8px auto;" />`
+      : '';
+    return `
+      <td valign="top" align="center" style="padding: 8px; width: 33%;">
+        <a href="${escapeHtml(link)}" style="text-decoration: none; color: #2b1d10;">
+          ${coverHtml}
+          <p style="margin: 0; font-family: 'Playfair Display', Georgia, 'Times New Roman', serif; font-size: 14px; color: #2b1d10; line-height: 1.3;">${escapeHtml(b.title)}</p>
+        </a>
+      </td>
+    `;
+  });
+
+  // 3 columns per row.
+  const rows: string[] = [];
+  for (let i = 0; i < cells.length; i += 3) {
+    rows.push(`<tr>${cells.slice(i, i + 3).join('')}</tr>`);
+  }
+
+  return `
+    <h3 style="margin: 32px 0 12px 0; font-family: 'Playfair Display', Georgia, 'Times New Roman', serif; font-size: 20px; color: #2b1d10;">
+      Si te perdiste los anteriores de la serie
+    </h3>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+           style="margin: 0 0 24px 0;">
+      ${rows.join('')}
+    </table>
+  `;
+}
+
+function renderBroadcastEmail(opts: BroadcastEmailOpts): string {
+  const { type, author, from, book, previousBooks, customMessage, promo, preferencesUrl, baseUrl, authorPageUrl } = opts;
+
+  const heroTitle = opts.heroTitle
+    || (type === 'promotion' ? `${book.title} en oferta` : `Nueva publicación: ${book.title}`);
+  const heroSubtitle = opts.heroSubtitle
+    || (type === 'promotion' ? 'Una oportunidad por tiempo limitado' : 'Acabo de publicarlo y quería que tú lo supieras primero');
+  const previewText = opts.previewText
+    || (type === 'promotion'
+      ? `Oferta especial en "${book.title}" — solo por tiempo limitado.`
+      : `Ya puedes leer "${book.title}".`);
+
+  const intro = customMessage && customMessage.trim().length > 0
+    ? `<p style="margin: 0 0 16px 0; color: #4a3a2a; white-space: pre-wrap;">${escapeHtml(customMessage)}</p>`
+    : '';
+
+  const promoBlock = type === 'promotion' && promo ? renderPromoBlock(book, promo) : '';
+
+  const ctaHref = book.amazonUrl || authorPageUrl || '#';
+  const ctaLabel = book.amazonUrl
+    ? (type === 'promotion' ? 'Aprovechar la oferta en Amazon' : 'Conseguirlo en Amazon')
+    : 'Saber más';
+  const ctaBlock = ctaHref !== '#' ? renderCtaButton(ctaHref, ctaLabel) : '';
+
+  const seriesGrid = renderPreviousBooksGrid(previousBooks ?? [], baseUrl);
+
+  const bodyHtml = `
+    ${intro}
+    ${renderBookCard(book, baseUrl)}
+    ${promoBlock}
+    ${ctaBlock}
+    ${seriesGrid}
+  `;
+
+  return renderAuthorBrandedEmail({
+    author,
+    from,
+    previewText,
+    heroTitle,
+    heroSubtitle,
+    bodyHtml,
+    preferencesUrl,
+    baseUrl,
+  });
+}
+
 export class EmailService {
   private provider: EmailProvider | null = null;
   private fromName: string = '';
@@ -642,6 +832,42 @@ export class EmailService {
       subject: `¡Bienvenido/a! Aquí tienes tu libro de regalo: ${bookTitle}`,
       html,
       from,
+    });
+  }
+
+  /**
+   * Renders a campaign email body for previewing in the admin UI without
+   * sending it. Centralizes the renderer so the admin preview and the
+   * actual send pipeline produce byte-identical HTML.
+   */
+  static renderBroadcast(opts: BroadcastEmailOpts): string {
+    return renderBroadcastEmail(opts);
+  }
+
+  /**
+   * Sends a single broadcast email. Caller is responsible for iterating
+   * over the recipients (so per-subscriber `listUnsubscribeUrl` and
+   * `preferencesUrl` can be threaded through).
+   */
+  async sendBroadcastEmail(opts: {
+    to: string;
+    subject: string;
+    from: { name: string; email: string };
+    rendererOpts: BroadcastEmailOpts;
+    listUnsubscribeUrl?: string;
+    tags?: Record<string, string>;
+  }): Promise<void> {
+    if (!this.provider) {
+      throw new Error('Email provider not configured');
+    }
+    const html = renderBroadcastEmail(opts.rendererOpts);
+    await this.provider.send({
+      to: opts.to,
+      subject: opts.subject,
+      html,
+      from: opts.from,
+      listUnsubscribeUrl: opts.listUnsubscribeUrl,
+      tags: opts.tags,
     });
   }
 

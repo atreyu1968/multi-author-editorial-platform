@@ -1,6 +1,6 @@
 // Reference: blueprint:javascript_database integration
 import { db } from "./db";
-import { eq, and, isNull, sql, desc, ilike } from "drizzle-orm";
+import { eq, and, isNull, sql, desc, ilike, inArray } from "drizzle-orm";
 import {
   authors,
   bookSeries,
@@ -10,6 +10,7 @@ import {
   newsletterLists,
   newsletterListSubscriptions,
   emailTemplates,
+  broadcasts,
   siteSettings,
   users,
   blogPosts,
@@ -45,6 +46,8 @@ import {
   type InsertNewsletterListSubscription,
   type EmailTemplate,
   type InsertEmailTemplate,
+  type Broadcast,
+  type InsertBroadcast,
   type SiteSettings,
   type InsertSiteSettings,
   type User,
@@ -502,6 +505,61 @@ export class DatabaseStorage implements IStorage {
   async deleteEmailTemplate(id: string): Promise<boolean> {
     const result = await db.delete(emailTemplates).where(eq(emailTemplates.id, id)).returning();
     return result.length > 0;
+  }
+
+  // Broadcast (campaign) methods
+  async getBroadcasts(authorId: string): Promise<Broadcast[]> {
+    return await db
+      .select()
+      .from(broadcasts)
+      .where(eq(broadcasts.authorId, authorId))
+      .orderBy(desc(broadcasts.createdAt));
+  }
+
+  async getBroadcastById(id: string): Promise<Broadcast | undefined> {
+    const [row] = await db.select().from(broadcasts).where(eq(broadcasts.id, id)).limit(1);
+    return row;
+  }
+
+  async createBroadcast(broadcast: InsertBroadcast): Promise<Broadcast> {
+    const [row] = await db.insert(broadcasts).values(broadcast).returning();
+    return row;
+  }
+
+  async updateBroadcast(id: string, patch: Partial<Broadcast>): Promise<Broadcast | undefined> {
+    const [row] = await db
+      .update(broadcasts)
+      .set(patch)
+      .where(eq(broadcasts.id, id))
+      .returning();
+    return row;
+  }
+
+  async getActiveSubscribersForBroadcast(authorId: string, listIds?: string[]): Promise<Newsletter[]> {
+    // Active = subscribed to this author and not unsubscribed.
+    // When listIds is non-empty we restrict to subscribers opted into at
+    // least one of those lists. Done in two queries to keep the join
+    // simple and to dedupe by subscriber id in JS.
+    const baseRows = await db
+      .select()
+      .from(newsletters)
+      .where(
+        and(
+          eq(newsletters.authorId, authorId),
+          isNull(newsletters.unsubscribedAt),
+        )
+      );
+
+    if (!listIds || listIds.length === 0) {
+      return baseRows;
+    }
+
+    const memberships = await db
+      .select({ subscriberId: newsletterListSubscriptions.subscriberId })
+      .from(newsletterListSubscriptions)
+      .where(inArray(newsletterListSubscriptions.listId, listIds));
+    const allowed = new Set(memberships.map(m => m.subscriberId));
+    return baseRows.filter(s => allowed.has(s.id));
   }
 
   // Site Settings methods
