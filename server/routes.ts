@@ -1844,6 +1844,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // PATCH /api/authors/:id/broadcasts/:broadcastId - edit a campaign that
+  // hasn't gone out yet. Only "scheduled" (or already-cancelled) rows are
+  // editable; once a broadcast has begun "sending" / "sent" / "failed" the
+  // record is historical and must not be mutated. Saving keeps the row in
+  // status="scheduled" so the cron tick will pick it up at the new time.
+  app.patch("/api/authors/:id/broadcasts/:broadcastId", requireAuth, async (req, res) => {
+    try {
+      const { id: authorId, broadcastId } = req.params;
+      const existing = await storage.getBroadcastById(broadcastId);
+      if (!existing || existing.authorId !== authorId) {
+        res.status(404).json({ message: "Broadcast not found" });
+        return;
+      }
+      if (existing.status !== "scheduled" && existing.status !== "cancelled") {
+        res.status(409).json({ message: "Solo se pueden editar campañas programadas o canceladas." });
+        return;
+      }
+
+      const payload = insertBroadcastSchema.parse({ ...req.body, authorId });
+
+      if (!payload.bookId) {
+        res.status(400).json({ message: "bookId is required" });
+        return;
+      }
+      const book = await storage.getBookById(payload.bookId);
+      if (!book || book.authorId !== authorId) {
+        res.status(404).json({ message: "Book not found for this author" });
+        return;
+      }
+
+      if (payload.type === 'promotion') {
+        if (payload.promoPriceCents === null || payload.promoPriceCents === undefined || !payload.promoCurrency) {
+          res.status(400).json({ message: "Promotions require promoPriceCents and promoCurrency" });
+          return;
+        }
+      }
+
+      const scheduledIso = payload.scheduledFor ? new Date(payload.scheduledFor).toISOString() : null;
+      if (!scheduledIso || new Date(scheduledIso).getTime() <= Date.now() + 5_000) {
+        res.status(400).json({ message: "scheduledFor must be a future timestamp" });
+        return;
+      }
+
+      const updated = await storage.updateBroadcast(broadcastId, {
+        type: payload.type,
+        bookId: payload.bookId,
+        subject: payload.subject,
+        previewText: payload.previewText ?? null,
+        customMessage: payload.customMessage ?? null,
+        promoPriceCents: payload.promoPriceCents ?? null,
+        promoCurrency: payload.promoCurrency ?? null,
+        promoStartsAt: payload.promoStartsAt ?? null,
+        promoEndsAt: payload.promoEndsAt ?? null,
+        listIds: payload.listIds && payload.listIds.length > 0 ? payload.listIds : null,
+        scheduledFor: scheduledIso,
+        timezone: payload.timezone ?? null,
+        rateLimitPerMinute: payload.rateLimitPerMinute ?? null,
+        // Re-arm: editing a previously-cancelled draft re-schedules it.
+        status: "scheduled",
+        errorMessage: null,
+      });
+      res.json(updated);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid broadcast data", errors: error.errors });
+        return;
+      }
+      console.error('Broadcast update error:', error);
+      res.status(500).json({ message: "Failed to update broadcast" });
+    }
+  });
+
+  // Cancel a scheduled campaign so it never sends. We flip status to
+  // "cancelled" — the worker tick only claims status="scheduled" rows, so
+  // the cancellation is purely a status change. The row stays in history
+  // so admins can see what happened. Exposed under both POST .../cancel
+  // (legacy / clearer intent) and DELETE on the broadcast itself (REST-y
+  // shorthand) since the task description used the latter wording.
+  const cancelBroadcastHandler = async (req: any, res: any) => {
+    try {
+      const { id: authorId, broadcastId } = req.params;
+      const existing = await storage.getBroadcastById(broadcastId);
+      if (!existing || existing.authorId !== authorId) {
+        res.status(404).json({ message: "Broadcast not found" });
+        return;
+      }
+      if (existing.status !== "scheduled") {
+        res.status(409).json({ message: "Solo se pueden cancelar campañas programadas." });
+        return;
+      }
+      const updated = await storage.updateBroadcast(broadcastId, { status: "cancelled" });
+      res.json(updated);
+    } catch (error) {
+      console.error('Broadcast cancel error:', error);
+      res.status(500).json({ message: "Failed to cancel broadcast" });
+    }
+  };
+  app.post("/api/authors/:id/broadcasts/:broadcastId/cancel", requireAuth, cancelBroadcastHandler);
+  app.delete("/api/authors/:id/broadcasts/:broadcastId", requireAuth, cancelBroadcastHandler);
+
   // Site Settings routes
   app.get("/api/settings", async (req, res) => {
     try {

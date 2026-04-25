@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Mail, Send, Eye, BookOpen, Tag, Users, Clock, Gauge, Plus, Trash2, Pencil } from "lucide-react";
+import { Loader2, Mail, Send, Eye, BookOpen, Tag, Users, Clock, Gauge, Plus, Trash2, Pencil, XCircle, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -48,6 +48,31 @@ function localDateTimeToUtcIso(date: string, time: string, tz: string): string |
     const asIfUtc = Date.UTC(+map.year, +map.month - 1, +map.day, +map.hour, +map.minute, +map.second);
     const offset = asIfUtc - utcGuess;
     return new Date(utcGuess - offset).toISOString();
+  } catch {
+    return null;
+  }
+}
+
+// Inverse of localDateTimeToUtcIso: take a stored UTC ISO and the timezone
+// the admin originally picked, and split it back into the "YYYY-MM-DD" /
+// "HH:MM" wall-clock pair that the date+time inputs need. Used when
+// pre-filling the composer to edit a scheduled campaign so the admin sees
+// the same numbers they typed when they first scheduled it.
+function utcIsoToLocalDateTime(iso: string, tz: string): { date: string; time: string } | null {
+  if (!iso || !tz) return null;
+  try {
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      hourCycle: 'h23',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit',
+    });
+    const parts = fmt.formatToParts(new Date(iso));
+    const map = Object.fromEntries(parts.filter(p => p.type !== 'literal').map(p => [p.type, p.value]));
+    return {
+      date: `${map.year}-${map.month}-${map.day}`,
+      time: `${map.hour}:${map.minute}`,
+    };
   } catch {
     return null;
   }
@@ -155,6 +180,7 @@ const STATUS_LABEL: Record<string, { label: string; variant: "default" | "second
   sending: { label: "En curso", variant: "secondary" },
   sent: { label: "Enviada", variant: "default" },
   failed: { label: "Fallida", variant: "destructive" },
+  cancelled: { label: "Cancelada", variant: "secondary" },
 };
 
 export default function BroadcastManagement() {
@@ -162,6 +188,13 @@ export default function BroadcastManagement() {
   const { toast } = useToast();
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"compose" | "history">("compose");
+  // When non-null we are editing an existing scheduled broadcast in place
+  // (PATCH), otherwise the composer creates a new one (POST).
+  const [editingId, setEditingId] = useState<string | null>(null);
+  // Cancellation goes through a tiny confirm dialog so admins can't pull
+  // a campaign by accident while skimming the history list.
+  const [cancelTarget, setCancelTarget] = useState<Broadcast | null>(null);
 
   const detectedTz = useMemo(() => {
     try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch { return "UTC"; }
@@ -270,6 +303,14 @@ export default function BroadcastManagement() {
       return (await r.json()) as Broadcast[];
     },
     enabled: !!selectedAuthorId,
+    // The default fetcher only assembles ?query=string params from object
+    // segments — it can't build hierarchical paths from string segments —
+    // so we have to spell the URL out explicitly here.
+    queryFn: async () => {
+      const r = await fetch(`/api/authors/${selectedAuthorId}/broadcasts`, { credentials: "include" });
+      if (!r.ok) throw new Error(`Failed to load broadcasts (${r.status})`);
+      return (await r.json()) as Broadcast[];
+    },
   });
 
   const selectedBook = useMemo(
@@ -331,11 +372,21 @@ export default function BroadcastManagement() {
 
   const sendMutation = useMutation({
     mutationFn: async (values: FormValues) => {
-      const r = await apiRequest("POST", `/api/authors/${selectedAuthorId}/broadcasts`, buildPayload(values));
+      const url = editingId
+        ? `/api/authors/${selectedAuthorId}/broadcasts/${editingId}`
+        : `/api/authors/${selectedAuthorId}/broadcasts`;
+      const method = editingId ? "PATCH" : "POST";
+      const r = await apiRequest(method, url, buildPayload(values));
       return (await r.json()) as Broadcast;
     },
     onSuccess: (data) => {
-      if (data.status === "scheduled") {
+      if (editingId) {
+        const when = data.scheduledFor ? new Date(data.scheduledFor).toLocaleString("es-ES") : "";
+        toast({
+          title: "Campaña actualizada",
+          description: `Se enviará el ${when}${data.timezone ? ` (${data.timezone})` : ""}.`,
+        });
+      } else if (data.status === "scheduled") {
         if (data.scheduleMode === "per_recipient_local_9am" && data.localDeliveryDate) {
           toast({
             title: "Entrega local programada",
@@ -358,12 +409,81 @@ export default function BroadcastManagement() {
       form.reset({ ...form.getValues(), subject: "", customMessage: "", previewText: "" });
       setPreview(null);
       setConfirmOpen(false);
+      setEditingId(null);
+      if (editingId) setActiveTab("history");
     },
     onError: (err: Error) => {
-      toast({ title: "No se pudo enviar", description: err.message, variant: "destructive" });
+      toast({ title: editingId ? "No se pudo actualizar" : "No se pudo enviar", description: err.message, variant: "destructive" });
       setConfirmOpen(false);
     },
   });
+
+  const cancelMutation = useMutation({
+    mutationFn: async (broadcastId: string) => {
+      const r = await apiRequest("POST", `/api/authors/${selectedAuthorId}/broadcasts/${broadcastId}/cancel`, {});
+      return (await r.json()) as Broadcast;
+    },
+    onSuccess: () => {
+      toast({ title: "Campaña cancelada", description: "El envío programado se ha detenido." });
+      queryClient.invalidateQueries({ queryKey: ["/api/authors", selectedAuthorId, "broadcasts"] });
+      setCancelTarget(null);
+    },
+    onError: (err: Error) => {
+      toast({ title: "No se pudo cancelar", description: err.message, variant: "destructive" });
+      setCancelTarget(null);
+    },
+  });
+
+  // Move the chosen scheduled broadcast into the composer. We project the
+  // stored UTC scheduledFor + timezone back into the date/time pair the
+  // form inputs expect so the admin sees exactly what they typed before.
+  function startEditing(b: Broadcast) {
+    const tz = b.timezone || detectedTz;
+    const local = b.scheduledFor ? utcIsoToLocalDateTime(b.scheduledFor, tz) : null;
+    form.reset({
+      type: (b.type as "new_release" | "promotion") || "new_release",
+      bookId: b.bookId || "",
+      subject: b.subject || "",
+      previewText: b.previewText || "",
+      customMessage: b.customMessage || "",
+      promoPriceEuros: b.promoPriceCents != null ? (b.promoPriceCents / 100).toFixed(2) : "",
+      promoCurrency: b.promoCurrency || "EUR",
+      promoStartsAt: b.promoStartsAt || "",
+      promoEndsAt: b.promoEndsAt || "",
+      listIds: b.listIds || [],
+      // Editing always uses "later" since only scheduled rows are editable.
+      scheduleMode: "later",
+      scheduleDate: local?.date || "",
+      scheduleTime: local?.time || "09:00",
+      scheduleTimezone: tz,
+      rateLimitPerMinute: b.rateLimitPerMinute != null ? String(b.rateLimitPerMinute) : "",
+    });
+    setEditingId(b.id);
+    setPreview(null);
+    setActiveTab("compose");
+  }
+
+  function cancelEditing() {
+    setEditingId(null);
+    setPreview(null);
+    form.reset({
+      type: "new_release",
+      bookId: "",
+      subject: "",
+      previewText: "",
+      customMessage: "",
+      promoPriceEuros: "",
+      promoCurrency: "EUR",
+      promoStartsAt: "",
+      promoEndsAt: "",
+      listIds: [],
+      scheduleMode: "now",
+      scheduleDate: "",
+      scheduleTime: "09:00",
+      scheduleTimezone: detectedTz,
+      rateLimitPerMinute: "",
+    });
+  }
 
   if (!selectedAuthorId) {
     return (
@@ -389,7 +509,7 @@ export default function BroadcastManagement() {
         </div>
       </div>
 
-      <Tabs defaultValue="compose" className="w-full">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "compose" | "history")} className="w-full">
         <TabsList>
           <TabsTrigger value="compose" data-testid="tab-compose">Componer</TabsTrigger>
           <TabsTrigger value="history" data-testid="tab-history">Historial</TabsTrigger>
@@ -398,8 +518,15 @@ export default function BroadcastManagement() {
 
         <TabsContent value="compose" className="space-y-6">
           <Card>
-            <CardHeader>
-              <h3 className="text-lg font-medium">Nueva campaña</h3>
+            <CardHeader className="flex flex-row items-center justify-between gap-2">
+              <h3 className="text-lg font-medium">
+                {editingId ? "Editar campaña programada" : "Nueva campaña"}
+              </h3>
+              {editingId && (
+                <Button type="button" variant="ghost" size="sm" onClick={cancelEditing} data-testid="button-cancel-edit">
+                  Descartar cambios
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
               <Form {...form}>
@@ -538,11 +665,16 @@ export default function BroadcastManagement() {
                             value={field.value}
                             className="flex gap-6 mt-2"
                           >
+                            {/* Editing an already-scheduled campaign always
+                                stays in "later" mode — switching to "now"
+                                would only ever fail server-side validation
+                                (scheduledFor must be in the future), so we
+                                hide that option to avoid the dead-end. */}
                             <FormItem className="flex items-center gap-2 space-y-0">
                               <FormControl>
-                                <RadioGroupItem value="now" data-testid="radio-schedule-now" />
+                                <RadioGroupItem value="now" data-testid="radio-schedule-now" disabled={!!editingId} />
                               </FormControl>
-                              <FormLabel className="font-normal">Enviar ahora</FormLabel>
+                              <FormLabel className={`font-normal ${editingId ? "text-muted-foreground" : ""}`}>Enviar ahora</FormLabel>
                             </FormItem>
                             <FormItem className="flex items-center gap-2 space-y-0">
                               <FormControl>
@@ -558,6 +690,11 @@ export default function BroadcastManagement() {
                             </FormItem>
                           </RadioGroup>
                         </FormControl>
+                        {editingId && (
+                          <FormDescription>
+                            Las campañas ya programadas se editan manteniendo un envío futuro. Si quieres detener el envío, usa <strong>Cancelar</strong> desde el historial.
+                          </FormDescription>
+                        )}
                         <FormMessage />
                       </FormItem>
                     )} />
@@ -685,12 +822,16 @@ export default function BroadcastManagement() {
                       onClick={() => setConfirmOpen(true)}
                       data-testid="button-broadcast-send"
                     >
-                      {watchScheduleMode === "now" ? <Send className="w-4 h-4 mr-2" /> : <Clock className="w-4 h-4 mr-2" />}
-                      {watchScheduleMode === "now"
-                        ? "Enviar campaña"
-                        : watchScheduleMode === "per_local_9am"
-                          ? "Programar entrega local"
-                          : "Programar campaña"}
+                      {editingId
+                        ? <Save className="w-4 h-4 mr-2" />
+                        : (watchScheduleMode === "now" ? <Send className="w-4 h-4 mr-2" /> : <Clock className="w-4 h-4 mr-2" />)}
+                      {editingId
+                        ? "Guardar cambios"
+                        : watchScheduleMode === "now"
+                          ? "Enviar campaña"
+                          : watchScheduleMode === "per_local_9am"
+                            ? "Programar entrega local"
+                            : "Programar campaña"}
                     </Button>
                     {preview && (
                       <Badge variant="secondary" className="self-center" data-testid="text-recipient-count">
@@ -735,6 +876,7 @@ export default function BroadcastManagement() {
                 <div className="space-y-3">
                   {pastBroadcasts.map((b) => {
                     const status = STATUS_LABEL[b.status] ?? STATUS_LABEL.draft;
+                    const isScheduled = b.status === "scheduled";
                     return (
                       <div key={b.id} className="flex items-start justify-between gap-4 p-4 border rounded-lg" data-testid={`row-broadcast-${b.id}`}>
                         <div className="space-y-1">
@@ -768,6 +910,11 @@ export default function BroadcastManagement() {
                             <p className="text-xs text-muted-foreground">
                               En curso · {b.successCount ?? 0}/{b.recipientCount ?? 0} entregadas
                             </p>
+                          ) : b.status === "cancelled" ? (
+                            <p className="text-xs text-muted-foreground" data-testid={`text-cancelled-${b.id}`}>
+                              Cancelada antes de enviarse
+                              {b.scheduledFor ? ` · estaba programada para ${new Date(b.scheduledFor).toLocaleString("es-ES")}` : ""}
+                            </p>
                           ) : (
                             <p className="text-xs text-muted-foreground">
                               {b.sentAt ? new Date(b.sentAt).toLocaleString("es-ES") : "Sin enviar"} · {b.successCount ?? 0} entregadas
@@ -778,6 +925,28 @@ export default function BroadcastManagement() {
                             <p className="text-xs text-destructive">{b.errorMessage}</p>
                           )}
                         </div>
+                        {isScheduled && (
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => startEditing(b)}
+                              data-testid={`button-edit-broadcast-${b.id}`}
+                            >
+                              <Pencil className="w-4 h-4 mr-1" /> Editar
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setCancelTarget(b)}
+                              data-testid={`button-cancel-broadcast-${b.id}`}
+                            >
+                              <XCircle className="w-4 h-4 mr-1" /> Cancelar
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -804,14 +973,16 @@ export default function BroadcastManagement() {
         <DialogContent data-testid="dialog-confirm-send">
           <DialogHeader>
             <DialogTitle>
-              {watchScheduleMode === "now"
-                ? "¿Enviar la campaña?"
-                : watchScheduleMode === "per_local_9am"
-                  ? "¿Programar la entrega local?"
-                  : "¿Programar la campaña?"}
+              {editingId
+                ? "¿Guardar cambios?"
+                : watchScheduleMode === "now"
+                  ? "¿Enviar la campaña?"
+                  : watchScheduleMode === "per_local_9am"
+                    ? "¿Programar la entrega local?"
+                    : "¿Programar la campaña?"}
             </DialogTitle>
           </DialogHeader>
-          {watchScheduleMode === "later" ? (
+          {editingId || watchScheduleMode === "later" ? (
             <p className="text-sm">
               Se enviará a <strong>{preview?.recipientCount ?? 0}</strong> suscriptores el{" "}
               <strong>
@@ -840,8 +1011,35 @@ export default function BroadcastManagement() {
             <Button onClick={() => sendMutation.mutate(form.getValues())} disabled={sendMutation.isPending} data-testid="button-confirm-send">
               {sendMutation.isPending
                 ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                : (watchScheduleMode === "now" ? <Send className="w-4 h-4 mr-2" /> : <Clock className="w-4 h-4 mr-2" />)}
-              {watchScheduleMode === "now" ? "Enviar ahora" : "Programar"}
+                : (editingId
+                    ? <Save className="w-4 h-4 mr-2" />
+                    : (watchScheduleMode === "now" ? <Send className="w-4 h-4 mr-2" /> : <Clock className="w-4 h-4 mr-2" />))}
+              {editingId
+                ? "Guardar"
+                : (watchScheduleMode === "now" ? "Enviar ahora" : "Programar")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!cancelTarget} onOpenChange={(o) => { if (!o) setCancelTarget(null); }}>
+        <DialogContent data-testid="dialog-confirm-cancel-broadcast">
+          <DialogHeader>
+            <DialogTitle>¿Cancelar la campaña programada?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm">
+            <strong>{cancelTarget?.subject}</strong> ya no se enviará. Podrás volver a programarla más adelante editándola desde el historial.
+          </p>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setCancelTarget(null)} data-testid="button-keep-scheduled">Mantener programada</Button>
+            <Button
+              variant="destructive"
+              onClick={() => cancelTarget && cancelMutation.mutate(cancelTarget.id)}
+              disabled={cancelMutation.isPending}
+              data-testid="button-confirm-cancel-broadcast"
+            >
+              {cancelMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <XCircle className="w-4 h-4 mr-2" />}
+              Cancelar campaña
             </Button>
           </div>
         </DialogContent>
