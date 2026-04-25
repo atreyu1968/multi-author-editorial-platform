@@ -1339,21 +1339,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET /api/free-book/download/:token - one-time, expiring secure redirect
+  // ----- Free-book one-time download -----------------------------------
+  //
+  // Why a landing page instead of an immediate redirect:
+  // Email security gateways (Microsoft SafeLinks, Mimecast, Proofpoint,
+  // Barracuda, Gmail/Outlook preview, Slack/Teams unfurl, etc.) follow
+  // every URL in incoming mail to scan it for malware BEFORE the user
+  // ever sees the message. If the GET handler marks the token as "used"
+  // on that first visit, the link is already burned by the time the
+  // human clicks it — the user then sees "This download link has
+  // already been used" without ever having downloaded anything.
+  //
+  // Solution: GET renders a small HTML interstitial with a "Descargar
+  // libro" button. Clicking the button POSTs back to this same path,
+  // which is what actually marks the token used and redirects to the
+  // file. Email scanners overwhelmingly do GET (and HEAD), almost
+  // never POST, so the token only burns on a real user interaction.
+  // The interstitial also gives us a friendlier UX on the error states
+  // (already used / expired / invalid) than a raw JSON 4xx response.
+
+  function renderFreeBookPage(opts: {
+    token: string;
+    status: 'ready' | 'used' | 'expired' | 'invalid' | 'error';
+    authorName?: string;
+    authorSlug?: string;
+  }): string {
+    const { token, status, authorName, authorSlug } = opts;
+    const safeAuthor = authorName ? escapeHtmlServer(authorName) : 'el autor';
+    const heading =
+      status === 'ready' ? 'Tu libro está listo'
+      : status === 'used' ? 'Este enlace ya se usó'
+      : status === 'expired' ? 'Enlace caducado'
+      : status === 'invalid' ? 'Enlace no válido'
+      : 'No hemos podido preparar tu descarga';
+    const authorLink = authorSlug
+      ? `<p style="margin-top:24px"><a href="/autor/${escapeHtmlServer(authorSlug)}" style="color:hsl(28, 50%, 40%);text-decoration:none;font-weight:600;">← Volver a la página de ${safeAuthor}</a></p>`
+      : '';
+    const body =
+      status === 'ready'
+        ? `<p>Pulsa el botón de abajo para descargar el libro que te ha enviado ${safeAuthor}.</p>
+           <form method="POST" action="/api/free-book/download/${escapeHtmlServer(token)}" style="margin-top:24px;">
+             <button type="submit" style="background:hsl(28, 50%, 40%);color:#fff;border:none;border-radius:6px;padding:14px 28px;font-size:16px;font-weight:600;cursor:pointer;">Descargar libro</button>
+           </form>
+           <p style="margin-top:20px;font-size:13px;color:#6b5a47;">El enlace funciona una sola vez. Si lo necesitas otra vez, vuelve a solicitarlo desde la página del autor.</p>`
+        : status === 'used'
+          ? `<p>Este enlace de descarga ya se ha utilizado anteriormente.</p>
+             <p style="color:#6b5a47">Si descargaste el archivo y lo perdiste, o no te llegó el primer correo, puedes solicitar un nuevo enlace desde la página del autor (tendrás que volver a introducir tu email).</p>${authorLink}`
+          : status === 'expired'
+            ? `<p>El enlace ha caducado por motivos de seguridad.</p>
+               <p style="color:#6b5a47">Solicita uno nuevo desde la página del autor.</p>${authorLink}`
+            : status === 'invalid'
+              ? `<p>No reconocemos este enlace. Es posible que se haya copiado mal o que pertenezca a una versión antigua del correo.</p>${authorLink}`
+              : `<p>Hubo un problema al preparar tu descarga. Vuelve a intentarlo en unos minutos o solicita un nuevo enlace desde la página del autor.</p>${authorLink}`;
+    return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="robots" content="noindex,nofollow"/><title>${heading}</title><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet"/></head>
+      <body style="margin:0;padding:48px 16px;background:#faf6ee;font-family:Helvetica,Arial,sans-serif;color:#2b1d10;line-height:1.6;">
+        <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:12px;box-shadow:0 4px 24px rgba(43,29,16,0.08);padding:40px 32px;">
+          <h1 style="font-family:'Playfair Display',Georgia,serif;font-size:28px;margin:0 0 16px 0;color:hsl(28, 50%, 40%);">${heading}</h1>
+          ${body}
+        </div>
+      </body></html>`;
+  }
+
+  // GET renders the interstitial page. Never marks the token as used.
   app.get("/api/free-book/download/:token", downloadLimiter, async (req, res) => {
     try {
       const { token } = req.params;
       const row = await storage.getFreeBookToken(token);
       if (!row) {
-        res.status(404).json({ message: "Invalid download token" });
+        res.status(404).type('html').send(renderFreeBookPage({ token, status: 'invalid' }));
         return;
       }
+      const author = row.authorId ? await storage.getAuthorById(row.authorId) : undefined;
+      const ctx = { authorName: author?.name, authorSlug: author?.slug };
       if (row.usedAt) {
-        res.status(401).json({ message: "This download link has already been used" });
+        res.status(410).type('html').send(renderFreeBookPage({ token, status: 'used', ...ctx }));
         return;
       }
       if (new Date() > new Date(row.expiresAt)) {
-        res.status(403).json({ message: "This download link has expired" });
+        res.status(410).type('html').send(renderFreeBookPage({ token, status: 'expired', ...ctx }));
+        return;
+      }
+      res.type('html').send(renderFreeBookPage({ token, status: 'ready', ...ctx }));
+    } catch (error) {
+      console.error('Free book landing page error:', error);
+      res.status(500).type('html').send(renderFreeBookPage({ token: req.params.token, status: 'error' }));
+    }
+  });
+
+  // POST is the actual one-time download trigger. Bots/scanners almost
+  // never POST, so this is what protects the token from being burned by
+  // automated link inspection.
+  app.post("/api/free-book/download/:token", downloadLimiter, async (req, res) => {
+    try {
+      const { token } = req.params;
+      const row = await storage.getFreeBookToken(token);
+      if (!row) {
+        res.status(404).type('html').send(renderFreeBookPage({ token, status: 'invalid' }));
+        return;
+      }
+      const author = row.authorId ? await storage.getAuthorById(row.authorId) : undefined;
+      const ctx = { authorName: author?.name, authorSlug: author?.slug };
+      if (row.usedAt) {
+        res.status(410).type('html').send(renderFreeBookPage({ token, status: 'used', ...ctx }));
+        return;
+      }
+      if (new Date() > new Date(row.expiresAt)) {
+        res.status(410).type('html').send(renderFreeBookPage({ token, status: 'expired', ...ctx }));
         return;
       }
       await storage.markFreeBookTokenUsed(token);
@@ -1361,7 +1452,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.redirect(target);
     } catch (error) {
       console.error('Free book download error:', error);
-      res.status(500).json({ message: "Failed to download file" });
+      res.status(500).type('html').send(renderFreeBookPage({ token: req.params.token, status: 'error' }));
     }
   });
 
