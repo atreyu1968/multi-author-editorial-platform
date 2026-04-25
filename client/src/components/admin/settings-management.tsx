@@ -183,9 +183,8 @@ export default function SettingsManagement() {
     buttonUploadFile: useUiText("admin.settings", "button_upload_file"),
     descFreeBookFile: useUiText("admin.settings", "desc_free_book_file"),
     labelBookFormat: useUiText("admin.settings", "label_book_format"),
-    formatPdf: useUiText("admin.settings", "format_pdf"),
     formatEpub: useUiText("admin.settings", "format_epub"),
-    formatMobi: useUiText("admin.settings", "format_mobi"),
+    formatAzw3: useUiText("admin.settings", "format_azw3", "AZW3"),
     labelBookDescription: useUiText("admin.settings", "label_book_description"),
     placeholderBookDescription: useUiText("admin.settings", "placeholder_book_description"),
     descBookDescription: useUiText("admin.settings", "desc_book_description"),
@@ -288,7 +287,7 @@ export default function SettingsManagement() {
       contactEmail: "",
       freeBookTitle: "Primeros Encuentros",
       freeBookFile: "",
-      freeBookFormat: "PDF",
+      freeBookFormat: "EPUB",
       freeBookDescription: "",
       emailProvider: "Resend",
       emailFromName: "",
@@ -323,7 +322,7 @@ export default function SettingsManagement() {
         contactEmail: settingsMap.contactEmail || "",
         freeBookTitle: settingsMap.freeBookTitle || "Primeros Encuentros",
         freeBookFile: settingsMap.freeBookFile || "",
-        freeBookFormat: settingsMap.freeBookFormat || "PDF",
+        freeBookFormat: settingsMap.freeBookFormat || "EPUB",
         freeBookDescription: settingsMap.freeBookDescription || "",
         emailProvider: settingsMap.emailProvider || "Resend",
         emailFromName: settingsMap.emailFromName || "",
@@ -1057,7 +1056,7 @@ export default function SettingsManagement() {
                             </FormControl>
                             <FileUploader
                               onComplete={(result) => handleFileUploadComplete("freeBookFile", result)}
-                              allowedFileTypes={['application/pdf', 'application/epub+zip']}
+                              allowedFileTypes={['application/epub+zip', 'application/vnd.amazon.ebook', 'application/octet-stream']}
                               maxFileSize={10485760}
                               buttonClassName="shrink-0"
                             >
@@ -1086,9 +1085,8 @@ export default function SettingsManagement() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="PDF">{t.formatPdf}</SelectItem>
                               <SelectItem value="EPUB">{t.formatEpub}</SelectItem>
-                              <SelectItem value="MOBI">{t.formatMobi}</SelectItem>
+                              <SelectItem value="AZW3">{t.formatAzw3}</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />

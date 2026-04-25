@@ -18315,7 +18315,7 @@
     {
       "key": "settings_newsletter_desc",
       "locale": "es-ES",
-      "value": "Ofrece un libro gratuito a cambio de suscripción al newsletter. Sube el archivo (EPUB, PDF, MOBI) y el sistema enviará automáticamente el link de descarga."
+      "value": "Ofrece un libro gratuito a cambio de suscripción al newsletter. Sube el archivo (EPUB o AZW3) y el sistema enviará automáticamente el link de descarga."
     },
     {
       "key": "section_editorial_title",
@@ -21065,32 +21065,32 @@
     {
       "key": "settings_newsletter_desc",
       "locale": "en-US",
-      "value": "Offer a free book in exchange for newsletter subscription. Upload the file (EPUB, PDF, MOBI) and the system will automatically send the download link."
+      "value": "Offer a free book in exchange for newsletter subscription. Upload the file (EPUB or AZW3) and the system will automatically send the download link."
     },
     {
       "key": "settings_newsletter_desc",
       "locale": "ca-ES",
-      "value": "Ofereix un llibre gratuït a canvi de subscripció al butlletí. Puja l'arxiu (EPUB, PDF, MOBI) i el sistema enviarà automàticament l'enllaç de descàrrega."
+      "value": "Ofereix un llibre gratuït a canvi de subscripció al butlletí. Puja l'arxiu (EPUB o AZW3) i el sistema enviarà automàticament l'enllaç de descàrrega."
     },
     {
       "key": "settings_newsletter_desc",
       "locale": "fr-FR",
-      "value": "Offrez un livre gratuit en échange d'un abonnement à la newsletter. Téléchargez le fichier (EPUB, PDF, MOBI) et le système enverra automatiquement le lien de téléchargement."
+      "value": "Offrez un livre gratuit en échange d'un abonnement à la newsletter. Téléchargez le fichier (EPUB ou AZW3) et le système enverra automatiquement le lien de téléchargement."
     },
     {
       "key": "settings_newsletter_desc",
       "locale": "it-IT",
-      "value": "Offri un libro gratuito in cambio dell'iscrizione alla newsletter. Carica il file (EPUB, PDF, MOBI) e il sistema invierà automaticamente il link di download."
+      "value": "Offri un libro gratuito in cambio dell'iscrizione alla newsletter. Carica il file (EPUB o AZW3) e il sistema invierà automaticamente il link di download."
     },
     {
       "key": "settings_newsletter_desc",
       "locale": "de-DE",
-      "value": "Bieten Sie ein kostenloses Buch im Austausch für ein Newsletter-Abonnement an. Laden Sie die Datei hoch (EPUB, PDF, MOBI) und das System sendet automatisch den Download-Link."
+      "value": "Bieten Sie ein kostenloses Buch im Austausch für ein Newsletter-Abonnement an. Laden Sie die Datei hoch (EPUB oder AZW3) und das System sendet automatisch den Download-Link."
     },
     {
       "key": "settings_newsletter_desc",
       "locale": "pt-PT",
-      "value": "Ofereça um livro gratuito em troca da subscrição da newsletter. Carregue o ficheiro (EPUB, PDF, MOBI) e o sistema enviará automaticamente o link de download."
+      "value": "Ofereça um livro gratuito em troca da subscrição da newsletter. Carregue o ficheiro (EPUB ou AZW3) e o sistema enviará automaticamente o link de download."
     },
     {
       "key": "settings_tab1",
