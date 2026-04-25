@@ -331,14 +331,16 @@ chown -R $APP_USER:$APP_USER "$APP_DIR/dist"
 rm -f "$BUILD_LOG"
 
 # ============================================================
-# EJECUTAR MIGRACIONES DE BASE DE DATOS
+# SINCRONIZAR ESQUEMA DE BASE DE DATOS
 #
-# En instalación nueva no aplicamos los .sql de migrations/ porque la BBDD
-# está vacía: drizzle-kit push crea todas las tablas y columnas declaradas
-# en shared/schema.ts en una sola pasada. Como `--force` por sí solo no
-# silencia los prompts del tipo "¿es la tabla X nueva o renombrada de Y?",
-# canalizamos `yes ""` para responder Enter de forma indefinida y aceptar
-# la opción por defecto (siempre la primera, que es "create").
+# En instalación nueva la BBDD está vacía. Usamos nuestro propio
+# sincronizador aditivo (`scripts/sync-schema.ts`) en lugar de
+# `drizzle-kit push --force`: lee shared/schema.ts, introspecciona
+# information_schema y emite CREATE TABLE / ADD COLUMN IF NOT EXISTS
+# de forma determinista, sin prompts y sin renombrados. Esto garantiza
+# que el esquema queda completo en la primera pasada y elimina la
+# clase de fallos en la que drizzle-kit interpretaba columnas nuevas
+# como renombrados de otras tablas.
 #
 # Tras la sincronización marcamos todas las migraciones SQL existentes
 # como ya aplicadas en la tabla _migrations. Sus contenidos son
@@ -351,16 +353,17 @@ print_status "Sincronizando esquema de base de datos..."
 cd "$APP_DIR"
 
 # Sincronizar esquema declarado en Drizzle
-DRIZZLE_LOG=$(mktemp /tmp/drizzle_install_XXXXXX.log)
-if sudo -u $APP_USER -E sh -c 'yes "" | npx drizzle-kit push --force' > "$DRIZZLE_LOG" 2>&1; then
-    print_success "Esquema sincronizado con drizzle-kit"
+SYNC_LOG=$(mktemp /tmp/sync_schema_install_XXXXXX.log)
+if sudo -u $APP_USER -E npx tsx scripts/sync-schema.ts > "$SYNC_LOG" 2>&1; then
+    grep -E "^\[sync-schema\] (summary|  )" "$SYNC_LOG" | head -20
+    print_success "Esquema sincronizado"
 else
-    print_error "drizzle-kit push falló — revisa el log:"
-    tail -30 "$DRIZZLE_LOG"
-    rm -f "$DRIZZLE_LOG"
+    print_error "El sincronizador de esquema falló — revisa el log:"
+    cat "$SYNC_LOG"
+    rm -f "$SYNC_LOG"
     exit 1
 fi
-rm -f "$DRIZZLE_LOG"
+rm -f "$SYNC_LOG"
 
 # Registrar las migraciones SQL existentes como ya aplicadas
 if [ -d "$APP_DIR/migrations" ]; then

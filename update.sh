@@ -185,14 +185,17 @@ rm -f "$BUILD_LOG"
 #
 # Estrategia en DOS fases para no volver a dejar la BBDD a medias:
 #
-#   Fase 1: drizzle-kit push --force
-#     Sincroniza el esquema declarado en shared/schema.ts contra la BBDD,
-#     creando cualquier tabla o columna nueva que aún no exista. Esto cubre
-#     los casos en los que un PR añade una tabla nueva (broadcasts, listas
-#     de interés, etc.) sin acompañarla de un .sql en migrations/.
-#     Se alimenta una secuencia infinita de Enter por stdin para responder
-#     automáticamente a los prompts de "crear tabla" / "crear columna" con
-#     la opción por defecto (la primera, que siempre es "create").
+#   Fase 1: scripts/sync-schema.ts (sincronizador aditivo propio)
+#     Lee todas las tablas declaradas en shared/schema.ts, introspecciona
+#     la BBDD viva y emite ÚNICAMENTE DDL aditivo:
+#       • CREATE TABLE para tablas que no existen.
+#       • ALTER TABLE ADD COLUMN IF NOT EXISTS para columnas faltantes.
+#       • ADD CONSTRAINT / CREATE INDEX IF NOT EXISTS para los demás.
+#     No es interactivo (no hay prompts de "rename vs create" como en
+#     `drizzle-kit push`), no destruye nada y se puede ejecutar en cada
+#     deploy sin sorpresas. Esto resuelve el problema histórico en el que
+#     drizzle-kit interpretaba columnas nuevas como renombrados de otras
+#     y dejaba huecos en la BBDD que sólo aparecían como 500 en runtime.
 #
 #   Fase 2: migraciones SQL incrementales
 #     Aplica los .sql de migrations/ que no estén ya en la tabla
@@ -204,21 +207,18 @@ rm -f "$BUILD_LOG"
 print_status "Actualizando esquema de base de datos..."
 cd "$APP_DIR"
 
-# Fase 1: sincronizar esquema declarado en Drizzle ─────────────────
-print_status "  [1/2] Sincronizando esquema con drizzle-kit push --force..."
-DRIZZLE_LOG=$(mktemp /tmp/drizzle_push_XXXXXX.log)
-# `yes ""` envía Enter de forma indefinida para aceptar la opción por
-# defecto (siempre "create") en cada prompt interactivo. Se redirige
-# stderr+stdout al log para no inundar la consola del actualizador.
-if sudo -u $APP_USER -E sh -c 'yes "" | npx drizzle-kit push --force' > "$DRIZZLE_LOG" 2>&1; then
-    print_success "  Esquema sincronizado con drizzle-kit"
+# Fase 1: sincronizador aditivo propio ────────────────────────────
+print_status "  [1/2] Sincronizando esquema con scripts/sync-schema.ts..."
+SYNC_LOG=$(mktemp /tmp/sync_schema_XXXXXX.log)
+if sudo -u $APP_USER -E npx tsx scripts/sync-schema.ts > "$SYNC_LOG" 2>&1; then
+    # Mostramos siempre el resumen final del script, son 5-6 líneas útiles.
+    grep -E "^\[sync-schema\] (summary|  )" "$SYNC_LOG" | head -20
+    print_success "  Esquema sincronizado"
 else
-    print_warning "  drizzle-kit push devolvió código no-cero (puede ser un aviso)"
-    echo "  --- últimas líneas del log ---"
-    tail -20 "$DRIZZLE_LOG"
-    echo "  ------------------------------"
+    print_error "  El sincronizador de esquema falló — revisa el log:"
+    cat "$SYNC_LOG"
 fi
-rm -f "$DRIZZLE_LOG"
+rm -f "$SYNC_LOG"
 
 # Fase 2: migraciones SQL incrementales ────────────────────────────
 if [ -d "$APP_DIR/migrations" ]; then

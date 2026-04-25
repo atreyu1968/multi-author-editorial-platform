@@ -1839,6 +1839,208 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ----- Admin subscriber CRUD --------------------------------------
+  // The admin panel needs a per-subscriber edit / delete / list-membership
+  // surface beyond the simple "list all" GET /api/newsletter. These routes
+  // are admin-only and live alongside the public POST /api/newsletter.
+
+  app.get("/api/newsletter/:id/lists", requireAuth, async (req, res) => {
+    try {
+      const sub = await storage.getNewsletterSubscriberById(req.params.id);
+      if (!sub) {
+        res.status(404).json({ message: "Subscriber not found" });
+        return;
+      }
+      const subscribedListIds = await storage.getSubscriberListIds(sub.id);
+      res.json({ subscribedListIds });
+    } catch (error) {
+      console.error('Failed to load subscriber list memberships:', error);
+      res.status(500).json({ message: "Failed to load list memberships" });
+    }
+  });
+
+  app.post("/api/newsletter/:id/lists", requireAuth, async (req, res) => {
+    try {
+      const schema = z.object({ listIds: z.array(z.string()) });
+      const { listIds } = schema.parse(req.body);
+      const sub = await storage.getNewsletterSubscriberById(req.params.id);
+      if (!sub) {
+        res.status(404).json({ message: "Subscriber not found" });
+        return;
+      }
+      // Sanity-check the requested list ids belong to the same author so a
+      // panel admin can't accidentally cross-link a subscriber to another
+      // author's list.
+      if (sub.authorId) {
+        const allowed = new Set(
+          (await storage.getNewsletterLists(sub.authorId)).map((l) => l.id),
+        );
+        const safe = listIds.filter((id) => allowed.has(id));
+        await storage.setSubscriberLists(sub.id, safe);
+      } else {
+        await storage.setSubscriberLists(sub.id, listIds);
+      }
+      res.json({ message: "Lists updated" });
+    } catch (error) {
+      console.error('Failed to update subscriber lists:', error);
+      res.status(400).json({ message: "Failed to update lists" });
+    }
+  });
+
+  app.patch("/api/newsletter/:id", requireAuth, async (req, res) => {
+    try {
+      // Admin-editable fields only. The subscriber's `preferencesToken`,
+      // `consentedAt`/`consentText` and `authorId` are immutable here —
+      // changing those would either break unsubscribe links or rewrite the
+      // RGPD consent record.
+      const patchSchema = z.object({
+        name: z.string().min(1).max(120).optional(),
+        email: z.string().email().optional(),
+        // Truthy → mark unsubscribed (now); falsy → resubscribe (clear).
+        unsubscribed: z.boolean().optional(),
+        timezone: z.string().min(1).max(64).nullable().optional(),
+      });
+      const body = patchSchema.parse(req.body);
+      const patch: any = {};
+      if (body.name !== undefined) patch.name = body.name;
+      if (body.email !== undefined) patch.email = body.email;
+      if (body.timezone !== undefined) patch.timezone = body.timezone;
+      if (body.unsubscribed !== undefined) {
+        patch.unsubscribedAt = body.unsubscribed ? new Date().toISOString() : null;
+      }
+      const updated = await storage.updateNewsletterSubscriber(req.params.id, patch);
+      if (!updated) {
+        res.status(404).json({ message: "Subscriber not found" });
+        return;
+      }
+      res.json(updated);
+    } catch (error) {
+      console.error('Failed to update subscriber:', error);
+      res.status(400).json({ message: "Failed to update subscriber" });
+    }
+  });
+
+  app.delete("/api/newsletter/:id", requireAuth, async (req, res) => {
+    try {
+      const ok = await storage.deleteNewsletterSubscriber(req.params.id);
+      if (!ok) {
+        res.status(404).json({ message: "Subscriber not found" });
+        return;
+      }
+      res.json({ message: "Subscriber deleted" });
+    } catch (error) {
+      console.error('Failed to delete subscriber:', error);
+      res.status(500).json({ message: "Failed to delete subscriber" });
+    }
+  });
+
+  // ----- Admin user CRUD --------------------------------------------
+  // Lets the admin panel manage panel users (login accounts). The first
+  // user is created automatically by `init-admin.ts`; everything beyond
+  // that is exposed here. Passwords are always scrypt-hashed via auth.ts.
+
+  app.get("/api/admin/users", requireAuth, async (_req, res) => {
+    try {
+      const users = await storage.getUsers();
+      // Never ship the password hash to the client — even an admin doesn't
+      // need to see another admin's hash.
+      res.json(
+        users.map((u) => ({ id: u.id, username: u.username, email: u.email ?? null })),
+      );
+    } catch (error) {
+      console.error('Failed to list admin users:', error);
+      res.status(500).json({ message: "Failed to list users" });
+    }
+  });
+
+  app.post("/api/admin/users", requireAuth, async (req, res) => {
+    try {
+      const schema = z.object({
+        username: z.string().min(3).max(60),
+        password: z.string().min(6).max(200),
+        email: z.string().email().optional(),
+      });
+      const body = schema.parse(req.body);
+      const existing = await storage.getUserByUsername(body.username);
+      if (existing) {
+        res.status(409).json({ message: "Ese nombre de usuario ya existe" });
+        return;
+      }
+      const { hashPassword } = await import('./auth.js');
+      const hashed = await hashPassword(body.password);
+      const created = await storage.createUser({
+        username: body.username,
+        password: hashed,
+        email: body.email ?? null,
+      } as any);
+      res.status(201).json({ id: created.id, username: created.username, email: created.email ?? null });
+    } catch (error) {
+      console.error('Failed to create admin user:', error);
+      res.status(400).json({ message: "Datos inválidos" });
+    }
+  });
+
+  app.patch("/api/admin/users/:id", requireAuth, async (req, res) => {
+    try {
+      const schema = z.object({
+        username: z.string().min(3).max(60).optional(),
+        password: z.string().min(6).max(200).optional(),
+        email: z.string().email().nullable().optional(),
+      });
+      const body = schema.parse(req.body);
+      const patch: any = {};
+      if (body.username !== undefined) {
+        // Ensure the new username doesn't collide with another row.
+        const conflict = await storage.getUserByUsername(body.username);
+        if (conflict && conflict.id !== req.params.id) {
+          res.status(409).json({ message: "Ese nombre de usuario ya existe" });
+          return;
+        }
+        patch.username = body.username;
+      }
+      if (body.email !== undefined) patch.email = body.email;
+      if (body.password) {
+        const { hashPassword } = await import('./auth.js');
+        patch.password = await hashPassword(body.password);
+      }
+      const updated = await storage.updateUser(req.params.id, patch);
+      if (!updated) {
+        res.status(404).json({ message: "Usuario no encontrado" });
+        return;
+      }
+      res.json({ id: updated.id, username: updated.username, email: updated.email ?? null });
+    } catch (error) {
+      console.error('Failed to update admin user:', error);
+      res.status(400).json({ message: "Datos inválidos" });
+    }
+  });
+
+  app.delete("/api/admin/users/:id", requireAuth, async (req, res) => {
+    try {
+      // Two safety nets: never let an admin delete their own session, and
+      // never let them delete the LAST remaining admin (locks out everyone).
+      const meId = (req.user as any)?.id;
+      if (meId === req.params.id) {
+        res.status(400).json({ message: "No puedes borrar tu propio usuario mientras estás conectado." });
+        return;
+      }
+      const all = await storage.getUsers();
+      if (all.length <= 1) {
+        res.status(400).json({ message: "No se puede borrar el último usuario administrador." });
+        return;
+      }
+      const ok = await storage.deleteUser(req.params.id);
+      if (!ok) {
+        res.status(404).json({ message: "Usuario no encontrado" });
+        return;
+      }
+      res.json({ message: "Usuario eliminado" });
+    } catch (error) {
+      console.error('Failed to delete admin user:', error);
+      res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
   // ----- Subscriber preference center (public) -----------------------
   // The token is the random `preferencesToken` minted at subscription time
   // and embedded in the List-Unsubscribe / footer URLs of all outgoing

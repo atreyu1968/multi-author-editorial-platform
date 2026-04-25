@@ -163,8 +163,14 @@ export interface IStorage {
 
   // User methods
   getUser(id: string): Promise<User | undefined>;
+  getUsers(): Promise<User[]>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: string, patch: Partial<User>): Promise<User | undefined>;
+  deleteUser(id: string): Promise<boolean>;
+  // Newsletter admin methods (subscriber CRUD beyond signup)
+  deleteNewsletterSubscriber(id: string): Promise<boolean>;
+  getNewsletterSubscriberById(id: string): Promise<Newsletter | undefined>;
 
   // Blog Post methods
   getBlogPosts(authorId?: string): Promise<BlogPost[]>;
@@ -1062,6 +1068,35 @@ export class MemStorage {
     const user: User = { ...insertUser, id };
     this.users.set(id, user);
     return user;
+  }
+
+  async getUsers(): Promise<User[]> {
+    return Array.from(this.users.values()).sort((a, b) =>
+      a.username.localeCompare(b.username),
+    );
+  }
+
+  async updateUser(id: string, patch: Partial<User>): Promise<User | undefined> {
+    const existing = this.users.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...patch, id: existing.id };
+    this.users.set(id, updated);
+    return updated;
+  }
+
+  async deleteUser(id: string): Promise<boolean> {
+    return this.users.delete(id);
+  }
+
+  async deleteNewsletterSubscriber(id: string): Promise<boolean> {
+    // MemStorage doesn't currently track newsletter subscriptions in detail —
+    // it operates on the simple `newsletters` map. For the in-memory backend
+    // we just remove the row; list memberships live elsewhere if used.
+    return this.newsletters.delete(id);
+  }
+
+  async getNewsletterSubscriberById(id: string): Promise<Newsletter | undefined> {
+    return this.newsletters.get(id);
   }
 
   // Blog Post methods

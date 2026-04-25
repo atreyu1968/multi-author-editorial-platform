@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { ArrowLeft, Home, BookOpen, Users, User, Star, Settings, FileText, HelpCircle, Type, UserCircle, Building2, BarChart3, ShoppingCart, Languages, Mail } from "lucide-react";
+import { ArrowLeft, Home, BookOpen, Users, User, Star, Settings, FileText, HelpCircle, Type, UserCircle, Building2, BarChart3, ShoppingCart, Languages, Mail, Inbox, ListChecks, KeyRound } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DynamicTheme } from "@/components/dynamic-theme";
 import { SEOHead } from "@/components/seo/seo-head";
@@ -20,10 +20,13 @@ import EditorialSettingsManagement from "@/components/admin/editorial-settings-m
 import AnalyticsManagement from "@/components/admin/analytics-management";
 import OrdersManagement from "@/components/admin/orders-management";
 import BroadcastManagement from "@/components/admin/broadcast-management";
+import SubscribersManagement from "@/components/admin/subscribers-management";
+import NewsletterListsManagement from "@/components/admin/newsletter-lists-management";
+import UsersManagement from "@/components/admin/users-management";
 import { AdminAuthorProvider, useAdminAuthor } from "@/contexts/admin-author-context";
 import { useUiText } from "@/contexts/ui-text-context";
 
-type AdminSection = 'dashboard' | 'books' | 'series' | 'authors' | 'bio' | 'testimonials' | 'blog' | 'settings' | 'ui-texts' | 'translations' | 'editorial-settings' | 'analytics' | 'orders' | 'broadcasts' | 'help';
+type AdminSection = 'dashboard' | 'books' | 'series' | 'authors' | 'bio' | 'testimonials' | 'blog' | 'settings' | 'ui-texts' | 'translations' | 'editorial-settings' | 'analytics' | 'orders' | 'broadcasts' | 'subscribers' | 'newsletter-lists' | 'users' | 'help';
 
 function AdminContent() {
   const [currentSection, setCurrentSection] = useState<AdminSection>('dashboard');
@@ -83,6 +86,12 @@ function AdminContent() {
         return <OrdersManagement />;
       case 'broadcasts':
         return <BroadcastManagement />;
+      case 'subscribers':
+        return <SubscribersManagement />;
+      case 'newsletter-lists':
+        return <NewsletterListsManagement />;
+      case 'users':
+        return <UsersManagement />;
       case 'help':
         return <HelpInstructions />;
       default:
@@ -252,6 +261,30 @@ function AdminContent() {
                   <Languages className="h-5 w-5" />
                   {t.navTranslations}
                 </button>
+                <button
+                  onClick={() => setCurrentSection('subscribers')}
+                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
+                    currentSection === 'subscribers'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'hover:bg-primary hover:text-primary-foreground'
+                  }`}
+                  data-testid="nav-subscribers"
+                >
+                  <Inbox className="h-5 w-5" />
+                  Suscriptores
+                </button>
+                <button
+                  onClick={() => setCurrentSection('newsletter-lists')}
+                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
+                    currentSection === 'newsletter-lists'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'hover:bg-primary hover:text-primary-foreground'
+                  }`}
+                  data-testid="nav-newsletter-lists"
+                >
+                  <ListChecks className="h-5 w-5" />
+                  Listas
+                </button>
                 <button 
                   onClick={() => setCurrentSection('settings')}
                   className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
@@ -347,6 +380,18 @@ function AdminContent() {
                 >
                   <Mail className="h-5 w-5" />
                   Campañas
+                </button>
+                <button
+                  onClick={() => setCurrentSection('users')}
+                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
+                    currentSection === 'users'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'hover:bg-primary hover:text-primary-foreground'
+                  }`}
+                  data-testid="nav-users"
+                >
+                  <KeyRound className="h-5 w-5" />
+                  Usuarios
                 </button>
                 <button 
                   onClick={() => setCurrentSection('help')}

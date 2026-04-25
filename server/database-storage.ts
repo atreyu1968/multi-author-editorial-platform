@@ -670,6 +670,45 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getUsers(): Promise<User[]> {
+    return await db.select().from(users).orderBy(users.username);
+  }
+
+  async updateUser(id: string, patch: Partial<User>): Promise<User | undefined> {
+    const [row] = await db
+      .update(users)
+      .set(patch)
+      .where(eq(users.id, id))
+      .returning();
+    return row || undefined;
+  }
+
+  async deleteUser(id: string): Promise<boolean> {
+    const result = await db.delete(users).where(eq(users.id, id)).returning();
+    return result.length > 0;
+  }
+
+  async deleteNewsletterSubscriber(id: string): Promise<boolean> {
+    // Cascade-clean list memberships first; the table has no FK declared.
+    await db
+      .delete(newsletterListSubscriptions)
+      .where(eq(newsletterListSubscriptions.subscriberId, id));
+    const result = await db
+      .delete(newsletters)
+      .where(eq(newsletters.id, id))
+      .returning();
+    return result.length > 0;
+  }
+
+  async getNewsletterSubscriberById(id: string): Promise<Newsletter | undefined> {
+    const [row] = await db
+      .select()
+      .from(newsletters)
+      .where(eq(newsletters.id, id))
+      .limit(1);
+    return row || undefined;
+  }
+
   // Blog Post methods
   async getBlogPosts(authorId?: string): Promise<BlogPost[]> {
     if (authorId) {
