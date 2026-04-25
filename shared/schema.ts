@@ -320,6 +320,11 @@ export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  // Optional contact email for the admin user. Used as the default
+  // recipient when the admin sends a one-shot test broadcast to themself
+  // from the campaign composer; nullable so existing accounts created
+  // before this column was added continue to work.
+  email: text("email"),
 });
 
 export const blogPosts = pgTable("blog_posts", {

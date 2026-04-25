@@ -1573,6 +1573,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/authors/:id/broadcasts/test - deliver the rendered campaign
+  // to a single chosen inbox so the admin can verify rendering, sender,
+  // and tracking before committing to a real send. We reuse the same
+  // renderer + per-author email provider configuration as the dispatch
+  // path so DKIM/SPF, headers, and tracking-pixel rewrites match exactly
+  // what real subscribers will receive. Importantly, NO row is written to
+  // the broadcasts table — this is a transient, one-shot send.
+  app.post("/api/authors/:id/broadcasts/test", requireAuth, async (req, res) => {
+    try {
+      const authorId = req.params.id;
+      const author = await storage.getAuthorById(authorId);
+      if (!author) {
+        res.status(404).json({ message: "Author not found" });
+        return;
+      }
+
+      const { recipientEmail, ...draft } = req.body || {};
+      const emailSchema = z.string().trim().email("Dirección de email inválida");
+      const recipient = emailSchema.parse(recipientEmail);
+
+      const payload = insertBroadcastSchema.parse({ ...draft, authorId });
+
+      if (!payload.bookId) {
+        res.status(400).json({ message: "bookId is required" });
+        return;
+      }
+      const book = await storage.getBookById(payload.bookId);
+      if (!book || book.authorId !== authorId) {
+        res.status(404).json({ message: "Book not found for this author" });
+        return;
+      }
+
+      // Resolve previous-in-series books just like the real dispatch does.
+      let previousBooks: typeof book[] = [];
+      if (book.seriesId) {
+        const all = await storage.getBooksBySeriesId(book.seriesId);
+        const myOrder = book.orderInSeries ?? Number.MAX_SAFE_INTEGER;
+        previousBooks = all
+          .filter(b => b.id !== book.id && (b.orderInSeries ?? 0) < myOrder)
+          .sort((a, b) => (a.orderInSeries ?? 0) - (b.orderInSeries ?? 0));
+      }
+
+      const editorialSettings = await storage.getEditorialSettings();
+      const { emailService } = await import('./email-service.js');
+      const configured = emailService.configureForAuthor('newsletter', author, editorialSettings);
+      if (!configured) {
+        res.status(400).json({ message: "Email provider not configured for this author" });
+        return;
+      }
+
+      const baseUrl = process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get('host')}`;
+      const authorPageUrl = `${baseUrl}/autor/${author.slug}`;
+      const from = emailService.getDefaultFrom();
+      const promo = payload.type === 'promotion'
+        && payload.promoPriceCents !== null
+        && payload.promoPriceCents !== undefined
+        && payload.promoCurrency
+          ? {
+              priceCents: payload.promoPriceCents,
+              currency: payload.promoCurrency,
+              startsAt: payload.promoStartsAt,
+              endsAt: payload.promoEndsAt,
+            }
+          : undefined;
+
+      // The test send has no real subscriber row, so it carries no
+      // preference token. We still tag it as a test so any provider
+      // dashboards/analytics can filter it out from real campaign metrics.
+      await emailService.sendBroadcastEmail({
+        to: recipient,
+        subject: `[PRUEBA] ${payload.subject}`,
+        from,
+        tags: { broadcast: 'test', type: payload.type },
+        rendererOpts: {
+          type: payload.type as 'new_release' | 'promotion',
+          author,
+          from,
+          book,
+          previousBooks,
+          customMessage: payload.customMessage,
+          promo,
+          baseUrl,
+          authorPageUrl,
+        },
+      });
+
+      res.json({ success: true, sentTo: recipient });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: error.errors[0]?.message || "Invalid test send data", errors: error.errors });
+        return;
+      }
+      console.error('Broadcast test send error:', error);
+      // Surface the provider error verbatim so the admin can act on it.
+      const message = error instanceof Error ? error.message : String(error);
+      res.status(500).json({ message });
+    }
+  });
+
   // POST /api/authors/:id/broadcasts - create a campaign.
   // If `scheduledFor` is omitted/null we send synchronously (legacy "send
   // now" flow) and wait for the per-recipient loop to finish so the admin

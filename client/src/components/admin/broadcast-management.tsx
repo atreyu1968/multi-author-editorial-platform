@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Mail, Send, Eye, BookOpen, Tag, Users, Clock, Gauge, Plus, Trash2, Pencil, XCircle, Save } from "lucide-react";
+import { Loader2, Mail, MailCheck, Send, Eye, BookOpen, Tag, Users, Clock, Gauge, Plus, Trash2, Pencil, XCircle, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,6 +23,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAdminAuthor } from "@/contexts/admin-author-context";
+import { useAuth } from "@/hooks/use-auth";
 import type { Book, NewsletterList, Broadcast } from "@shared/schema";
 
 // Convert "YYYY-MM-DD" + "HH:MM" interpreted in `tz` (an IANA zone) into a
@@ -53,11 +54,26 @@ function localDateTimeToUtcIso(date: string, time: string, tz: string): string |
   }
 }
 
-// Inverse of localDateTimeToUtcIso: take a stored UTC ISO and the timezone
-// the admin originally picked, and split it back into the "YYYY-MM-DD" /
-// "HH:MM" wall-clock pair that the date+time inputs need. Used when
-// pre-filling the composer to edit a scheduled campaign so the admin sees
-// the same numbers they typed when they first scheduled it.
+// `apiRequest` throws `Error("<status>: <body>")`. Most of our routes return
+// `{ "message": "..." }` JSON, so unwrap it here so toasts show the human
+// message verbatim instead of the wrapped status + JSON envelope.
+function extractErrorMessage(err: unknown): string {
+  const raw = err instanceof Error ? err.message : String(err);
+  // Strip the leading "<status>: " prefix that apiRequest adds.
+  const colonIdx = raw.indexOf(": ");
+  const body = colonIdx > 0 && /^\d{3}/.test(raw) ? raw.slice(colonIdx + 2) : raw;
+  // If the body is JSON with a `message` field, return that field.
+  try {
+    const parsed = JSON.parse(body);
+    if (parsed && typeof parsed === "object" && typeof parsed.message === "string") {
+      return parsed.message;
+    }
+  } catch {
+    // Not JSON — fall through and return the body as-is.
+  }
+  return body;
+}
+
 function utcIsoToLocalDateTime(iso: string, tz: string): { date: string; time: string } | null {
   if (!iso || !tz) return null;
   try {
@@ -184,7 +200,8 @@ const STATUS_LABEL: Record<string, { label: string; variant: "default" | "second
 };
 
 export default function BroadcastManagement() {
-  const { selectedAuthorId } = useAdminAuthor();
+  const { selectedAuthorId, authors } = useAdminAuthor();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -195,6 +212,17 @@ export default function BroadcastManagement() {
   // Cancellation goes through a tiny confirm dialog so admins can't pull
   // a campaign by accident while skimming the history list.
   const [cancelTarget, setCancelTarget] = useState<Broadcast | null>(null);
+  // Test-send dialog state. Lets the admin deliver the rendered draft to
+  // a single inbox (default = the selected author's own email) before
+  // committing to a real broadcast — no row is written to the broadcasts
+  // table for these one-shot sends.
+  const [testOpen, setTestOpen] = useState(false);
+  const [testEmail, setTestEmail] = useState("");
+
+  const selectedAuthor = useMemo(
+    () => authors.find((a) => a.id === selectedAuthorId) || null,
+    [authors, selectedAuthorId],
+  );
 
   const detectedTz = useMemo(() => {
     try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch { return "UTC"; }
@@ -417,6 +445,47 @@ export default function BroadcastManagement() {
       setConfirmOpen(false);
     },
   });
+
+  const testSendMutation = useMutation({
+    mutationFn: async ({ values, recipientEmail }: { values: FormValues; recipientEmail: string }) => {
+      const r = await apiRequest(
+        "POST",
+        `/api/authors/${selectedAuthorId}/broadcasts/test`,
+        { ...buildPayload(values), recipientEmail },
+      );
+      return (await r.json()) as { success: boolean; sentTo: string };
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Email de prueba enviado",
+        description: `Entregado a ${data.sentTo}. Revisa tu bandeja de entrada (y spam).`,
+      });
+      setTestOpen(false);
+    },
+    onError: (err: Error) => {
+      // Surface the provider error verbatim so admins can act on it
+      // (e.g. "Domain not verified", "Invalid API key").
+      // apiRequest wraps non-2xx responses as `Error("<status>: <body>")`
+      // where <body> is usually the JSON `{ "message": "..." }` returned
+      // by the route. Unwrap it so the toast shows ONLY the human-readable
+      // provider message instead of "500: {"message":"..."}".
+      toast({
+        title: "No se pudo enviar la prueba",
+        description: extractErrorMessage(err),
+        variant: "destructive",
+      });
+    },
+  });
+
+  function openTestDialog() {
+    // "Enviar prueba a mí" — pre-fill with the logged-in admin's contact
+    // email so a single click sends the test to their own inbox. Fall back
+    // to the selected author's email when the admin account has no email
+    // on file (legacy accounts created before the column existed). Admin
+    // can still override with any address before confirming.
+    setTestEmail((prev) => prev || user?.email || selectedAuthor?.email || "");
+    setTestOpen(true);
+  }
 
   const cancelMutation = useMutation({
     mutationFn: async (broadcastId: string) => {
@@ -818,6 +887,22 @@ export default function BroadcastManagement() {
                     </Button>
                     <Button
                       type="button"
+                      variant="outline"
+                      disabled={testSendMutation.isPending}
+                      onClick={() => {
+                        // Validate the draft before opening the dialog so we
+                        // don't waste a real send on a form with errors.
+                        form.handleSubmit(() => openTestDialog())();
+                      }}
+                      data-testid="button-broadcast-test"
+                    >
+                      {testSendMutation.isPending
+                        ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        : <MailCheck className="w-4 h-4 mr-2" />}
+                      Enviar prueba a mí
+                    </Button>
+                    <Button
+                      type="button"
                       disabled={!preview || sendMutation.isPending}
                       onClick={() => setConfirmOpen(true)}
                       data-testid="button-broadcast-send"
@@ -1017,6 +1102,48 @@ export default function BroadcastManagement() {
               {editingId
                 ? "Guardar"
                 : (watchScheduleMode === "now" ? "Enviar ahora" : "Programar")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={testOpen} onOpenChange={(o) => { if (!o) setTestOpen(false); }}>
+        <DialogContent data-testid="dialog-test-send">
+          <DialogHeader>
+            <DialogTitle>Enviar email de prueba</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Recibirás una sola copia del email tal y como lo verán los suscriptores
+            (mismo remitente, encabezados y seguimiento). No quedará registro en el historial.
+          </p>
+          <div className="space-y-2">
+            <label className="text-sm font-medium" htmlFor="test-recipient-input">Destinatario</label>
+            <Input
+              id="test-recipient-input"
+              type="email"
+              placeholder="tu@email.com"
+              value={testEmail}
+              onChange={(e) => setTestEmail(e.target.value)}
+              data-testid="input-test-recipient"
+            />
+          </div>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setTestOpen(false)}
+              data-testid="button-cancel-test"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => testSendMutation.mutate({ values: form.getValues(), recipientEmail: testEmail.trim() })}
+              disabled={testSendMutation.isPending || !testEmail.trim()}
+              data-testid="button-confirm-test"
+            >
+              {testSendMutation.isPending
+                ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                : <MailCheck className="w-4 h-4 mr-2" />}
+              Enviar prueba
             </Button>
           </div>
         </DialogContent>
