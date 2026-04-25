@@ -839,6 +839,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         consentedAt: new Date().toISOString(),
         consentText: GDPR_CONSENT_TEXT,
       });
+      // Optional opt-in interest lists from the public signup form. Sanitised
+      // below against this author's actual lists to prevent cross-author writes.
+      const requestedListIds: string[] = Array.isArray(req.body?.listIds)
+        ? req.body.listIds.filter((x: unknown) => typeof x === 'string')
+        : [];
 
       // Resolve author (if scoped) and respect mailingListEnabled flag
       let author: Author | undefined;
@@ -858,6 +863,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const unsubscribeUrl = subscriber.preferencesToken
         ? `${baseUrl}/api/unsubscribe/${subscriber.preferencesToken}`
         : undefined;
+
+      // Apply opt-in list memberships (active lists for this author only).
+      if (requestedListIds.length > 0 && validatedSubscriber.authorId) {
+        try {
+          const authorLists = await storage.getNewsletterLists(validatedSubscriber.authorId, { activeOnly: true });
+          const allowed = new Set(authorLists.map(l => l.id));
+          const safe = requestedListIds.filter(id => allowed.has(id));
+          if (safe.length > 0) {
+            await storage.setSubscriberLists(subscriber.id, safe);
+          }
+        } catch (e) {
+          console.error('Failed to set subscriber lists:', e);
+        }
+      }
 
       // Try to send welcome email with free book
       try {
@@ -930,8 +949,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email: z.string().email(),
         name: z.string().min(1).max(120),
         locale: z.string().min(2).max(10).optional(),
+        listIds: z.array(z.string()).optional(),
       });
-      const { email, name, locale } = claimSchema.parse(req.body);
+      const { email, name, locale, listIds } = claimSchema.parse(req.body);
 
       const author = await storage.getAuthorById(authorId);
       if (!author || !author.isActive) {
@@ -977,6 +997,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subscriberRow = await storage.createNewsletterSubscriber(subscriberPayload);
       } catch {
         // already subscribed - refresh the consent stamp for the audit trail
+        // and keep the row reference so we can still apply list preferences below.
         const existing = await storage.getNewsletterSubscriberByEmail(authorId, email);
         if (existing) {
           subscriberRow = await storage.updateNewsletterSubscriber(existing.id, {
@@ -984,6 +1005,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             consentText: GDPR_CONSENT_TEXT,
             unsubscribedAt: null,
           });
+        }
+      }
+
+      // Apply opt-in list memberships (active lists for this author only).
+      if (subscriberRow && Array.isArray(listIds) && listIds.length > 0) {
+        try {
+          const authorLists = await storage.getNewsletterLists(authorId, { activeOnly: true });
+          const allowed = new Set(authorLists.map(l => l.id));
+          const safe = listIds.filter(id => allowed.has(id));
+          if (safe.length > 0) {
+            await storage.setSubscriberLists(subscriberRow.id, safe);
+          }
+        } catch (e) {
+          console.error('Failed to set subscriber lists on free-book claim:', e);
         }
       }
 
@@ -1315,6 +1350,200 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error('Broadcast send error:', error);
       res.status(500).json({ message: "Failed to send broadcast" });
+    }
+  });
+
+  // ----- Newsletter list (interest topic) routes ---------------------
+  // Lists are author-scoped. The GET endpoint is public so the signup form
+  // and preference center can render the available interest checkboxes;
+  // only active lists are returned to unauthenticated callers. The CRUD
+  // mutations are admin-only.
+
+  function slugify(input: string): string {
+    return input
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 60) || 'lista';
+  }
+
+  app.get("/api/authors/:id/newsletter-lists", async (req, res) => {
+    try {
+      const author = await storage.getAuthorById(req.params.id);
+      if (!author) {
+        res.status(404).json({ message: "Author not found" });
+        return;
+      }
+      const isAdmin = req.isAuthenticated && req.isAuthenticated();
+      const lists = await storage.getNewsletterLists(req.params.id, { activeOnly: !isAdmin });
+      res.json(lists);
+    } catch (error) {
+      console.error('Failed to fetch newsletter lists:', error);
+      res.status(500).json({ message: "Failed to fetch newsletter lists" });
+    }
+  });
+
+  app.post("/api/authors/:id/newsletter-lists", requireAuth, async (req, res) => {
+    try {
+      const author = await storage.getAuthorById(req.params.id);
+      if (!author) {
+        res.status(404).json({ message: "Author not found" });
+        return;
+      }
+      const body = { ...req.body, authorId: req.params.id };
+      if (!body.slug && body.name) body.slug = slugify(body.name);
+      const data = insertNewsletterListSchema.parse(body);
+      const created = await storage.createNewsletterList(data);
+      res.status(201).json(created);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid list data", errors: error.errors });
+        return;
+      }
+      console.error('Failed to create newsletter list:', error);
+      res.status(500).json({ message: "Failed to create newsletter list" });
+    }
+  });
+
+  app.patch("/api/newsletter-lists/:id", requireAuth, async (req, res) => {
+    try {
+      const existing = await storage.getNewsletterListById(req.params.id);
+      if (!existing) {
+        res.status(404).json({ message: "List not found" });
+        return;
+      }
+      const patchSchema = insertNewsletterListSchema.partial();
+      const patch = patchSchema.parse(req.body);
+      if (patch.name && !patch.slug && !existing.slug) patch.slug = slugify(patch.name);
+      const updated = await storage.updateNewsletterList(req.params.id, patch);
+      res.json(updated);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid list data", errors: error.errors });
+        return;
+      }
+      console.error('Failed to update newsletter list:', error);
+      res.status(500).json({ message: "Failed to update newsletter list" });
+    }
+  });
+
+  app.delete("/api/newsletter-lists/:id", requireAuth, async (req, res) => {
+    try {
+      const ok = await storage.deleteNewsletterList(req.params.id);
+      if (!ok) {
+        res.status(404).json({ message: "List not found" });
+        return;
+      }
+      res.json({ message: "List deleted" });
+    } catch (error) {
+      console.error('Failed to delete newsletter list:', error);
+      res.status(500).json({ message: "Failed to delete newsletter list" });
+    }
+  });
+
+  // ----- Subscriber preference center (public) -----------------------
+  // The token is the random `preferencesToken` minted at subscription time
+  // and embedded in the List-Unsubscribe / footer URLs of all outgoing
+  // mail. It identifies the subscriber without requiring them to log in.
+
+  app.get("/api/preferences/:token", async (req, res) => {
+    try {
+      const subscriber = await storage.getNewsletterSubscriberByToken(req.params.token);
+      if (!subscriber) {
+        res.status(404).json({ message: "Preference link not found or expired" });
+        return;
+      }
+      const author = await storage.getAuthorById(subscriber.authorId);
+      const lists = await storage.getNewsletterLists(subscriber.authorId, { activeOnly: true });
+      const subscribedListIds = await storage.getSubscriberListIds(subscriber.id);
+      res.json({
+        subscriber: {
+          id: subscriber.id,
+          name: subscriber.name,
+          email: subscriber.email,
+          authorId: subscriber.authorId,
+          unsubscribedAt: subscriber.unsubscribedAt,
+        },
+        author: author ? { id: author.id, name: author.name, slug: author.slug } : null,
+        lists,
+        subscribedListIds,
+      });
+    } catch (error) {
+      console.error('Failed to load preferences:', error);
+      res.status(500).json({ message: "Failed to load preferences" });
+    }
+  });
+
+  app.post("/api/preferences/:token", async (req, res) => {
+    try {
+      const subscriber = await storage.getNewsletterSubscriberByToken(req.params.token);
+      if (!subscriber) {
+        res.status(404).json({ message: "Preference link not found or expired" });
+        return;
+      }
+      const updateSchema = z.object({
+        name: z.string().min(1).max(120).optional(),
+        listIds: z.array(z.string()).optional(),
+        unsubscribe: z.boolean().optional(),
+      });
+      const body = updateSchema.parse(req.body);
+
+      const patch: Partial<typeof subscriber> = {};
+      if (body.name && body.name !== subscriber.name) patch.name = body.name;
+      if (body.unsubscribe === true) patch.unsubscribedAt = new Date().toISOString();
+      // Re-subscribe: an authenticated preference save with unsubscribe=false
+      // clears the soft-unsubscribe flag so future broadcasts include them.
+      if (body.unsubscribe === false && subscriber.unsubscribedAt) patch.unsubscribedAt = null;
+
+      if (Object.keys(patch).length > 0) {
+        await storage.updateNewsletterSubscriber(subscriber.id, patch);
+      }
+
+      if (body.listIds) {
+        // Validate each list belongs to this subscriber's author (defense in depth).
+        const authorLists = await storage.getNewsletterLists(subscriber.authorId, { activeOnly: false });
+        const allowed = new Set(authorLists.map(l => l.id));
+        const safe = body.listIds.filter(id => allowed.has(id));
+        await storage.setSubscriberLists(subscriber.id, safe);
+      }
+
+      const refreshed = await storage.getNewsletterSubscriberByToken(req.params.token);
+      const subscribedListIds = refreshed ? await storage.getSubscriberListIds(refreshed.id) : [];
+      res.json({
+        subscriber: refreshed && {
+          id: refreshed.id,
+          name: refreshed.name,
+          email: refreshed.email,
+          authorId: refreshed.authorId,
+          unsubscribedAt: refreshed.unsubscribedAt,
+        },
+        subscribedListIds,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid preferences", errors: error.errors });
+        return;
+      }
+      console.error('Failed to save preferences:', error);
+      res.status(500).json({ message: "Failed to save preferences" });
+    }
+  });
+
+  // RFC 8058 List-Unsubscribe-Post one-click endpoint. Any POST to this URL
+  // (with or without a body) immediately unsubscribes the bearer of the token.
+  app.post("/api/preferences/:token/unsubscribe", async (req, res) => {
+    try {
+      const updated = await storage.unsubscribeNewsletterByToken(req.params.token);
+      if (!updated) {
+        res.status(404).json({ message: "Preference link not found or expired" });
+        return;
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Failed to unsubscribe:', error);
+      res.status(500).json({ message: "Failed to unsubscribe" });
     }
   });
 

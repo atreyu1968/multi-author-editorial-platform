@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Mail, Send, Eye, BookOpen, Tag, Users, Clock, Gauge } from "lucide-react";
+import { Loader2, Mail, Send, Eye, BookOpen, Tag, Users, Clock, Gauge, Plus, Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -187,7 +187,6 @@ export default function BroadcastManagement() {
   const { data: lists = [] } = useQuery<NewsletterList[]>({
     queryKey: ["/api/authors", selectedAuthorId, "newsletter-lists"],
     enabled: !!selectedAuthorId,
-    // The list endpoint may not be wired yet in this iteration; tolerate 404 by returning [].
     queryFn: async () => {
       try {
         const r = await fetch(`/api/authors/${selectedAuthorId}/newsletter-lists`, { credentials: "include" });
@@ -196,6 +195,47 @@ export default function BroadcastManagement() {
       } catch {
         return [];
       }
+    },
+  });
+
+  const createListMutation = useMutation({
+    mutationFn: async (input: { name: string; description?: string; isDefault?: boolean }) => {
+      const r = await apiRequest("POST", `/api/authors/${selectedAuthorId}/newsletter-lists`, input);
+      return (await r.json()) as NewsletterList;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/authors", selectedAuthorId, "newsletter-lists"] });
+      toast({ title: "Lista creada" });
+    },
+    onError: (err: Error) => {
+      toast({ title: "No se pudo crear la lista", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const updateListMutation = useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: Partial<NewsletterList> }) => {
+      const r = await apiRequest("PATCH", `/api/newsletter-lists/${id}`, patch);
+      return (await r.json()) as NewsletterList;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/authors", selectedAuthorId, "newsletter-lists"] });
+      toast({ title: "Lista actualizada" });
+    },
+    onError: (err: Error) => {
+      toast({ title: "No se pudo actualizar", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const deleteListMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/newsletter-lists/${id}`, undefined);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/authors", selectedAuthorId, "newsletter-lists"] });
+      toast({ title: "Lista eliminada" });
+    },
+    onError: (err: Error) => {
+      toast({ title: "No se pudo eliminar", description: err.message, variant: "destructive" });
     },
   });
 
@@ -306,6 +346,7 @@ export default function BroadcastManagement() {
         <TabsList>
           <TabsTrigger value="compose" data-testid="tab-compose">Componer</TabsTrigger>
           <TabsTrigger value="history" data-testid="tab-history">Historial</TabsTrigger>
+          <TabsTrigger value="lists" data-testid="tab-lists">Listas de interés</TabsTrigger>
         </TabsList>
 
         <TabsContent value="compose" className="space-y-6">
@@ -656,6 +697,18 @@ export default function BroadcastManagement() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="lists">
+          <ListsManager
+            lists={lists}
+            onCreate={(input) => createListMutation.mutate(input)}
+            onUpdate={(id, patch) => updateListMutation.mutate({ id, patch })}
+            onDelete={(id) => deleteListMutation.mutate(id)}
+            isCreating={createListMutation.isPending}
+            isUpdating={updateListMutation.isPending}
+            isDeleting={deleteListMutation.isPending}
+          />
+        </TabsContent>
       </Tabs>
 
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
@@ -693,6 +746,184 @@ export default function BroadcastManagement() {
           </div>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+interface ListsManagerProps {
+  lists: NewsletterList[];
+  onCreate: (input: { name: string; description?: string; isDefault?: boolean }) => void;
+  onUpdate: (id: string, patch: Partial<NewsletterList>) => void;
+  onDelete: (id: string) => void;
+  isCreating: boolean;
+  isUpdating: boolean;
+  isDeleting: boolean;
+}
+
+function ListsManager({ lists, onCreate, onUpdate, onDelete, isCreating, isDeleting }: ListsManagerProps) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [isDefault, setIsDefault] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+
+  function submitNew(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) return;
+    onCreate({ name: name.trim(), description: description.trim() || undefined, isDefault });
+    setName("");
+    setDescription("");
+    setIsDefault(false);
+  }
+
+  function startEdit(l: NewsletterList) {
+    setEditingId(l.id);
+    setEditName(l.name);
+    setEditDescription(l.description ?? "");
+  }
+
+  function saveEdit() {
+    if (!editingId) return;
+    onUpdate(editingId, { name: editName.trim(), description: editDescription.trim() || null });
+    setEditingId(null);
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <h3 className="text-lg font-medium">Nueva lista de interés</h3>
+          <p className="text-sm text-muted-foreground">
+            Crea categorías (por ejemplo "Romance", "Misterio") para que los suscriptores indiquen qué quieren recibir.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={submitNew} className="space-y-3" data-testid="form-new-list">
+            <Input
+              placeholder="Nombre de la lista"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              data-testid="input-list-name"
+            />
+            <Textarea
+              placeholder="Descripción (opcional)"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
+              data-testid="input-list-description"
+            />
+            <label className="flex items-center gap-2 text-sm">
+              <Checkbox
+                checked={isDefault}
+                onCheckedChange={(c) => setIsDefault(!!c)}
+                data-testid="checkbox-list-default"
+              />
+              Marcar por defecto al inscribirse
+            </label>
+            <Button type="submit" disabled={isCreating || !name.trim()} data-testid="button-create-list">
+              {isCreating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
+              Crear lista
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <h3 className="text-lg font-medium">Listas existentes</h3>
+        </CardHeader>
+        <CardContent>
+          {lists.length === 0 ? (
+            <p className="text-sm text-muted-foreground" data-testid="text-no-lists">
+              Aún no hay listas. Crea la primera arriba.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {lists.map((l) => {
+                const editing = editingId === l.id;
+                return (
+                  <div
+                    key={l.id}
+                    className="flex items-start justify-between gap-4 p-4 border rounded-lg"
+                    data-testid={`row-list-${l.id}`}
+                  >
+                    {editing ? (
+                      <div className="flex-1 space-y-2">
+                        <Input
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          data-testid={`input-edit-list-name-${l.id}`}
+                        />
+                        <Textarea
+                          value={editDescription}
+                          onChange={(e) => setEditDescription(e.target.value)}
+                          rows={2}
+                          data-testid={`input-edit-list-description-${l.id}`}
+                        />
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={saveEdit} data-testid={`button-save-list-${l.id}`}>
+                            Guardar
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => setEditingId(null)} data-testid={`button-cancel-edit-list-${l.id}`}>
+                            Cancelar
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium" data-testid={`text-list-name-${l.id}`}>{l.name}</p>
+                          {l.isDefault && <Badge variant="secondary">Por defecto</Badge>}
+                          {!l.isActive && <Badge variant="outline">Inactiva</Badge>}
+                        </div>
+                        {l.description && (
+                          <p className="text-sm text-muted-foreground">{l.description}</p>
+                        )}
+                        <p className="text-xs text-muted-foreground">/{l.slug}</p>
+                      </div>
+                    )}
+
+                    {!editing && (
+                      <div className="flex gap-2 shrink-0">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onUpdate(l.id, { isActive: !l.isActive })}
+                          data-testid={`button-toggle-active-list-${l.id}`}
+                        >
+                          {l.isActive ? "Desactivar" : "Activar"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => startEdit(l)}
+                          data-testid={`button-edit-list-${l.id}`}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => {
+                            if (confirm(`¿Eliminar la lista "${l.name}"? Las suscripciones a esta lista también se borrarán.`)) {
+                              onDelete(l.id);
+                            }
+                          }}
+                          disabled={isDeleting}
+                          data-testid={`button-delete-list-${l.id}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

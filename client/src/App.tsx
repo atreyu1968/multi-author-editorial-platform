@@ -25,6 +25,7 @@ import AuthorsListPage from "@/pages/authors-list";
 import SearchResultsPage from "@/pages/search-results";
 import Checkout from "@/pages/checkout";
 import OrderConfirmation from "@/pages/order-confirmation";
+import PreferencesPage from "@/pages/preferences";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
 
@@ -88,6 +89,10 @@ function Router() {
       {/* Admin routes (no locale prefix needed) - MUST be first */}
       <Route path="/auth" component={AuthPage} />
       <ProtectedRoute path="/admin" component={Admin} />
+
+      {/* Subscriber preference center (accessed from email footers / List-Unsubscribe). */}
+      <Route path="/preferencias/:token" component={PreferencesPage} />
+      <Route path="/preferences/:token" component={PreferencesPage} />
       
       {/* Locale-prefixed routes */}
       <Route path="/:locale(es-ES|en-US|ca-ES|fr-FR|it-IT|de-DE|pt-PT)/" component={Home} />

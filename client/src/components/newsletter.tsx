@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Gift, Check, Users, Mail, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useUiText } from "@/contexts/ui-text-context";
 import { useLocale } from "@/contexts/locale-context";
-import type { Author } from "@shared/schema";
+import type { Author, NewsletterList } from "@shared/schema";
 
 // RGPD: keep this disclosure aligned with the server-side `GDPR_CONSENT_TEXT`
 // constant in server/routes.ts. The exact wording shown here is what the
@@ -28,6 +28,7 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [consent, setConsent] = useState(false);
+  const [selectedListIds, setSelectedListIds] = useState<string[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { locale } = useLocale();
@@ -45,6 +46,32 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
     enabled: !!defaultAuthorId,
   });
 
+  // Fetch active interest lists for this author so subscribers can opt in
+  // at signup time. Tolerates the endpoint returning [] for authors with
+  // no lists configured.
+  const { data: lists = [] } = useQuery<NewsletterList[]>({
+    queryKey: ["/api/authors", defaultAuthorId, "newsletter-lists"],
+    enabled: !!defaultAuthorId,
+    queryFn: async () => {
+      try {
+        const r = await fetch(`/api/authors/${defaultAuthorId}/newsletter-lists`, { credentials: "include" });
+        if (!r.ok) return [];
+        return (await r.json()) as NewsletterList[];
+      } catch {
+        return [];
+      }
+    },
+  });
+
+  // Pre-check default lists once they load (only when nothing has been chosen yet).
+  useEffect(() => {
+    if (lists.length > 0 && selectedListIds.length === 0) {
+      const defaults = lists.filter((l) => l.isDefault).map((l) => l.id);
+      if (defaults.length > 0) setSelectedListIds(defaults);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lists]);
+
   // Endpoint depends on whether the scoped author has a free book configured:
   //   - With a free book: POST /api/authors/:id/free-book/claim, which
   //     subscribes AND emails a one-time tokenized download link (raw file
@@ -53,7 +80,7 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
   //     (so authors with mailingListEnabled=true but no gift can still
   //     collect signups).
   const subscribeMutation = useMutation({
-    mutationFn: async (data: { name: string; email: string; authorId: string }) => {
+    mutationFn: async (data: { name: string; email: string; authorId: string; listIds: string[] }) => {
       const endpoint = scopedAuthor?.freeBookFile
         ? `/api/authors/${data.authorId}/free-book/claim`
         : `/api/newsletter`;
@@ -61,15 +88,17 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
       // with the language they signed up in (used for downstream emails).
       // `consent: true` is required by both endpoints (RGPD).
       const body = scopedAuthor?.freeBookFile
-        ? { name: data.name, email: data.email, locale, consent: true }
-        : { name: data.name, email: data.email, authorId: data.authorId, locale, consent: true };
+        ? { name: data.name, email: data.email, locale, consent: true, listIds: data.listIds }
+        : { name: data.name, email: data.email, authorId: data.authorId, locale, consent: true, listIds: data.listIds };
       const response = await apiRequest("POST", endpoint, body);
       return response.json();
     },
     onSuccess: () => {
       toast({
         title: "¡Suscripción exitosa!",
-        description: "Revisa tu email para descargar tu libro gratuito.",
+        description: scopedAuthor?.freeBookFile
+          ? "Revisa tu email para descargar tu libro gratuito."
+          : "Te has suscrito correctamente a la newsletter.",
       });
       setName("");
       setEmail("");
@@ -114,8 +143,16 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
       name: name.trim(),
       email: email.trim(),
       authorId: defaultAuthorId,
+      listIds: selectedListIds,
     });
   };
+
+  function toggleList(id: string, checked: boolean) {
+    setSelectedListIds((prev) => {
+      if (checked) return Array.from(new Set([...prev, id]));
+      return prev.filter((x) => x !== id);
+    });
+  }
 
   // Hide while loading the author so we never flash a form for an opted-out author.
   if (defaultAuthorId && (isAuthorLoading || !scopedAuthor)) {
@@ -206,6 +243,31 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
                       data-testid="input-email"
                     />
                   </div>
+                  {lists.length > 0 && (
+                    <div className="text-left space-y-2 bg-white/10 rounded-lg p-3 border border-white/20" data-testid="newsletter-lists">
+                      <p className="text-sm font-medium opacity-90">Tus intereses (opcional):</p>
+                      <div className="space-y-2">
+                        {lists.map((l) => {
+                          const checked = selectedListIds.includes(l.id);
+                          return (
+                            <label
+                              key={l.id}
+                              className="flex items-start gap-2 text-sm cursor-pointer"
+                              data-testid={`row-signup-list-${l.id}`}
+                            >
+                              <Checkbox
+                                checked={checked}
+                                onCheckedChange={(c) => toggleList(l.id, !!c)}
+                                className="mt-0.5 border-white/60 data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground"
+                                data-testid={`checkbox-signup-list-${l.id}`}
+                              />
+                              <span className="opacity-95">{l.name}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                   <label
                     htmlFor="newsletter-consent"
                     className="flex items-start gap-3 text-left text-sm opacity-90 cursor-pointer rounded-md p-2 -mx-2 hover:bg-white/5 transition-colors"
