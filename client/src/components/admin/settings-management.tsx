@@ -27,9 +27,12 @@ interface SettingsFormData {
   freeBookFile: string;
   freeBookFormat: string;
   freeBookDescription: string;
-  emailProvider: string;
-  emailFromName: string;
-  emailFromAddress: string;
+  // NOTE: the email provider/sender fields used to live here too, but
+  // they wrote to `site_settings` rows that the email service never
+  // reads. The real configuration lives in `editorial_settings` (admin
+  // panel "Configuración Editorial" -> Email Newsletter) for the
+  // global fallback, and on the `authors` row (admin panel "Autores")
+  // for per-author overrides. Don't reintroduce the dead duplicates.
   instagramUrl: string;
   twitterUrl: string;
   facebookUrl: string;
@@ -117,7 +120,7 @@ export default function SettingsManagement() {
     tabGeneral: useUiText("admin.settings", "tab_general", "General"),
     tabAppearance: useUiText("admin.settings", "tab_appearance", "Apariencia"),
     tabSocial: useUiText("admin.settings", "tab_social", "Redes"),
-    tabNewsletter: useUiText("admin.settings", "tab_newsletter", "Newsletter"),
+    tabNewsletter: useUiText("admin.settings", "tab_newsletter", "Libro de regalo (global)"),
     tabStats: useUiText("admin.settings", "tab_stats", "Estadísticas"),
     cardGeneralTitle: useUiText("admin.settings", "card_general_title"),
     labelHeroTitle: useUiText("admin.settings", "label_hero_title"),
@@ -173,7 +176,7 @@ export default function SettingsManagement() {
     placeholderAmazon: useUiText("admin.settings", "placeholder_amazon"),
     buttonSaveSocialPending: useUiText("admin.settings", "button_save_social_pending"),
     buttonSaveSocial: useUiText("admin.settings", "button_save_social"),
-    cardNewsletterTitle: useUiText("admin.settings", "card_newsletter_title"),
+    cardNewsletterTitle: useUiText("admin.settings", "card_newsletter_title", "Libro de regalo (global)"),
     headingFreeBook: useUiText("admin.settings", "heading_free_book"),
     labelFreeBookTitle: useUiText("admin.settings", "label_free_book_title"),
     placeholderFreeBookTitle: useUiText("admin.settings", "placeholder_free_book_title"),
@@ -289,9 +292,6 @@ export default function SettingsManagement() {
       freeBookFile: "",
       freeBookFormat: "EPUB",
       freeBookDescription: "",
-      emailProvider: "Resend",
-      emailFromName: "",
-      emailFromAddress: "",
       instagramUrl: "",
       twitterUrl: "",
       facebookUrl: "",
@@ -324,9 +324,6 @@ export default function SettingsManagement() {
         freeBookFile: settingsMap.freeBookFile || "",
         freeBookFormat: settingsMap.freeBookFormat || "EPUB",
         freeBookDescription: settingsMap.freeBookDescription || "",
-        emailProvider: settingsMap.emailProvider || "Resend",
-        emailFromName: settingsMap.emailFromName || "",
-        emailFromAddress: settingsMap.emailFromAddress || "",
         instagramUrl: settingsMap.instagramUrl || "",
         twitterUrl: settingsMap.twitterUrl || "",
         facebookUrl: settingsMap.facebookUrl || "",
@@ -399,8 +396,8 @@ export default function SettingsManagement() {
   });
 
   const updateGeneralSettingsMutation = createUpdateMutation([
-    'heroTitle', 'heroSubtitle', 'contactEmail', 'freeBookTitle', 'freeBookFile', 
-    'freeBookFormat', 'freeBookDescription', 'emailProvider', 'emailFromName', 'emailFromAddress'
+    'heroTitle', 'heroSubtitle', 'contactEmail', 'freeBookTitle', 'freeBookFile',
+    'freeBookFormat', 'freeBookDescription'
   ]);
 
   const updateAppearanceMutation = createUpdateMutation(['logoUrl', 'faviconUrl']);
@@ -1117,77 +1114,31 @@ export default function SettingsManagement() {
                     />
                   </div>
 
-                  <div className="border-t pt-6 space-y-4">
-                    <h4 className="font-semibold text-lg">{t.headingEmailConfig}</h4>
-                    
-                    <FormField
-                      control={form.control}
-                      name="emailProvider"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t.labelEmailProvider}</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger data-testid="select-email-provider">
-                                <SelectValue />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="Resend">{t.providerResend}</SelectItem>
-                              <SelectItem value="SendGrid">{t.providerSendgrid}</SelectItem>
-                              <SelectItem value="Mailchimp">{t.providerMailchimp}</SelectItem>
-                              <SelectItem value="Brevo">{t.providerBrevo}</SelectItem>
-                              <SelectItem value="Postmark">{t.providerPostmark}</SelectItem>
-                              <SelectItem value="Mailgun">{t.providerMailgun}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* Instrucciones dinámicas según el proveedor */}
-                    <EmailProviderInstructions 
-                      provider={form.watch("emailProvider")} 
-                      instructionsTitle={t.emailInstructionsTitle}
-                      instructionsLink={t.emailInstructionsLink}
-                      providerSteps={providerSteps}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="emailFromName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t.labelEmailFromName}</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder={t.placeholderEmailFromName} data-testid="input-email-from-name" />
-                          </FormControl>
-                          <FormDescription>
-                            {t.descEmailFromName}
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="emailFromAddress"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t.labelEmailFromAddress}</FormLabel>
-                          <FormControl>
-                            <Input {...field} type="email" placeholder={t.placeholderEmailFromAddress} data-testid="input-email-from-address" />
-                          </FormControl>
-                          <FormDescription>
-                            {t.descEmailFromAddress}
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                  <Alert
+                    className="bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-900"
+                    data-testid="alert-email-config-moved"
+                  >
+                    <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <AlertDescription className="text-blue-900 dark:text-blue-100">
+                      <p className="font-semibold mb-1">¿Buscas el remitente y proveedor de email?</p>
+                      <p className="text-sm leading-relaxed">
+                        La configuración de envío (proveedor, API key, nombre y email del remitente)
+                        se gestiona ahora en dos sitios:
+                      </p>
+                      <ul className="text-sm list-disc list-inside mt-2 space-y-1">
+                        <li>
+                          <strong>Configuración Editorial → Email Newsletter</strong>: configuración global por defecto.
+                        </li>
+                        <li>
+                          <strong>Autores → ficha del autor</strong>: cada autor puede sobrescribir el remitente y/o el proveedor.
+                          Los campos vacíos heredan del editorial.
+                        </li>
+                      </ul>
+                      <p className="text-xs text-blue-800 dark:text-blue-200 mt-2 opacity-80">
+                        Esta sección solo guarda el libro de regalo de fallback que se usa cuando un autor no ha configurado el suyo propio.
+                      </p>
+                    </AlertDescription>
+                  </Alert>
 
                   <Button 
                     type="submit" 
