@@ -934,7 +934,7 @@ export default function AuthorManagement() {
                           <Input {...field} value={field.value || ""} placeholder="/objects/... o https://..." data-testid="input-author-free-book-file" />
                           <FileUploader
                             onComplete={(result) => form.setValue("freeBookFile", result.objectPath)}
-                            allowedFileTypes={["application/epub+zip", "application/pdf", "application/vnd.amazon.ebook", "application/x-mobipocket-ebook", "application/octet-stream"]}
+                            allowedFileTypes={["application/epub+zip", "application/pdf", "application/vnd.amazon.ebook", "application/x-mobipocket-ebook", "application/octet-stream", ".epub", ".pdf", ".azw", ".azw3", ".mobi", ".kfx"]}
                             buttonClassName="shrink-0"
                           >
                             <Upload className="h-4 w-4 mr-2" />
