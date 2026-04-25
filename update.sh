@@ -182,55 +182,91 @@ rm -f "$BUILD_LOG"
 
 # ============================================================
 # ACTUALIZAR ESQUEMA DE BASE DE DATOS
-# Método 1: Migraciones SQL incrementales (robusto, sin prompts)
-# Método 2: drizzle-kit push como fallback
+#
+# Estrategia en DOS fases para no volver a dejar la BBDD a medias:
+#
+#   Fase 1: drizzle-kit push --force
+#     Sincroniza el esquema declarado en shared/schema.ts contra la BBDD,
+#     creando cualquier tabla o columna nueva que aún no exista. Esto cubre
+#     los casos en los que un PR añade una tabla nueva (broadcasts, listas
+#     de interés, etc.) sin acompañarla de un .sql en migrations/.
+#     Se alimenta una secuencia infinita de Enter por stdin para responder
+#     automáticamente a los prompts de "crear tabla" / "crear columna" con
+#     la opción por defecto (la primera, que siempre es "create").
+#
+#   Fase 2: migraciones SQL incrementales
+#     Aplica los .sql de migrations/ que no estén ya en la tabla
+#     _migrations. Se ejecutan con ON_ERROR_STOP=1: si una sentencia falla,
+#     psql sale con código no-cero, NO marcamos la migración como aplicada
+#     y avisamos al admin. Antes esto se silenciaba y dejaba huérfanas las
+#     migraciones rotas.
 # ============================================================
 print_status "Actualizando esquema de base de datos..."
 cd "$APP_DIR"
 
-# Método 1: Aplicar migraciones SQL si existen
+# Fase 1: sincronizar esquema declarado en Drizzle ─────────────────
+print_status "  [1/2] Sincronizando esquema con drizzle-kit push --force..."
+DRIZZLE_LOG=$(mktemp /tmp/drizzle_push_XXXXXX.log)
+# `yes ""` envía Enter de forma indefinida para aceptar la opción por
+# defecto (siempre "create") en cada prompt interactivo. Se redirige
+# stderr+stdout al log para no inundar la consola del actualizador.
+if sudo -u $APP_USER -E sh -c 'yes "" | npx drizzle-kit push --force' > "$DRIZZLE_LOG" 2>&1; then
+    print_success "  Esquema sincronizado con drizzle-kit"
+else
+    print_warning "  drizzle-kit push devolvió código no-cero (puede ser un aviso)"
+    echo "  --- últimas líneas del log ---"
+    tail -20 "$DRIZZLE_LOG"
+    echo "  ------------------------------"
+fi
+rm -f "$DRIZZLE_LOG"
+
+# Fase 2: migraciones SQL incrementales ────────────────────────────
 if [ -d "$APP_DIR/migrations" ]; then
+    print_status "  [2/2] Aplicando migraciones SQL incrementales..."
     MIGRATIONS_APPLIED=0
+    MIGRATIONS_FAILED=0
     MIGRATIONS_TABLE_EXISTS=$(psql "$DATABASE_URL" -tAc "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = '_migrations');" 2>/dev/null || echo "f")
-    
+
     if [ "$MIGRATIONS_TABLE_EXISTS" = "f" ]; then
         psql "$DATABASE_URL" -c "CREATE TABLE IF NOT EXISTS _migrations (id SERIAL PRIMARY KEY, filename TEXT UNIQUE NOT NULL, applied_at TIMESTAMP DEFAULT NOW());" 2>/dev/null
-        print_success "Tabla de migraciones creada"
+        print_success "  Tabla de migraciones creada"
     fi
-    
+
     for migration_file in $(ls "$APP_DIR/migrations"/*.sql 2>/dev/null | sort); do
         FILENAME=$(basename "$migration_file")
         ALREADY_APPLIED=$(psql "$DATABASE_URL" -tAc "SELECT COUNT(*) FROM _migrations WHERE filename = '$FILENAME';" 2>/dev/null || echo "0")
-        
+
         if [ "$ALREADY_APPLIED" = "0" ]; then
-            print_status "  Aplicando migración: $FILENAME"
-            if psql "$DATABASE_URL" -f "$migration_file" 2>&1; then
+            print_status "    Aplicando migración: $FILENAME"
+            # ON_ERROR_STOP=1 garantiza que psql sale con código no-cero
+            # si CUALQUIER sentencia del archivo falla. Antes psql salía
+            # con 0 incluso ante errores y la migración se marcaba como
+            # aplicada sin haber hecho nada.
+            if psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$migration_file"; then
                 psql "$DATABASE_URL" -c "INSERT INTO _migrations (filename) VALUES ('$FILENAME');" 2>/dev/null
                 MIGRATIONS_APPLIED=$((MIGRATIONS_APPLIED + 1))
-                print_success "  Migración $FILENAME aplicada"
+                print_success "    Migración $FILENAME aplicada"
             else
-                print_warning "  Error en migración $FILENAME (continuando...)"
+                MIGRATIONS_FAILED=$((MIGRATIONS_FAILED + 1))
+                print_warning "    Migración $FILENAME falló y NO se marca como aplicada"
+                print_warning "    Se reintentará en la próxima actualización"
             fi
         fi
     done
-    
+
     if [ $MIGRATIONS_APPLIED -gt 0 ]; then
-        print_success "$MIGRATIONS_APPLIED migración(es) aplicada(s)"
+        print_success "  $MIGRATIONS_APPLIED migración(es) SQL aplicada(s)"
     else
-        print_success "Base de datos al día (sin migraciones pendientes)"
+        print_success "  Sin migraciones SQL pendientes"
+    fi
+    if [ $MIGRATIONS_FAILED -gt 0 ]; then
+        print_warning "  $MIGRATIONS_FAILED migración(es) SQL fallaron — revisa los logs anteriores"
     fi
 else
-    print_status "No se encontró directorio de migraciones, usando drizzle-kit..."
-    # Método 2: drizzle-kit push (puede tener prompts interactivos)
-    DRIZZLE_LOG=$(mktemp /tmp/drizzle_push_XXXXXX.log)
-    echo "y" | timeout 30 npx drizzle-kit push --force > "$DRIZZLE_LOG" 2>&1 || {
-        print_warning "drizzle-kit push falló o no respondió"
-        echo "  Log: $(cat "$DRIZZLE_LOG")"
-        print_warning "Si hay cambios de esquema pendientes, aplícalos manualmente"
-    }
-    rm -f "$DRIZZLE_LOG"
-    print_success "Base de datos actualizada"
+    print_status "  [2/2] Sin directorio migrations/, omitiendo fase SQL"
 fi
+
+print_success "Base de datos sincronizada"
 
 # ============================================================
 # VERIFICAR USUARIO ADMIN

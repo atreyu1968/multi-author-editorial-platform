@@ -332,13 +332,47 @@ rm -f "$BUILD_LOG"
 
 # ============================================================
 # EJECUTAR MIGRACIONES DE BASE DE DATOS
+#
+# En instalación nueva no aplicamos los .sql de migrations/ porque la BBDD
+# está vacía: drizzle-kit push crea todas las tablas y columnas declaradas
+# en shared/schema.ts en una sola pasada. Como `--force` por sí solo no
+# silencia los prompts del tipo "¿es la tabla X nueva o renombrada de Y?",
+# canalizamos `yes ""` para responder Enter de forma indefinida y aceptar
+# la opción por defecto (siempre la primera, que es "create").
+#
+# Tras la sincronización marcamos todas las migraciones SQL existentes
+# como ya aplicadas en la tabla _migrations. Sus contenidos son
+# idempotentes (ADD COLUMN IF NOT EXISTS, CREATE TABLE IF NOT EXISTS),
+# pero registrarlas evita que el primer update.sh tras una instalación
+# limpia las reintente innecesariamente.
 # ============================================================
 print_status "Sincronizando esquema de base de datos..."
 
 cd "$APP_DIR"
 
-# Ejecutar db:push con --force para evitar prompts interactivos
-sudo -u $APP_USER -E npx drizzle-kit push --force 2>&1 | tail -10
+# Sincronizar esquema declarado en Drizzle
+DRIZZLE_LOG=$(mktemp /tmp/drizzle_install_XXXXXX.log)
+if sudo -u $APP_USER -E sh -c 'yes "" | npx drizzle-kit push --force' > "$DRIZZLE_LOG" 2>&1; then
+    print_success "Esquema sincronizado con drizzle-kit"
+else
+    print_error "drizzle-kit push falló — revisa el log:"
+    tail -30 "$DRIZZLE_LOG"
+    rm -f "$DRIZZLE_LOG"
+    exit 1
+fi
+rm -f "$DRIZZLE_LOG"
+
+# Registrar las migraciones SQL existentes como ya aplicadas
+if [ -d "$APP_DIR/migrations" ]; then
+    psql "$DATABASE_URL" -c "CREATE TABLE IF NOT EXISTS _migrations (id SERIAL PRIMARY KEY, filename TEXT UNIQUE NOT NULL, applied_at TIMESTAMP DEFAULT NOW());" 2>/dev/null
+    SEEDED=0
+    for migration_file in $(ls "$APP_DIR/migrations"/*.sql 2>/dev/null | sort); do
+        FILENAME=$(basename "$migration_file")
+        psql "$DATABASE_URL" -c "INSERT INTO _migrations (filename) VALUES ('$FILENAME') ON CONFLICT (filename) DO NOTHING;" 2>/dev/null
+        SEEDED=$((SEEDED + 1))
+    done
+    print_success "Registradas $SEEDED migración(es) SQL como aplicadas"
+fi
 
 print_success "Base de datos sincronizada"
 
