@@ -82,7 +82,11 @@ const formSchema = z.object({
   promoStartsAt: z.string().optional(),
   promoEndsAt: z.string().optional(),
   listIds: z.array(z.string()).default([]),
-  scheduleMode: z.enum(["now", "later"]).default("now"),
+  // "now"            – send immediately (legacy)
+  // "later"          – at a single fixed datetime + timezone (legacy)
+  // "per_local_9am"  – on a chosen local date, deliver at 9 a.m. in each
+  //                    subscriber's own timezone
+  scheduleMode: z.enum(["now", "later", "per_local_9am"]).default("now"),
   scheduleDate: z.string().optional(),
   scheduleTime: z.string().optional(),
   scheduleTimezone: z.string().optional(),
@@ -111,6 +115,20 @@ const formSchema = z.object({
       if (!iso) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["scheduleDate"], message: "Fecha/hora inválida" });
       } else if (new Date(iso).getTime() <= Date.now()) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["scheduleDate"], message: "Debe ser una fecha futura" });
+      }
+    }
+  }
+  if (data.scheduleMode === "per_local_9am") {
+    if (!data.scheduleDate) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["scheduleDate"], message: "Fecha requerida" });
+    } else {
+      // The chosen local date must not be entirely in the past everywhere on
+      // earth. We accept anything from "today in UTC+14" onward.
+      const today = new Date();
+      const todayInUtcPlus14 = new Date(today.getTime() + 14 * 3600 * 1000)
+        .toISOString().slice(0, 10);
+      if (data.scheduleDate < todayInUtcPlus14) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["scheduleDate"], message: "Debe ser una fecha futura" });
       }
     }
@@ -241,6 +259,16 @@ export default function BroadcastManagement() {
 
   const { data: pastBroadcasts = [], isLoading: loadingHistory } = useQuery<Broadcast[]>({
     queryKey: ["/api/authors", selectedAuthorId, "broadcasts"],
+    // The default fetcher only treats *object* segments as query params, so a
+    // hierarchical key like ["/api/authors", id, "broadcasts"] would collapse
+    // to "/api/authors". Override here to build the actual nested REST URL.
+    queryFn: async () => {
+      const r = await fetch(`/api/authors/${selectedAuthorId}/broadcasts`, {
+        credentials: "include",
+      });
+      if (!r.ok) throw new Error(`${r.status}: ${(await r.text()) || r.statusText}`);
+      return (await r.json()) as Broadcast[];
+    },
     enabled: !!selectedAuthorId,
   });
 
@@ -259,6 +287,14 @@ export default function BroadcastManagement() {
     const rate = values.rateLimitPerMinute && values.rateLimitPerMinute.trim()
       ? Math.floor(Number(values.rateLimitPerMinute))
       : null;
+    // Map the UI's three-way `scheduleMode` to the wire format. The
+    // server understands two values: "fixed" (covers both "now" and "later")
+    // and "per_recipient_local_9am". The admin's detected timezone is
+    // forwarded as the fallback for subscribers that never shared one of
+    // their own.
+    const wireScheduleMode = values.scheduleMode === "per_local_9am"
+      ? "per_recipient_local_9am"
+      : "fixed";
     return {
       type: values.type,
       bookId: values.bookId,
@@ -271,8 +307,12 @@ export default function BroadcastManagement() {
       promoEndsAt: values.type === "promotion" ? (values.promoEndsAt || null) : null,
       listIds: values.listIds && values.listIds.length > 0 ? values.listIds : null,
       scheduledFor,
-      timezone: values.scheduleMode === "later" ? (values.scheduleTimezone || null) : null,
+      timezone: values.scheduleMode === "later"
+        ? (values.scheduleTimezone || null)
+        : (values.scheduleMode === "per_local_9am" ? detectedTz : null),
       rateLimitPerMinute: rate,
+      scheduleMode: wireScheduleMode,
+      localDeliveryDate: values.scheduleMode === "per_local_9am" ? (values.scheduleDate || null) : null,
     };
   }
 
@@ -296,11 +336,18 @@ export default function BroadcastManagement() {
     },
     onSuccess: (data) => {
       if (data.status === "scheduled") {
-        const when = data.scheduledFor ? new Date(data.scheduledFor).toLocaleString("es-ES") : "";
-        toast({
-          title: "Campaña programada",
-          description: `Se enviará el ${when}${data.timezone ? ` (${data.timezone})` : ""}.`,
-        });
+        if (data.scheduleMode === "per_recipient_local_9am" && data.localDeliveryDate) {
+          toast({
+            title: "Entrega local programada",
+            description: `Cada suscriptor recibirá la campaña a las 9:00 hora local el ${data.localDeliveryDate}.`,
+          });
+        } else {
+          const when = data.scheduledFor ? new Date(data.scheduledFor).toLocaleString("es-ES") : "";
+          toast({
+            title: "Campaña programada",
+            description: `Se enviará el ${when}${data.timezone ? ` (${data.timezone})` : ""}.`,
+          });
+        }
       } else {
         toast({
           title: "Campaña enviada",
@@ -503,6 +550,12 @@ export default function BroadcastManagement() {
                               </FormControl>
                               <FormLabel className="font-normal">Programar envío</FormLabel>
                             </FormItem>
+                            <FormItem className="flex items-center gap-2 space-y-0">
+                              <FormControl>
+                                <RadioGroupItem value="per_local_9am" data-testid="radio-schedule-per-local" />
+                              </FormControl>
+                              <FormLabel className="font-normal">Enviar a las 9:00 hora local de cada suscriptor</FormLabel>
+                            </FormItem>
                           </RadioGroup>
                         </FormControl>
                         <FormMessage />
@@ -548,6 +601,26 @@ export default function BroadcastManagement() {
                             <FormMessage />
                           </FormItem>
                         )} />
+                      </div>
+                    )}
+
+                    {watchScheduleMode === "per_local_9am" && (
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <FormField control={form.control} name="scheduleDate" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Fecha de entrega local</FormLabel>
+                            <FormControl>
+                              <Input type="date" data-testid="input-local-delivery-date" {...field} />
+                            </FormControl>
+                            <FormDescription>
+                              Cada suscriptor recibirá el email a las 9:00 hora local en esta fecha.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <div className="text-sm text-muted-foreground self-end pb-2" data-testid="text-per-local-fallback">
+                          Suscriptores sin zona horaria detectada usarán <strong>{detectedTz}</strong>.
+                        </div>
                       </div>
                     )}
 
@@ -612,8 +685,12 @@ export default function BroadcastManagement() {
                       onClick={() => setConfirmOpen(true)}
                       data-testid="button-broadcast-send"
                     >
-                      {watchScheduleMode === "later" ? <Clock className="w-4 h-4 mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-                      {watchScheduleMode === "later" ? "Programar campaña" : "Enviar campaña"}
+                      {watchScheduleMode === "now" ? <Send className="w-4 h-4 mr-2" /> : <Clock className="w-4 h-4 mr-2" />}
+                      {watchScheduleMode === "now"
+                        ? "Enviar campaña"
+                        : watchScheduleMode === "per_local_9am"
+                          ? "Programar entrega local"
+                          : "Programar campaña"}
                     </Button>
                     {preview && (
                       <Badge variant="secondary" className="self-center" data-testid="text-recipient-count">
@@ -669,11 +746,23 @@ export default function BroadcastManagement() {
                             </Badge>
                           </div>
                           <p className="font-medium">{b.subject}</p>
-                          {b.status === "scheduled" && b.scheduledFor ? (
+                          {b.status === "scheduled" && b.scheduleMode === "per_recipient_local_9am" ? (
+                            <p className="text-xs text-muted-foreground" data-testid={`text-scheduled-${b.id}`}>
+                              Entrega local: 9:00 hora local de cada suscriptor el {b.localDeliveryDate}
+                              {b.rateLimitPerMinute ? ` · ritmo ${b.rateLimitPerMinute}/min` : ""}
+                            </p>
+                          ) : b.status === "scheduled" && b.scheduledFor ? (
                             <p className="text-xs text-muted-foreground" data-testid={`text-scheduled-${b.id}`}>
                               Programada para {new Date(b.scheduledFor).toLocaleString("es-ES")}
                               {b.timezone ? ` (${b.timezone})` : ""}
                               {b.rateLimitPerMinute ? ` · ritmo ${b.rateLimitPerMinute}/min` : ""}
+                            </p>
+                          ) : b.status === "sending" && b.scheduleMode === "per_recipient_local_9am" ? (
+                            <p className="text-xs text-muted-foreground">
+                              Entrega local en curso · {b.successCount ?? 0}/{b.recipientCount ?? 0} entregadas
+                              {b.completedTimezones && b.completedTimezones.length > 0
+                                ? ` · zonas listas: ${b.completedTimezones.length}`
+                                : ""}
                             </p>
                           ) : b.status === "sending" ? (
                             <p className="text-xs text-muted-foreground">
@@ -715,7 +804,11 @@ export default function BroadcastManagement() {
         <DialogContent data-testid="dialog-confirm-send">
           <DialogHeader>
             <DialogTitle>
-              {watchScheduleMode === "later" ? "¿Programar la campaña?" : "¿Enviar la campaña?"}
+              {watchScheduleMode === "now"
+                ? "¿Enviar la campaña?"
+                : watchScheduleMode === "per_local_9am"
+                  ? "¿Programar la entrega local?"
+                  : "¿Programar la campaña?"}
             </DialogTitle>
           </DialogHeader>
           {watchScheduleMode === "later" ? (
@@ -730,6 +823,13 @@ export default function BroadcastManagement() {
               </strong>{" "}
               ({form.getValues("scheduleTimezone")}).
             </p>
+          ) : watchScheduleMode === "per_local_9am" ? (
+            <p className="text-sm" data-testid="text-confirm-per-local">
+              Cada uno de los <strong>{preview?.recipientCount ?? 0}</strong> suscriptores recibirá la
+              campaña a las <strong>9:00</strong> hora local en su propia zona el{" "}
+              <strong>{form.getValues("scheduleDate")}</strong>. Quienes no tengan zona detectada
+              usarán <strong>{detectedTz}</strong>.
+            </p>
           ) : (
             <p className="text-sm">
               Vas a enviar este email a <strong>{preview?.recipientCount ?? 0}</strong> suscriptores activos. No se puede deshacer.
@@ -740,8 +840,8 @@ export default function BroadcastManagement() {
             <Button onClick={() => sendMutation.mutate(form.getValues())} disabled={sendMutation.isPending} data-testid="button-confirm-send">
               {sendMutation.isPending
                 ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                : (watchScheduleMode === "later" ? <Clock className="w-4 h-4 mr-2" /> : <Send className="w-4 h-4 mr-2" />)}
-              {watchScheduleMode === "later" ? "Programar" : "Enviar ahora"}
+                : (watchScheduleMode === "now" ? <Send className="w-4 h-4 mr-2" /> : <Clock className="w-4 h-4 mr-2" />)}
+              {watchScheduleMode === "now" ? "Enviar ahora" : "Programar"}
             </Button>
           </div>
         </DialogContent>

@@ -167,6 +167,11 @@ export const newsletters = pgTable("newsletters", {
   // accepted at signup time.
   consentedAt: text("consented_at"),
   consentText: text("consent_text"),
+  // Optional IANA timezone (e.g. "Europe/Madrid", "America/Mexico_City") used
+  // by the per-recipient local-delivery scheduler so each subscriber gets the
+  // campaign at 9 a.m. their own local time. Captured from the browser at
+  // signup time when available; admins may also import/edit it later.
+  timezone: text("timezone"),
 });
 
 // Per-author topical lists subscribers can opt into (e.g. "Histórica",
@@ -253,6 +258,24 @@ export const broadcasts = pgTable("broadcasts", {
   // `scheduledFor` value is always normalized to UTC at write time.
   scheduledFor: text("scheduled_for"),
   timezone: text("timezone"),
+  // Scheduling mode:
+  //   "fixed"                    – the legacy behavior: send to every recipient
+  //                                at the single UTC instant in `scheduledFor`.
+  //   "per_recipient_local_9am"  – on `localDeliveryDate`, deliver to each
+  //                                subscriber when 9 a.m. arrives in their own
+  //                                timezone. The cron tick groups recipients by
+  //                                IANA zone and dispatches each group as its
+  //                                local clock hits 09:**, recording each
+  //                                completed zone in `completedTimezones` so a
+  //                                later tick doesn't double-send.
+  scheduleMode: text("schedule_mode").notNull().default("fixed"),
+  // Local calendar date (YYYY-MM-DD) the campaign should be received on.
+  // Only used when `scheduleMode = "per_recipient_local_9am"`. Each subscriber
+  // gets the email at 9 a.m. local time on this date.
+  localDeliveryDate: text("local_delivery_date"),
+  // IANA zones already dispatched to. Used by the per-recipient scheduler so
+  // overlapping ticks (or restarts) never re-send to the same group.
+  completedTimezones: text("completed_timezones").array(),
   // Optional throttle: emails per minute. NULL/0 = no throttling. Used to
   // pace bulk sends so providers don't flag the run as a spam burst.
   rateLimitPerMinute: integer("rate_limit_per_minute"),
@@ -665,6 +688,10 @@ export const insertNewsletterSchema = createInsertSchema(newsletters).omit({
   subscribedAt: true,
   preferencesToken: true,
   unsubscribedAt: true,
+}).extend({
+  // Optional IANA timezone string. The public signup endpoints accept the
+  // value the browser detected via `Intl.DateTimeFormat().resolvedOptions().timeZone`.
+  timezone: z.string().min(1).max(64).optional().nullable(),
 });
 
 export const insertNewsletterListSchema = createInsertSchema(newsletterLists).omit({
@@ -702,6 +729,13 @@ export const insertBroadcastSchema = createInsertSchema(broadcasts).omit({
   scheduledFor: z.string().datetime().optional().nullable(),
   timezone: z.string().min(1).max(64).optional().nullable(),
   rateLimitPerMinute: z.number().int().positive().max(10000).optional().nullable(),
+  // Per-recipient local-9am scheduling. When `scheduleMode = "per_recipient_local_9am"`
+  // the client must also send `localDeliveryDate` (YYYY-MM-DD); the server
+  // derives `scheduledFor` from it so the cron tick picks the row up early
+  // enough to dispatch the easternmost timezones at their 9 a.m.
+  scheduleMode: z.enum(["fixed", "per_recipient_local_9am"]).optional(),
+  localDeliveryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+  completedTimezones: z.array(z.string()).optional().nullable(),
 });
 
 export const insertCustomerSchema = createInsertSchema(customers).omit({

@@ -947,6 +947,9 @@ export class MemStorage {
       // Newsletter row shape (`string | null`, not `... | undefined`).
       consentedAt: insertNewsletter.consentedAt ?? null,
       consentText: insertNewsletter.consentText ?? null,
+      // IANA timezone (optional). Captured from the browser at signup so the
+      // per-recipient local-9-a.m. broadcast scheduler can honour it.
+      timezone: insertNewsletter.timezone ?? null,
     };
     this.newsletters.set(id, newsletter);
     return newsletter;

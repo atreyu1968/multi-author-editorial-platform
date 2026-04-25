@@ -84,12 +84,20 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
       const endpoint = scopedAuthor?.freeBookFile
         ? `/api/authors/${data.authorId}/free-book/claim`
         : `/api/newsletter`;
+      // Best-effort: send the browser's IANA timezone so the per-recipient
+      // local-9-a.m. broadcast scheduler can deliver each subscriber's
+      // campaign at 9 a.m. their own local time. Falls back to undefined on
+      // older browsers; the server treats it as optional.
+      let browserTimezone: string | undefined;
+      try {
+        browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
+      } catch { /* ignore */ }
       // Always send the active UI locale so subscribers/tokens are tagged
       // with the language they signed up in (used for downstream emails).
       // `consent: true` is required by both endpoints (RGPD).
       const body = scopedAuthor?.freeBookFile
-        ? { name: data.name, email: data.email, locale, consent: true, listIds: data.listIds }
-        : { name: data.name, email: data.email, authorId: data.authorId, locale, consent: true, listIds: data.listIds };
+        ? { name: data.name, email: data.email, locale, consent: true, listIds: data.listIds, timezone: browserTimezone }
+        : { name: data.name, email: data.email, authorId: data.authorId, locale, consent: true, listIds: data.listIds, timezone: browserTimezone };
       const response = await apiRequest("POST", endpoint, body);
       return response.json();
     },

@@ -109,6 +109,40 @@ function isValidHexColor(color: string): boolean {
 // provider spam-burst heuristics.
 const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 
+// Returns the local calendar date (YYYY-MM-DD) and clock hour (0-23) of `now`
+// expressed in the IANA `tz`. Used by the per-recipient scheduler to decide
+// whether a given timezone group is currently in their 9 a.m. window.
+// Returns `null` when the zone string is invalid so callers can skip safely.
+function getLocalDateAndHour(tz: string, now: Date): { date: string; hour: number } | null {
+  try {
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      hourCycle: 'h23',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit',
+    });
+    const map = Object.fromEntries(
+      fmt.formatToParts(now).filter(p => p.type !== 'literal').map(p => [p.type, p.value]),
+    );
+    if (!map.year || !map.month || !map.day || map.hour === undefined) return null;
+    return { date: `${map.year}-${map.month}-${map.day}`, hour: parseInt(map.hour, 10) };
+  } catch {
+    return null;
+  }
+}
+
+// Returns a UTC ISO timestamp early enough to guarantee the cron tick will
+// pick a per-recipient broadcast up before the easternmost zone hits 9 a.m.
+// on `localDate`. The earliest possible 9-a.m.-local instant on a given
+// date is in UTC+14 (Pacific/Kiritimati): localDate at 09:00 in UTC+14 =
+// (localDate - 1) at 19:00 UTC. We back off another few hours for safety.
+export function earliestDispatchInstantForLocalDate(localDate: string): string {
+  const [y, m, d] = localDate.split('-').map(Number);
+  // localDate at 00:00 UTC minus 14h = previous day at 10:00 UTC. Comfortably
+  // before any zone could reach 9 a.m. local time on the chosen date.
+  return new Date(Date.UTC(y, m - 1, d) - 14 * 3600 * 1000).toISOString();
+}
+
 export async function dispatchBroadcast(broadcastId: string, baseUrl: string) {
   const broadcast = await storage.getBroadcastById(broadcastId);
   if (!broadcast) throw new Error(`Broadcast ${broadcastId} not found`);
@@ -235,9 +269,222 @@ export async function dispatchBroadcast(broadcastId: string, baseUrl: string) {
   });
 }
 
+// Per-recipient local-9-a.m. dispatch helper. A campaign in this mode stays
+// in status="scheduled" across many ticks: each tick sends to the timezone
+// groups whose local clock is currently in the 9 a.m. window, then writes the
+// completed zones back to the row. Once every grouped zone has been served
+// (or the 40-hour delivery window closes), the row is finalized to "sent".
+//
+// Concurrency: in-process `perRecipientLocks` prevents a slow tick from
+// overlapping with the next one for the same broadcast id. We also re-fetch
+// the row inside the helper so we always work from the latest persisted
+// state (success counts + completedTimezones) instead of a stale snapshot.
+const perRecipientLocks = new Set<string>();
+const PER_RECIPIENT_WINDOW_MS = 40 * 60 * 60 * 1000; // 40h: covers UTC+14 → UTC-12
+
+export async function dispatchPerRecipientLocal9amTick(
+  broadcastId: string,
+  baseUrl: string,
+  now: Date = new Date(),
+) {
+  const broadcast = await storage.getBroadcastById(broadcastId);
+  if (!broadcast) return;
+  if (broadcast.scheduleMode !== 'per_recipient_local_9am') return;
+  if (broadcast.status !== 'scheduled' && broadcast.status !== 'sending') return;
+
+  const author = await storage.getAuthorById(broadcast.authorId);
+  if (!author) {
+    await storage.updateBroadcast(broadcastId, { status: 'failed', errorMessage: 'Author not found' });
+    return;
+  }
+  if (!broadcast.bookId) {
+    await storage.updateBroadcast(broadcastId, { status: 'failed', errorMessage: 'bookId is required' });
+    return;
+  }
+  const book = await storage.getBookById(broadcast.bookId);
+  if (!book || book.authorId !== broadcast.authorId) {
+    await storage.updateBroadcast(broadcastId, { status: 'failed', errorMessage: 'Book not found for this author' });
+    return;
+  }
+
+  const recipients = await storage.getActiveSubscribersForBroadcast(
+    broadcast.authorId,
+    broadcast.listIds || [],
+  );
+
+  // Group recipients by their effective IANA zone. Subscribers without a
+  // stored timezone fall back to the broadcast's `timezone` field (the
+  // admin's detected zone), then UTC as last resort.
+  const fallbackTz = broadcast.timezone || 'UTC';
+  const tzGroups = new Map<string, typeof recipients>();
+  for (const sub of recipients) {
+    const tz = (sub.timezone && sub.timezone.trim()) || fallbackTz;
+    const list = tzGroups.get(tz) ?? [];
+    list.push(sub);
+    tzGroups.set(tz, list);
+  }
+
+  // Compute remaining zones (everything not yet processed in a previous tick).
+  const completed = new Set<string>(broadcast.completedTimezones ?? []);
+  const allZones = Array.from(tzGroups.keys());
+  const remaining = allZones.filter(tz => !completed.has(tz));
+
+  // Edge case: nobody to send to (no subscribers, or all already done).
+  // Finalize immediately so the row leaves the queue.
+  if (allZones.length === 0 || remaining.length === 0) {
+    await storage.updateBroadcast(broadcastId, {
+      status: 'sent',
+      recipientCount: recipients.length,
+      sentAt: new Date().toISOString(),
+    });
+    return;
+  }
+
+  // First time we touch the row: stamp the recipientCount + flip to "sending"
+  // (we keep status="sending" while the multi-tick rollout is in progress).
+  if (broadcast.status === 'scheduled') {
+    await storage.updateBroadcast(broadcastId, {
+      status: 'sending',
+      recipientCount: recipients.length,
+    });
+  }
+
+  // Find which of the remaining zones is currently in their 9-a.m. local
+  // hour AND on/after the chosen local delivery date. Anything still
+  // pending past the 40h window is force-completed below.
+  const targetDate = broadcast.localDeliveryDate || '';
+  const dueZones: string[] = [];
+  for (const tz of remaining) {
+    const local = getLocalDateAndHour(tz, now);
+    if (!local) {
+      // Invalid IANA string – skip the zone entirely so we don't stall the row.
+      completed.add(tz);
+      continue;
+    }
+    if (local.hour === 9 && (!targetDate || local.date >= targetDate)) {
+      dueZones.push(tz);
+    }
+  }
+
+  if (dueZones.length > 0) {
+    // Configure the per-author email provider once per tick.
+    const editorialSettings = await storage.getEditorialSettings();
+    const { emailService } = await import('./email-service.js');
+    const configured = emailService.configureForAuthor('newsletter', author, editorialSettings);
+    if (!configured) {
+      await storage.updateBroadcast(broadcastId, {
+        status: 'failed',
+        errorMessage: 'Email provider not configured for this author',
+      });
+      return;
+    }
+
+    let previousBooks: Book[] = [];
+    if (book.seriesId) {
+      const all = await storage.getBooksBySeriesId(book.seriesId);
+      const myOrder = book.orderInSeries ?? Number.MAX_SAFE_INTEGER;
+      previousBooks = all
+        .filter(b => b.id !== book.id && (b.orderInSeries ?? 0) < myOrder)
+        .sort((a, b) => (a.orderInSeries ?? 0) - (b.orderInSeries ?? 0));
+    }
+
+    const authorPageUrl = `${baseUrl}/autor/${author.slug}`;
+    const from = emailService.getDefaultFrom();
+    const rate = broadcast.rateLimitPerMinute ?? 0;
+    const intervalMs = rate > 0 ? Math.ceil(60_000 / rate) : 0;
+    const promo = broadcast.type === 'promotion'
+      && broadcast.promoPriceCents !== null
+      && broadcast.promoPriceCents !== undefined
+      && broadcast.promoCurrency
+        ? {
+            priceCents: broadcast.promoPriceCents,
+            currency: broadcast.promoCurrency,
+            startsAt: broadcast.promoStartsAt,
+            endsAt: broadcast.promoEndsAt,
+          }
+        : undefined;
+
+    let success = broadcast.successCount ?? 0;
+    let failure = broadcast.failureCount ?? 0;
+
+    for (const tz of dueZones) {
+      const group = tzGroups.get(tz) ?? [];
+      for (let i = 0; i < group.length; i++) {
+        const subscriber = group[i];
+        const startedAt = Date.now();
+        try {
+          const unsubscribeUrl = subscriber.preferencesToken
+            ? `${baseUrl}/api/unsubscribe/${subscriber.preferencesToken}`
+            : undefined;
+          await emailService.sendBroadcastEmail({
+            to: subscriber.email,
+            subject: broadcast.subject,
+            from,
+            listUnsubscribeUrl: unsubscribeUrl,
+            tags: { broadcast: broadcast.id, type: broadcast.type, tz },
+            rendererOpts: {
+              type: broadcast.type as 'new_release' | 'promotion',
+              author,
+              from,
+              book,
+              previousBooks,
+              customMessage: broadcast.customMessage,
+              promo,
+              unsubscribeUrl,
+              baseUrl,
+              authorPageUrl,
+            },
+          });
+          success++;
+        } catch (err) {
+          console.error(`Per-recipient broadcast ${broadcastId} failed for ${subscriber.email}:`, err);
+          failure++;
+        }
+        if (intervalMs > 0 && i < group.length - 1) {
+          const elapsed = Date.now() - startedAt;
+          const wait = intervalMs - elapsed;
+          if (wait > 0) await sleep(wait);
+        }
+      }
+      completed.add(tz);
+    }
+
+    await storage.updateBroadcast(broadcastId, {
+      successCount: success,
+      failureCount: failure,
+      completedTimezones: Array.from(completed),
+    });
+  }
+
+  // Decide whether the rollout is finished. We're done when every zone in
+  // the recipient set has been processed, OR the 40h delivery window has
+  // closed (anything still pending is treated as a no-op completion).
+  const stillPending = allZones.filter(tz => !completed.has(tz));
+  const startedAtMs = broadcast.scheduledFor ? new Date(broadcast.scheduledFor).getTime() : Date.now();
+  const expired = Number.isFinite(startedAtMs) && now.getTime() - startedAtMs > PER_RECIPIENT_WINDOW_MS;
+
+  if (stillPending.length === 0 || expired) {
+    const finalized = await storage.updateBroadcast(broadcastId, {
+      status: 'sent',
+      sentAt: new Date().toISOString(),
+      completedTimezones: Array.from(completed),
+    });
+    if (expired && stillPending.length > 0) {
+      console.warn(
+        `Per-recipient broadcast ${broadcastId} hit the 40h window with ` +
+        `${stillPending.length} timezone(s) still unsent: ${stillPending.join(', ')}`,
+      );
+    }
+    return finalized;
+  }
+}
+
 // Background tick: every minute, claim any "scheduled" broadcasts whose
-// scheduled_for has passed and dispatch them. Each row is flipped to
-// "sending" inside `dispatchBroadcast` so a parallel tick won't double-send.
+// scheduled_for has passed and dispatch them. For "fixed" mode, each row is
+// flipped to "sending" inside `dispatchBroadcast` so a parallel tick won't
+// double-send. For "per_recipient_local_9am", the row stays in
+// "scheduled"/"sending" across many ticks (rolling out timezone-by-timezone)
+// and an in-memory lock prevents overlap.
 let scheduledTickStarted = false;
 function startScheduledBroadcastTick() {
   if (scheduledTickStarted) return;
@@ -250,6 +497,24 @@ function startScheduledBroadcastTick() {
     try {
       const due = await storage.getDueScheduledBroadcasts(new Date().toISOString());
       for (const b of due) {
+        if (b.scheduleMode === 'per_recipient_local_9am') {
+          if (perRecipientLocks.has(b.id)) continue;
+          perRecipientLocks.add(b.id);
+          (async () => {
+            try {
+              await dispatchPerRecipientLocal9amTick(b.id, baseUrl);
+            } catch (err) {
+              console.error(`Per-recipient broadcast ${b.id} tick error:`, err);
+              await storage.updateBroadcast(b.id, {
+                status: 'failed',
+                errorMessage: err instanceof Error ? err.message : String(err),
+              }).catch(() => {});
+            } finally {
+              perRecipientLocks.delete(b.id);
+            }
+          })();
+          continue;
+        }
         // Reserve the row immediately so a concurrent tick (or restart
         // mid-tick) doesn't pick the same row up again. Only proceed if
         // the reservation actually changed status from "scheduled".
@@ -834,10 +1099,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(400).json({ message: "Debes aceptar recibir correos comerciales para suscribirte." });
         return;
       }
+      // Capture the visitor's IANA timezone (browser-detected, optional). Used
+      // by the per-recipient local-9-a.m. broadcast scheduler so subscribers
+      // get the campaign at 9 a.m. their own local time. We accept any string
+      // up to 64 chars; invalid IANA values fall back to the broadcast's
+      // configured fallback zone at dispatch time.
+      const reqTimezone = typeof req.body?.timezone === 'string' && req.body.timezone.trim()
+        ? req.body.timezone.trim().slice(0, 64)
+        : null;
       const validatedSubscriber = insertNewsletterSchema.parse({
         ...req.body,
         consentedAt: new Date().toISOString(),
         consentText: GDPR_CONSENT_TEXT,
+        timezone: reqTimezone,
       });
       // Optional opt-in interest lists from the public signup form. Sanitised
       // below against this author's actual lists to prevent cross-author writes.
@@ -950,8 +1224,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: z.string().min(1).max(120),
         locale: z.string().min(2).max(10).optional(),
         listIds: z.array(z.string()).optional(),
+        // Browser-detected IANA timezone (optional). Same role as on the
+        // /api/newsletter endpoint: enables per-recipient local-9-a.m. delivery.
+        timezone: z.string().min(1).max(64).optional(),
       });
-      const { email, name, locale, listIds } = claimSchema.parse(req.body);
+      const { email, name, locale, listIds, timezone } = claimSchema.parse(req.body);
 
       const author = await storage.getAuthorById(authorId);
       if (!author || !author.isActive) {
@@ -991,6 +1268,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         locale: locale || 'es-ES',
         consentedAt,
         consentText: GDPR_CONSENT_TEXT,
+        timezone: timezone || null,
       });
       let subscriberRow: Awaited<ReturnType<typeof storage.createNewsletterSubscriber>> | undefined;
       try {
@@ -1004,6 +1282,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             consentedAt,
             consentText: GDPR_CONSENT_TEXT,
             unsubscribedAt: null,
+            // Refresh the timezone if the visitor's browser detected one — keeps
+            // the per-recipient scheduler accurate when subscribers move zones.
+            ...(timezone ? { timezone } : {}),
           });
         }
       }
@@ -1325,14 +1606,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const scheduledIso = payload.scheduledFor ? new Date(payload.scheduledFor).toISOString() : null;
-      const isFuture = scheduledIso !== null && new Date(scheduledIso).getTime() > Date.now() + 5_000;
+      const isPerRecipient = payload.scheduleMode === 'per_recipient_local_9am';
+      if (isPerRecipient && !payload.localDeliveryDate) {
+        res.status(400).json({ message: "localDeliveryDate is required for per-recipient local-9am scheduling" });
+        return;
+      }
+
+      // For per-recipient mode the server derives `scheduledFor` from the
+      // chosen local date so the cron tick wakes up early enough to dispatch
+      // the easternmost timezones at their 9 a.m. The admin-detected
+      // `timezone` is still kept as a fallback for subscribers who never
+      // shared one of their own.
+      const scheduledIso = isPerRecipient
+        ? earliestDispatchInstantForLocalDate(payload.localDeliveryDate as string)
+        : (payload.scheduledFor ? new Date(payload.scheduledFor).toISOString() : null);
+      const isFuture = scheduledIso !== null
+        && (isPerRecipient || new Date(scheduledIso).getTime() > Date.now() + 5_000);
 
       // Persist the row. Scheduled rows wait for the worker; immediate rows
       // start as "draft" and are flipped to "sending" once we begin dispatching.
       const draft = await storage.createBroadcast({
         ...payload,
         scheduledFor: scheduledIso,
+        scheduleMode: payload.scheduleMode || 'fixed',
+        localDeliveryDate: isPerRecipient ? (payload.localDeliveryDate || null) : null,
       });
       if (isFuture) {
         const scheduled = await storage.updateBroadcast(draft.id, { status: 'scheduled' });
