@@ -145,6 +145,9 @@ export interface IStorage {
   getBroadcastById(id: string): Promise<Broadcast | undefined>;
   createBroadcast(broadcast: InsertBroadcast): Promise<Broadcast>;
   updateBroadcast(id: string, patch: Partial<Broadcast>): Promise<Broadcast | undefined>;
+  // Returns broadcasts whose status="scheduled" AND scheduled_for <= the
+  // given UTC ISO timestamp. Used by the background tick to claim due jobs.
+  getDueScheduledBroadcasts(nowIso: string): Promise<Broadcast[]>;
   // Returns active subscribers (unsubscribedAt IS NULL) for the author.
   // When `listIds` is non-empty, only subscribers opted into at least one
   // of those lists are returned. When empty/omitted, returns every active
@@ -1007,6 +1010,7 @@ export class MemStorage {
     } as Broadcast;
   }
   async updateBroadcast(): Promise<Broadcast | undefined> { return undefined; }
+  async getDueScheduledBroadcasts(): Promise<Broadcast[]> { return []; }
   async getActiveSubscribersForBroadcast(): Promise<Newsletter[]> { return []; }
 
   // Site Settings methods

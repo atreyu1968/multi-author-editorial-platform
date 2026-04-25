@@ -245,7 +245,19 @@ export const broadcasts = pgTable("broadcasts", {
   // Targeting: array of newsletterLists.id. NULL/empty = send to every
   // active subscriber of this author.
   listIds: text("list_ids").array(),
-  // Lifecycle: draft → sending → sent | failed.
+  // Scheduling: when set, the campaign is queued for the background worker
+  // to dispatch at/after this UTC ISO timestamp. NULL = send immediately
+  // (legacy synchronous flow). `timezone` is the IANA zone the admin picked
+  // in the UI (e.g. "Europe/Madrid"); it's stored for display ("9 a.m. CET")
+  // and so the recurring tick can re-derive the original local time. The
+  // `scheduledFor` value is always normalized to UTC at write time.
+  scheduledFor: text("scheduled_for"),
+  timezone: text("timezone"),
+  // Optional throttle: emails per minute. NULL/0 = no throttling. Used to
+  // pace bulk sends so providers don't flag the run as a spam burst.
+  rateLimitPerMinute: integer("rate_limit_per_minute"),
+  // Lifecycle: draft → scheduled → sending → sent | failed.
+  // (Send-now campaigns skip "scheduled" and go straight to "sending".)
   status: text("status").notNull().default("draft"),
   recipientCount: integer("recipient_count").default(0),
   successCount: integer("success_count").default(0),
@@ -685,6 +697,11 @@ export const insertBroadcastSchema = createInsertSchema(broadcasts).omit({
   // listIds is optional and omits empty arrays
   listIds: z.array(z.string().uuid()).optional().nullable(),
   promoPriceCents: z.number().int().nonnegative().optional().nullable(),
+  // scheduledFor is a UTC ISO-8601 timestamp; the client computes it from
+  // its local datetime + selected timezone. NULL/empty = send immediately.
+  scheduledFor: z.string().datetime().optional().nullable(),
+  timezone: z.string().min(1).max(64).optional().nullable(),
+  rateLimitPerMinute: z.number().int().positive().max(10000).optional().nullable(),
 });
 
 export const insertCustomerSchema = createInsertSchema(customers).omit({

@@ -100,6 +100,182 @@ function isValidHexColor(color: string): boolean {
   return /^#[0-9A-Fa-f]{6}$/.test(color);
 }
 
+// ----- Broadcast dispatch helper ------------------------------------------
+// Shared by the inline "send now" POST handler and the background cron
+// tick. Reads the persisted broadcast row, resolves recipients + previous
+// books in the series, configures the per-author email provider, and sends
+// best-effort per recipient (a single bounce never aborts the run). Honors
+// `rateLimitPerMinute` by sleeping between sends so big lists don't trip
+// provider spam-burst heuristics.
+const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
+
+export async function dispatchBroadcast(broadcastId: string, baseUrl: string) {
+  const broadcast = await storage.getBroadcastById(broadcastId);
+  if (!broadcast) throw new Error(`Broadcast ${broadcastId} not found`);
+
+  const author = await storage.getAuthorById(broadcast.authorId);
+  if (!author) {
+    return await storage.updateBroadcast(broadcastId, {
+      status: 'failed',
+      errorMessage: 'Author not found',
+    });
+  }
+  if (!broadcast.bookId) {
+    return await storage.updateBroadcast(broadcastId, {
+      status: 'failed',
+      errorMessage: 'bookId is required',
+    });
+  }
+  const book = await storage.getBookById(broadcast.bookId);
+  if (!book || book.authorId !== broadcast.authorId) {
+    return await storage.updateBroadcast(broadcastId, {
+      status: 'failed',
+      errorMessage: 'Book not found for this author',
+    });
+  }
+
+  const recipients = await storage.getActiveSubscribersForBroadcast(
+    broadcast.authorId,
+    broadcast.listIds || [],
+  );
+  let previousBooks: Book[] = [];
+  if (book.seriesId) {
+    const all = await storage.getBooksBySeriesId(book.seriesId);
+    const myOrder = book.orderInSeries ?? Number.MAX_SAFE_INTEGER;
+    previousBooks = all
+      .filter(b => b.id !== book.id && (b.orderInSeries ?? 0) < myOrder)
+      .sort((a, b) => (a.orderInSeries ?? 0) - (b.orderInSeries ?? 0));
+  }
+
+  await storage.updateBroadcast(broadcastId, {
+    status: 'sending',
+    recipientCount: recipients.length,
+  });
+
+  const editorialSettings = await storage.getEditorialSettings();
+  const { emailService } = await import('./email-service.js');
+  const configured = emailService.configureForAuthor('newsletter', author, editorialSettings);
+  if (!configured) {
+    return await storage.updateBroadcast(broadcastId, {
+      status: 'failed',
+      errorMessage: 'Email provider not configured for this author',
+    });
+  }
+
+  const authorPageUrl = `${baseUrl}/autor/${author.slug}`;
+  const from = emailService.getDefaultFrom();
+  // Throttle: convert "emails per minute" to "ms per email". A throttle of
+  // 0/null/undefined means no pacing — fire as fast as the provider allows.
+  const rate = broadcast.rateLimitPerMinute ?? 0;
+  const intervalMs = rate > 0 ? Math.ceil(60_000 / rate) : 0;
+
+  let success = 0;
+  let failure = 0;
+  const promo = broadcast.type === 'promotion'
+    && broadcast.promoPriceCents !== null
+    && broadcast.promoPriceCents !== undefined
+    && broadcast.promoCurrency
+      ? {
+          priceCents: broadcast.promoPriceCents,
+          currency: broadcast.promoCurrency,
+          startsAt: broadcast.promoStartsAt,
+          endsAt: broadcast.promoEndsAt,
+        }
+      : undefined;
+
+  for (let i = 0; i < recipients.length; i++) {
+    const subscriber = recipients[i];
+    const sentAtThisOne = Date.now();
+    try {
+      // RGPD: every campaign carries an in-body "darme de baja" link
+      // and the RFC 8058 List-Unsubscribe / List-Unsubscribe-Post
+      // headers, both pointing at the same one-click endpoint.
+      const unsubscribeUrl = subscriber.preferencesToken
+        ? `${baseUrl}/api/unsubscribe/${subscriber.preferencesToken}`
+        : undefined;
+      await emailService.sendBroadcastEmail({
+        to: subscriber.email,
+        subject: broadcast.subject,
+        from,
+        listUnsubscribeUrl: unsubscribeUrl,
+        tags: { broadcast: broadcast.id, type: broadcast.type },
+        rendererOpts: {
+          type: broadcast.type as 'new_release' | 'promotion',
+          author,
+          from,
+          book,
+          previousBooks,
+          customMessage: broadcast.customMessage,
+          promo,
+          unsubscribeUrl,
+          baseUrl,
+          authorPageUrl,
+        },
+      });
+      success++;
+    } catch (err) {
+      console.error(`Broadcast ${broadcastId} failed for ${subscriber.email}:`, err);
+      failure++;
+    }
+    // Pace the loop so we don't exceed the per-minute quota. Skip the wait
+    // after the final send so we don't add latency for the last recipient.
+    if (intervalMs > 0 && i < recipients.length - 1) {
+      const elapsed = Date.now() - sentAtThisOne;
+      const wait = intervalMs - elapsed;
+      if (wait > 0) await sleep(wait);
+    }
+  }
+
+  return await storage.updateBroadcast(broadcastId, {
+    status: failure === 0 ? 'sent' : (success === 0 ? 'failed' : 'sent'),
+    successCount: success,
+    failureCount: failure,
+    sentAt: new Date().toISOString(),
+    errorMessage: failure > 0 && success === 0 ? 'All recipients failed' : null,
+  });
+}
+
+// Background tick: every minute, claim any "scheduled" broadcasts whose
+// scheduled_for has passed and dispatch them. Each row is flipped to
+// "sending" inside `dispatchBroadcast` so a parallel tick won't double-send.
+let scheduledTickStarted = false;
+function startScheduledBroadcastTick() {
+  if (scheduledTickStarted) return;
+  scheduledTickStarted = true;
+
+  const TICK_MS = 60_000; // 1 minute
+  const baseUrl = process.env.PUBLIC_BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
+
+  const tick = async () => {
+    try {
+      const due = await storage.getDueScheduledBroadcasts(new Date().toISOString());
+      for (const b of due) {
+        // Reserve the row immediately so a concurrent tick (or restart
+        // mid-tick) doesn't pick the same row up again. Only proceed if
+        // the reservation actually changed status from "scheduled".
+        const reserved = await storage.updateBroadcast(b.id, { status: 'sending' });
+        if (!reserved || reserved.status !== 'sending') continue;
+        try {
+          await dispatchBroadcast(b.id, baseUrl);
+        } catch (err) {
+          console.error(`Scheduled broadcast ${b.id} dispatch error:`, err);
+          await storage.updateBroadcast(b.id, {
+            status: 'failed',
+            errorMessage: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Scheduled broadcast tick error:', err);
+    }
+  };
+
+  // Fire once shortly after boot so anything overdue from a restart is
+  // picked up promptly, then every minute thereafter.
+  setTimeout(() => { tick(); }, 5_000);
+  setInterval(tick, TICK_MS);
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Rate limiters for critical endpoints
   const newsletterLimiter = rateLimit({
@@ -1081,10 +1257,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // POST /api/authors/:id/broadcasts - persist the campaign and send it
-  // synchronously. We wait for the send loop to finish so the admin UI gets
-  // accurate success/failure counts; volumes are small (≤ a few thousand
-  // subscribers per author) which keeps this well under the request budget.
+  // POST /api/authors/:id/broadcasts - create a campaign.
+  // If `scheduledFor` is omitted/null we send synchronously (legacy "send
+  // now" flow) and wait for the per-recipient loop to finish so the admin
+  // gets accurate success/failure counts. If `scheduledFor` is provided we
+  // persist with status="scheduled" and return immediately; the cron tick
+  // installed below will pick the row up at/after that UTC instant.
   app.post("/api/authors/:id/broadcasts", requireAuth, async (req, res) => {
     try {
       const authorId = req.params.id;
@@ -1112,87 +1290,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Persist as draft → send → mark sent (or failed).
-      const draft = await storage.createBroadcast(payload);
+      const scheduledIso = payload.scheduledFor ? new Date(payload.scheduledFor).toISOString() : null;
+      const isFuture = scheduledIso !== null && new Date(scheduledIso).getTime() > Date.now() + 5_000;
 
-      // Resolve recipients and series tail outside the per-recipient loop.
-      const recipients = await storage.getActiveSubscribersForBroadcast(authorId, payload.listIds || []);
-      let previousBooks: typeof book[] = [];
-      if (book.seriesId) {
-        const all = await storage.getBooksBySeriesId(book.seriesId);
-        const myOrder = book.orderInSeries ?? Number.MAX_SAFE_INTEGER;
-        previousBooks = all
-          .filter(b => b.id !== book.id && (b.orderInSeries ?? 0) < myOrder)
-          .sort((a, b) => (a.orderInSeries ?? 0) - (b.orderInSeries ?? 0));
-      }
-
-      await storage.updateBroadcast(draft.id, { status: 'sending', recipientCount: recipients.length });
-
-      const editorialSettings = await storage.getEditorialSettings();
-      const { emailService } = await import('./email-service.js');
-      const configured = emailService.configureForAuthor('newsletter', author, editorialSettings);
-      if (!configured) {
-        await storage.updateBroadcast(draft.id, { status: 'failed', errorMessage: 'Email provider not configured for this author' });
-        res.status(500).json({ message: "Email provider not configured for this author" });
+      // Persist the row. Scheduled rows wait for the worker; immediate rows
+      // start as "draft" and are flipped to "sending" once we begin dispatching.
+      const draft = await storage.createBroadcast({
+        ...payload,
+        scheduledFor: scheduledIso,
+      });
+      if (isFuture) {
+        const scheduled = await storage.updateBroadcast(draft.id, { status: 'scheduled' });
+        res.status(201).json(scheduled ?? draft);
         return;
       }
 
       const baseUrl = process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get('host')}`;
-      const authorPageUrl = `${baseUrl}/autor/${author.slug}`;
-      const from = emailService.getDefaultFrom();
-
-      let success = 0;
-      let failure = 0;
-      for (const subscriber of recipients) {
-        try {
-          // RGPD: every campaign carries an in-body "darme de baja" link
-          // and the RFC 8058 List-Unsubscribe / List-Unsubscribe-Post
-          // headers, both pointing at the same one-click endpoint.
-          const unsubscribeUrl = subscriber.preferencesToken
-            ? `${baseUrl}/api/unsubscribe/${subscriber.preferencesToken}`
-            : undefined;
-          await emailService.sendBroadcastEmail({
-            to: subscriber.email,
-            subject: payload.subject,
-            from,
-            listUnsubscribeUrl: unsubscribeUrl,
-            tags: { broadcast: draft.id, type: payload.type },
-            rendererOpts: {
-              type: payload.type,
-              author,
-              from,
-              book,
-              previousBooks,
-              customMessage: payload.customMessage,
-              promo: payload.type === 'promotion' && payload.promoPriceCents !== null && payload.promoPriceCents !== undefined && payload.promoCurrency
-                ? {
-                    priceCents: payload.promoPriceCents,
-                    currency: payload.promoCurrency,
-                    startsAt: payload.promoStartsAt,
-                    endsAt: payload.promoEndsAt,
-                  }
-                : undefined,
-              unsubscribeUrl,
-              baseUrl,
-              authorPageUrl,
-            },
-          });
-          success++;
-        } catch (err) {
-          console.error(`Broadcast send failed for ${subscriber.email}:`, err);
-          failure++;
-        }
-      }
-
-      const updated = await storage.updateBroadcast(draft.id, {
-        status: failure === 0 ? 'sent' : (success === 0 ? 'failed' : 'sent'),
-        successCount: success,
-        failureCount: failure,
-        sentAt: new Date().toISOString(),
-        errorMessage: failure > 0 && success === 0 ? 'All recipients failed' : null,
-      });
-
-      res.status(201).json(updated);
+      const result = await dispatchBroadcast(draft.id, baseUrl);
+      res.status(201).json(result);
     } catch (error) {
       if (error instanceof z.ZodError) {
         res.status(400).json({ message: "Invalid broadcast data", errors: error.errors });
@@ -2975,6 +3090,10 @@ ${sitemapRefs}`;
       res.status(500).json({ message: 'Failed to convert currency' });
     }
   });
+
+  // Kick off the background worker that polls for due scheduled broadcasts
+  // and dispatches them. Idempotent — safe to call from re-registrations.
+  startScheduledBroadcastTick();
 
   const httpServer = createServer(app);
   return httpServer;

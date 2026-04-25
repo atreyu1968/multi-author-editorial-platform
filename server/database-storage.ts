@@ -1,6 +1,6 @@
 // Reference: blueprint:javascript_database integration
 import { db } from "./db";
-import { eq, and, isNull, sql, desc, ilike, inArray } from "drizzle-orm";
+import { eq, and, isNull, sql, desc, ilike, inArray, lte, asc } from "drizzle-orm";
 import {
   authors,
   bookSeries,
@@ -542,6 +542,22 @@ export class DatabaseStorage implements IStorage {
       .where(eq(broadcasts.id, id))
       .returning();
     return row;
+  }
+
+  async getDueScheduledBroadcasts(nowIso: string): Promise<Broadcast[]> {
+    // Background tick polls this every minute. We pick scheduled rows whose
+    // scheduled_for has passed (UTC ISO compares lexicographically), oldest
+    // first, so a backlog drains in chronological order.
+    return await db
+      .select()
+      .from(broadcasts)
+      .where(
+        and(
+          eq(broadcasts.status, "scheduled"),
+          lte(broadcasts.scheduledFor, nowIso),
+        ),
+      )
+      .orderBy(asc(broadcasts.scheduledFor));
   }
 
   async getActiveSubscribersForBroadcast(authorId: string, listIds?: string[]): Promise<Newsletter[]> {

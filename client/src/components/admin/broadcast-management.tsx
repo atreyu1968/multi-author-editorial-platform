@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Mail, Send, Eye, BookOpen, Tag, Users } from "lucide-react";
+import { Loader2, Mail, Send, Eye, BookOpen, Tag, Users, Clock, Gauge } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,10 +19,57 @@ import {
 } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAdminAuthor } from "@/contexts/admin-author-context";
 import type { Book, NewsletterList, Broadcast } from "@shared/schema";
+
+// Convert "YYYY-MM-DD" + "HH:MM" interpreted in `tz` (an IANA zone) into a
+// UTC ISO timestamp. Uses Intl.DateTimeFormat to derive the zone's offset
+// at the chosen wall-clock time (handles DST correctly without pulling in a
+// timezone library). If the inputs are invalid, returns null so the caller
+// can surface a validation message instead of sending a bad payload.
+function localDateTimeToUtcIso(date: string, time: string, tz: string): string | null {
+  if (!date || !time || !tz) return null;
+  const [y, m, d] = date.split('-').map(Number);
+  const [hh, mm] = time.split(':').map(Number);
+  if (!y || !m || !d || Number.isNaN(hh) || Number.isNaN(mm)) return null;
+  const utcGuess = Date.UTC(y, m - 1, d, hh, mm);
+  try {
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      hourCycle: 'h23',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+    });
+    const parts = fmt.formatToParts(new Date(utcGuess));
+    const map = Object.fromEntries(parts.filter(p => p.type !== 'literal').map(p => [p.type, p.value]));
+    const asIfUtc = Date.UTC(+map.year, +map.month - 1, +map.day, +map.hour, +map.minute, +map.second);
+    const offset = asIfUtc - utcGuess;
+    return new Date(utcGuess - offset).toISOString();
+  } catch {
+    return null;
+  }
+}
+
+// A short curated list — the most common author timezones — plus the
+// admin's detected local zone if it's not already in the list.
+const COMMON_TIMEZONES = [
+  'Europe/Madrid',
+  'Europe/London',
+  'Europe/Paris',
+  'Europe/Berlin',
+  'Europe/Lisbon',
+  'America/New_York',
+  'America/Chicago',
+  'America/Denver',
+  'America/Los_Angeles',
+  'America/Mexico_City',
+  'America/Buenos_Aires',
+  'America/Sao_Paulo',
+  'UTC',
+];
 
 const formSchema = z.object({
   type: z.enum(["new_release", "promotion"]),
@@ -35,6 +82,11 @@ const formSchema = z.object({
   promoStartsAt: z.string().optional(),
   promoEndsAt: z.string().optional(),
   listIds: z.array(z.string()).default([]),
+  scheduleMode: z.enum(["now", "later"]).default("now"),
+  scheduleDate: z.string().optional(),
+  scheduleTime: z.string().optional(),
+  scheduleTimezone: z.string().optional(),
+  rateLimitPerMinute: z.string().optional(),
 }).superRefine((data, ctx) => {
   if (data.type === "promotion") {
     if (!data.promoPriceEuros || isNaN(Number(data.promoPriceEuros)) || Number(data.promoPriceEuros) < 0) {
@@ -42,6 +94,31 @@ const formSchema = z.object({
     }
     if (!data.promoCurrency) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["promoCurrency"], message: "Moneda requerida" });
+    }
+  }
+  if (data.scheduleMode === "later") {
+    if (!data.scheduleDate) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["scheduleDate"], message: "Fecha requerida" });
+    }
+    if (!data.scheduleTime) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["scheduleTime"], message: "Hora requerida" });
+    }
+    if (!data.scheduleTimezone) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["scheduleTimezone"], message: "Zona horaria requerida" });
+    }
+    if (data.scheduleDate && data.scheduleTime && data.scheduleTimezone) {
+      const iso = localDateTimeToUtcIso(data.scheduleDate, data.scheduleTime, data.scheduleTimezone);
+      if (!iso) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["scheduleDate"], message: "Fecha/hora inválida" });
+      } else if (new Date(iso).getTime() <= Date.now()) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["scheduleDate"], message: "Debe ser una fecha futura" });
+      }
+    }
+  }
+  if (data.rateLimitPerMinute && data.rateLimitPerMinute.trim()) {
+    const n = Number(data.rateLimitPerMinute);
+    if (!Number.isFinite(n) || n <= 0 || n > 10000) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["rateLimitPerMinute"], message: "Entre 1 y 10000" });
     }
   }
 });
@@ -56,7 +133,8 @@ interface PreviewResponse {
 
 const STATUS_LABEL: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   draft: { label: "Borrador", variant: "outline" },
-  sending: { label: "Enviando", variant: "secondary" },
+  scheduled: { label: "Programada", variant: "outline" },
+  sending: { label: "En curso", variant: "secondary" },
   sent: { label: "Enviada", variant: "default" },
   failed: { label: "Fallida", variant: "destructive" },
 };
@@ -66,6 +144,15 @@ export default function BroadcastManagement() {
   const { toast } = useToast();
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const detectedTz = useMemo(() => {
+    try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch { return "UTC"; }
+  }, []);
+  const tzOptions = useMemo(() => {
+    const set = new Set<string>(COMMON_TIMEZONES);
+    set.add(detectedTz);
+    return Array.from(set);
+  }, [detectedTz]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -80,11 +167,17 @@ export default function BroadcastManagement() {
       promoStartsAt: "",
       promoEndsAt: "",
       listIds: [],
+      scheduleMode: "now",
+      scheduleDate: "",
+      scheduleTime: "09:00",
+      scheduleTimezone: detectedTz,
+      rateLimitPerMinute: "",
     },
   });
 
   const watchType = form.watch("type");
   const watchBookId = form.watch("bookId");
+  const watchScheduleMode = form.watch("scheduleMode");
 
   const { data: books = [] } = useQuery<Book[]>({
     queryKey: ["/api/books", { authorId: selectedAuthorId }],
@@ -120,6 +213,12 @@ export default function BroadcastManagement() {
     const promoPriceCents = values.type === "promotion" && values.promoPriceEuros
       ? Math.round(Number(values.promoPriceEuros) * 100)
       : null;
+    const scheduledFor = values.scheduleMode === "later"
+      ? localDateTimeToUtcIso(values.scheduleDate || "", values.scheduleTime || "", values.scheduleTimezone || "UTC")
+      : null;
+    const rate = values.rateLimitPerMinute && values.rateLimitPerMinute.trim()
+      ? Math.floor(Number(values.rateLimitPerMinute))
+      : null;
     return {
       type: values.type,
       bookId: values.bookId,
@@ -131,6 +230,9 @@ export default function BroadcastManagement() {
       promoStartsAt: values.type === "promotion" ? (values.promoStartsAt || null) : null,
       promoEndsAt: values.type === "promotion" ? (values.promoEndsAt || null) : null,
       listIds: values.listIds && values.listIds.length > 0 ? values.listIds : null,
+      scheduledFor,
+      timezone: values.scheduleMode === "later" ? (values.scheduleTimezone || null) : null,
+      rateLimitPerMinute: rate,
     };
   }
 
@@ -153,10 +255,18 @@ export default function BroadcastManagement() {
       return (await r.json()) as Broadcast;
     },
     onSuccess: (data) => {
-      toast({
-        title: "Campaña enviada",
-        description: `Entregada a ${data.successCount ?? 0} destinatarios${(data.failureCount ?? 0) > 0 ? ` (${data.failureCount} fallos)` : ""}.`,
-      });
+      if (data.status === "scheduled") {
+        const when = data.scheduledFor ? new Date(data.scheduledFor).toLocaleString("es-ES") : "";
+        toast({
+          title: "Campaña programada",
+          description: `Se enviará el ${when}${data.timezone ? ` (${data.timezone})` : ""}.`,
+        });
+      } else {
+        toast({
+          title: "Campaña enviada",
+          description: `Entregada a ${data.successCount ?? 0} destinatarios${(data.failureCount ?? 0) > 0 ? ` (${data.failureCount} fallos)` : ""}.`,
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ["/api/authors", selectedAuthorId, "broadcasts"] });
       form.reset({ ...form.getValues(), subject: "", customMessage: "", previewText: "" });
       setPreview(null);
@@ -330,6 +440,95 @@ export default function BroadcastManagement() {
                     </div>
                   )}
 
+                  <div className="grid gap-4 p-4 border rounded-lg bg-muted/20">
+                    <FormField control={form.control} name="scheduleMode" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2"><Clock className="w-4 h-4" /> ¿Cuándo enviar?</FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            value={field.value}
+                            className="flex gap-6 mt-2"
+                          >
+                            <FormItem className="flex items-center gap-2 space-y-0">
+                              <FormControl>
+                                <RadioGroupItem value="now" data-testid="radio-schedule-now" />
+                              </FormControl>
+                              <FormLabel className="font-normal">Enviar ahora</FormLabel>
+                            </FormItem>
+                            <FormItem className="flex items-center gap-2 space-y-0">
+                              <FormControl>
+                                <RadioGroupItem value="later" data-testid="radio-schedule-later" />
+                              </FormControl>
+                              <FormLabel className="font-normal">Programar envío</FormLabel>
+                            </FormItem>
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+
+                    {watchScheduleMode === "later" && (
+                      <div className="grid gap-4 md:grid-cols-3">
+                        <FormField control={form.control} name="scheduleDate" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Fecha</FormLabel>
+                            <FormControl>
+                              <Input type="date" data-testid="input-schedule-date" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <FormField control={form.control} name="scheduleTime" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Hora</FormLabel>
+                            <FormControl>
+                              <Input type="time" data-testid="input-schedule-time" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <FormField control={form.control} name="scheduleTimezone" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Zona horaria</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger data-testid="select-schedule-timezone">
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {tzOptions.map((tz) => (
+                                  <SelectItem key={tz} value={tz} data-testid={`option-tz-${tz}`}>{tz}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormDescription>9:00 significará 9:00 hora local de esta zona.</FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                      </div>
+                    )}
+
+                    <FormField control={form.control} name="rateLimitPerMinute" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2"><Gauge className="w-4 h-4" /> Límite de envío (opcional)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="1"
+                            max="10000"
+                            placeholder="Sin límite"
+                            data-testid="input-rate-limit"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription>Emails por minuto. Útil para listas grandes y para no marcar como spam.</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </div>
+
                   {lists.length > 0 && (
                     <FormField control={form.control} name="listIds" render={() => (
                       <FormItem>
@@ -372,7 +571,8 @@ export default function BroadcastManagement() {
                       onClick={() => setConfirmOpen(true)}
                       data-testid="button-broadcast-send"
                     >
-                      <Send className="w-4 h-4 mr-2" /> Enviar campaña
+                      {watchScheduleMode === "later" ? <Clock className="w-4 h-4 mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+                      {watchScheduleMode === "later" ? "Programar campaña" : "Enviar campaña"}
                     </Button>
                     {preview && (
                       <Badge variant="secondary" className="self-center" data-testid="text-recipient-count">
@@ -428,10 +628,22 @@ export default function BroadcastManagement() {
                             </Badge>
                           </div>
                           <p className="font-medium">{b.subject}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {b.sentAt ? new Date(b.sentAt).toLocaleString("es-ES") : "Sin enviar"} · {b.successCount ?? 0} entregadas
-                            {(b.failureCount ?? 0) > 0 ? ` · ${b.failureCount} fallidas` : ""}
-                          </p>
+                          {b.status === "scheduled" && b.scheduledFor ? (
+                            <p className="text-xs text-muted-foreground" data-testid={`text-scheduled-${b.id}`}>
+                              Programada para {new Date(b.scheduledFor).toLocaleString("es-ES")}
+                              {b.timezone ? ` (${b.timezone})` : ""}
+                              {b.rateLimitPerMinute ? ` · ritmo ${b.rateLimitPerMinute}/min` : ""}
+                            </p>
+                          ) : b.status === "sending" ? (
+                            <p className="text-xs text-muted-foreground">
+                              En curso · {b.successCount ?? 0}/{b.recipientCount ?? 0} entregadas
+                            </p>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">
+                              {b.sentAt ? new Date(b.sentAt).toLocaleString("es-ES") : "Sin enviar"} · {b.successCount ?? 0} entregadas
+                              {(b.failureCount ?? 0) > 0 ? ` · ${b.failureCount} fallidas` : ""}
+                            </p>
+                          )}
                           {b.errorMessage && (
                             <p className="text-xs text-destructive">{b.errorMessage}</p>
                           )}
@@ -449,16 +661,34 @@ export default function BroadcastManagement() {
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent data-testid="dialog-confirm-send">
           <DialogHeader>
-            <DialogTitle>¿Enviar la campaña?</DialogTitle>
+            <DialogTitle>
+              {watchScheduleMode === "later" ? "¿Programar la campaña?" : "¿Enviar la campaña?"}
+            </DialogTitle>
           </DialogHeader>
-          <p className="text-sm">
-            Vas a enviar este email a <strong>{preview?.recipientCount ?? 0}</strong> suscriptores activos. No se puede deshacer.
-          </p>
+          {watchScheduleMode === "later" ? (
+            <p className="text-sm">
+              Se enviará a <strong>{preview?.recipientCount ?? 0}</strong> suscriptores el{" "}
+              <strong>
+                {(() => {
+                  const v = form.getValues();
+                  const iso = localDateTimeToUtcIso(v.scheduleDate || "", v.scheduleTime || "", v.scheduleTimezone || "UTC");
+                  return iso ? new Date(iso).toLocaleString("es-ES") : "";
+                })()}
+              </strong>{" "}
+              ({form.getValues("scheduleTimezone")}).
+            </p>
+          ) : (
+            <p className="text-sm">
+              Vas a enviar este email a <strong>{preview?.recipientCount ?? 0}</strong> suscriptores activos. No se puede deshacer.
+            </p>
+          )}
           <div className="flex justify-end gap-2 mt-4">
             <Button variant="outline" onClick={() => setConfirmOpen(false)} data-testid="button-cancel-send">Cancelar</Button>
             <Button onClick={() => sendMutation.mutate(form.getValues())} disabled={sendMutation.isPending} data-testid="button-confirm-send">
-              {sendMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
-              Enviar ahora
+              {sendMutation.isPending
+                ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                : (watchScheduleMode === "later" ? <Clock className="w-4 h-4 mr-2" /> : <Send className="w-4 h-4 mr-2" />)}
+              {watchScheduleMode === "later" ? "Programar" : "Enviar ahora"}
             </Button>
           </div>
         </DialogContent>
