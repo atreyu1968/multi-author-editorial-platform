@@ -1156,8 +1156,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const editorialSettings = await storage.getEditorialSettings();
 
-        // Per-author free book takes priority; fall back to global site settings
-        let freeBookFile: string | undefined = author?.freeBookFile || undefined;
+        // Per-author free book takes priority. We honor the optional
+        // `format` field from the public form so the welcome mail links
+        // to the file the subscriber actually wants (EPUB/PDF/AZW3/MOBI),
+        // and fall back through any other configured format, then the
+        // legacy generic file, then the global site-settings default.
+        const requestedFormat = typeof req.body?.format === 'string'
+          ? req.body.format.toLowerCase()
+          : '';
+        const formatToColumn = {
+          epub: 'freeBookFileEpub',
+          pdf:  'freeBookFilePdf',
+          azw3: 'freeBookFileAzw3',
+          mobi: 'freeBookFileMobi',
+        } as const;
+        type FmtKey = keyof typeof formatToColumn;
+        let freeBookFile: string | undefined;
+        let resolvedFormat: string = '';
+        if (author && requestedFormat && (formatToColumn as any)[requestedFormat]) {
+          const v = (author as any)[formatToColumn[requestedFormat as FmtKey]] as string | null | undefined;
+          if (v) { freeBookFile = v; resolvedFormat = requestedFormat; }
+        }
+        if (!freeBookFile && author) {
+          for (const fmt of ['epub', 'pdf', 'azw3', 'mobi'] as const) {
+            const v = (author as any)[formatToColumn[fmt]] as string | null | undefined;
+            if (v) { freeBookFile = v; resolvedFormat = fmt; break; }
+          }
+        }
+        if (!freeBookFile && author?.freeBookFile) {
+          freeBookFile = author.freeBookFile;
+        }
         let freeBookTitle: string = author?.freeBookTitle || 'Libro de Regalo';
         let freeBookDescription: string = author?.freeBookDescription || 'Disfruta de este libro exclusivo como regalo de bienvenida.';
         let freeBookCover: string | undefined = author?.freeBookCover || undefined;
@@ -1224,6 +1252,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               author,
               unsubscribeUrl,
               freeBookCover,
+              resolvedFormat || null,
             );
           }
         }
@@ -1273,8 +1302,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      // Resolve the file URL: per-author first, then global fallback
-      let freeBookFile: string | undefined = author.freeBookFile || undefined;
+      // Resolve the file URL: per-author format-specific first (driven by
+      // the optional `format` field from the public form), then per-author
+      // legacy generic file, then global site-settings fallback. The
+      // four format columns let an author offer the same book in EPUB /
+      // PDF / AZW3 / MOBI so the subscriber can pick what fits their
+      // device. The legacy `freeBookFile` is kept so existing setups
+      // don't need to be re-uploaded.
+      const requestedFormat = typeof req.body?.format === 'string'
+        ? req.body.format.toLowerCase()
+        : '';
+      const formatToColumn: Record<string, keyof typeof author> = {
+        epub: 'freeBookFileEpub',
+        pdf:  'freeBookFilePdf',
+        azw3: 'freeBookFileAzw3',
+        mobi: 'freeBookFileMobi',
+      };
+      let freeBookFile: string | undefined;
+      let resolvedFormat: string = '';
+      if (requestedFormat && formatToColumn[requestedFormat]) {
+        const v = author[formatToColumn[requestedFormat]] as string | null | undefined;
+        if (v) { freeBookFile = v; resolvedFormat = requestedFormat; }
+      }
+      // No format requested or that format isn't configured — fall back to
+      // any per-author format-specific file (in a stable preference order)
+      // before reaching for the legacy generic slot.
+      if (!freeBookFile) {
+        for (const fmt of ['epub', 'pdf', 'azw3', 'mobi'] as const) {
+          const v = author[formatToColumn[fmt]] as string | null | undefined;
+          if (v) { freeBookFile = v; resolvedFormat = fmt; break; }
+        }
+      }
+      if (!freeBookFile && author.freeBookFile) {
+        freeBookFile = author.freeBookFile;
+      }
       let freeBookTitle: string = author.freeBookTitle || 'Libro de Regalo';
       let freeBookDescription: string = author.freeBookDescription || 'Disfruta de este libro exclusivo como regalo de bienvenida.';
       let freeBookCover: string | undefined = author.freeBookCover || undefined;
@@ -1357,7 +1418,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ? `${baseUrl}/api/unsubscribe/${subscriberRow.preferencesToken}`
             : undefined;
           const from = emailService.getDefaultFrom();
-          await emailService.sendWelcomeEmail(email, name, freeBookTitle, freeBookDescription, downloadUrl, from, author, unsubscribeUrl, freeBookCover);
+          await emailService.sendWelcomeEmail(email, name, freeBookTitle, freeBookDescription, downloadUrl, from, author, unsubscribeUrl, freeBookCover, resolvedFormat || null);
         }
       } catch (emailError) {
         console.error('Failed to send free-book email:', emailError);
@@ -1490,8 +1551,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(410).type('html').send(renderFreeBookPage({ token, status: 'used', ...ctx }));
         return;
       }
-      const target = row.fileUrl.startsWith('http') ? row.fileUrl : `${req.protocol}://${req.get('host')}${row.fileUrl}`;
-      res.redirect(target);
+      // Use a RELATIVE Location for in-app paths (e.g. /uploads/... or
+      // /objects/...) so the browser preserves the current protocol and
+      // host. Building an absolute URL from req.protocol breaks behind
+      // nginx when the proxy terminates TLS but forwards as HTTP — the
+      // resulting "http://" Location triggers a mixed-content block in
+      // the user's browser and the EPUB never downloads. Off-platform
+      // (http/https) URLs are passed through unchanged.
+      res.redirect(row.fileUrl);
     } catch (error) {
       console.error('Free book download error:', error);
       res.status(500).type('html').send(renderFreeBookPage({ token: req.params.token, status: 'error' }));

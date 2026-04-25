@@ -808,6 +808,7 @@ export class EmailService {
     author?: Author | null,
     unsubscribeUrl?: string,
     bookCoverUrl?: string | null,
+    bookFormat?: string | null,
   ): Promise<void> {
     if (!this.provider) {
       throw new Error('Email provider not configured');
@@ -821,12 +822,20 @@ export class EmailService {
       ? `<img src="${escapeHtml(absoluteCover)}" alt="${escapeHtml(bookTitle)}" width="160"
               style="display: block; width: 160px; max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 16px rgba(43,29,16,0.18); margin: 0 auto 16px auto;" />`
       : '';
+    // Capitalize the format label so the subject + CTA read naturally
+    // (e.g. "tu libro EPUB" instead of "tu libro epub"). Empty when the
+    // author hasn't configured a format-specific file.
+    const formatLabel = bookFormat ? bookFormat.toUpperCase() : '';
+    const formatSuffix = formatLabel ? ` (${formatLabel})` : '';
+    const ctaLabel = formatLabel
+      ? `Descargar mi libro ${formatLabel}`
+      : 'Descargar mi libro gratis';
 
     const html = renderAuthorBrandedEmail({
       author,
       from,
       baseUrl,
-      previewText: `Tu libro de regalo "${bookTitle}" te está esperando.`,
+      previewText: `Tu libro de regalo "${bookTitle}"${formatSuffix} te está esperando.`,
       heroTitle: `¡Bienvenido/a, ${escapeHtml(recipientName)}!`,
       heroSubtitle: 'Gracias por suscribirte a la newsletter',
       unsubscribeUrl,
@@ -849,7 +858,7 @@ export class EmailService {
             </td>
           </tr>
         </table>
-        ${renderCtaButton(bookDownloadUrl, 'Descargar mi libro gratis')}
+        ${renderCtaButton(bookDownloadUrl, ctaLabel)}
         <p style="margin: 28px 0 8px 0; color: #4a3a2a;">¿Qué más recibirás?</p>
         <ul style="margin: 0 0 8px 18px; padding: 0; color: #6b5a47; line-height: 1.9;">
           <li>Acceso anticipado a los nuevos lanzamientos</li>
@@ -862,7 +871,7 @@ export class EmailService {
 
     await this.provider.send({
       to: recipientEmail,
-      subject: `¡Bienvenido/a! Aquí tienes tu libro de regalo: ${bookTitle}`,
+      subject: `¡Bienvenido/a! Aquí tienes tu libro de regalo${formatSuffix}: ${bookTitle}`,
       html,
       from,
     });

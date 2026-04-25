@@ -149,6 +149,10 @@ export default function AuthorManagement() {
       emailApiKey: "",
       customDomain: "",
       freeBookFile: "",
+      freeBookFileEpub: "",
+      freeBookFilePdf: "",
+      freeBookFileAzw3: "",
+      freeBookFileMobi: "",
       freeBookCover: "",
       freeBookTitle: "",
       freeBookDescription: "",
@@ -279,6 +283,10 @@ export default function AuthorManagement() {
       emailApiKey: "",
       customDomain: "",
       freeBookFile: "",
+      freeBookFileEpub: "",
+      freeBookFilePdf: "",
+      freeBookFileAzw3: "",
+      freeBookFileMobi: "",
       freeBookCover: "",
       freeBookTitle: "",
       freeBookDescription: "",
@@ -316,6 +324,10 @@ export default function AuthorManagement() {
       emailApiKey: author.emailApiKey || "",
       customDomain: author.customDomain || "",
       freeBookFile: author.freeBookFile || "",
+      freeBookFileEpub: author.freeBookFileEpub || "",
+      freeBookFilePdf: author.freeBookFilePdf || "",
+      freeBookFileAzw3: author.freeBookFileAzw3 || "",
+      freeBookFileMobi: author.freeBookFileMobi || "",
       freeBookCover: author.freeBookCover || "",
       freeBookTitle: author.freeBookTitle || "",
       freeBookDescription: author.freeBookDescription || "",
@@ -921,14 +933,54 @@ export default function AuthorManagement() {
               <div className="space-y-4 border-t pt-6 mt-6">
                 <h3 className="text-lg font-semibold">Libro de regalo</h3>
                 <p className="text-sm text-muted-foreground">
-                  Libro gratuito que el autor entregará automáticamente cuando un lector se suscriba a su lista de correo.
+                  Libro gratuito que el autor entregará automáticamente cuando un lector se suscriba a su lista de correo. Sube el archivo en uno o varios formatos: el lector elegirá el que le funcione en su dispositivo.
                 </p>
+                {(["Epub", "Pdf", "Azw3", "Mobi"] as const).map((fmt) => {
+                  const labels = {
+                    Epub: { label: "EPUB (Kobo, Apple Books, Tolino, lectores genéricos)", placeholder: "Sube tu archivo .epub" },
+                    Pdf:  { label: "PDF (compatible con cualquier dispositivo)", placeholder: "Sube tu archivo .pdf" },
+                    Azw3: { label: "AZW3 (Kindle moderno)", placeholder: "Sube tu archivo .azw3" },
+                    Mobi: { label: "MOBI (Kindle antiguo)", placeholder: "Sube tu archivo .mobi" },
+                  } as const;
+                  const fieldName = `freeBookFile${fmt}` as const;
+                  return (
+                    <FormField
+                      key={fmt}
+                      control={form.control}
+                      name={fieldName}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{labels[fmt].label}</FormLabel>
+                          <FormControl>
+                            <div className="flex gap-2">
+                              <Input
+                                {...field}
+                                value={field.value || ""}
+                                placeholder={labels[fmt].placeholder}
+                                data-testid={`input-author-free-book-file-${fmt.toLowerCase()}`}
+                              />
+                              <FileUploader
+                                onComplete={(result) => form.setValue(fieldName, result.objectPath)}
+                                allowedFileTypes={["application/epub+zip", "application/pdf", "application/vnd.amazon.ebook", "application/x-mobipocket-ebook", "application/octet-stream", ".epub", ".pdf", ".azw", ".azw3", ".mobi", ".kfx"]}
+                                buttonClassName="shrink-0"
+                              >
+                                <Upload className="h-4 w-4 mr-2" />
+                                Subir
+                              </FileUploader>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  );
+                })}
                 <FormField
                   control={form.control}
                   name="freeBookFile"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Archivo del libro (URL o ruta)</FormLabel>
+                      <FormLabel className="text-xs text-muted-foreground">Archivo genérico (compatibilidad con configuraciones antiguas, opcional)</FormLabel>
                       <FormControl>
                         <div className="flex gap-2">
                           <Input {...field} value={field.value || ""} placeholder="/objects/... o https://..." data-testid="input-author-free-book-file" />

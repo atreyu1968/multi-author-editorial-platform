@@ -34,8 +34,18 @@ export const authors = pgTable("authors", {
   emailApiKey: text("email_api_key"),
   // Custom domain (e.g. authorname.com)
   customDomain: text("custom_domain").unique(),
-  // Free book offered by this author
+  // Free book offered by this author. `freeBookFile` is the legacy/default
+  // single-file slot kept for backward compatibility — when only one format
+  // is uploaded the public form uses it directly. The four format-specific
+  // columns let an author upload multiple formats so each subscriber can
+  // pick the one their e-reader supports (Kindle → AZW3, Kobo/generic →
+  // EPUB, etc.). Newsletter signup considers a free book "available" when
+  // any of these five fields is set.
   freeBookFile: text("free_book_file"),
+  freeBookFileEpub: text("free_book_file_epub"),
+  freeBookFilePdf: text("free_book_file_pdf"),
+  freeBookFileAzw3: text("free_book_file_azw3"),
+  freeBookFileMobi: text("free_book_file_mobi"),
   freeBookCover: text("free_book_cover"),
   freeBookTitle: text("free_book_title"),
   freeBookDescription: text("free_book_description"),

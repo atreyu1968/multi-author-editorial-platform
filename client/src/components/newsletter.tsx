@@ -29,6 +29,7 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
   const [email, setEmail] = useState("");
   const [consent, setConsent] = useState(false);
   const [selectedListIds, setSelectedListIds] = useState<string[]>([]);
+  const [selectedFormat, setSelectedFormat] = useState<string>("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { locale } = useLocale();
@@ -80,8 +81,13 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
   //     (so authors with mailingListEnabled=true but no gift can still
   //     collect signups).
   const subscribeMutation = useMutation({
-    mutationFn: async (data: { name: string; email: string; authorId: string; listIds: string[] }) => {
-      const endpoint = scopedAuthor?.freeBookFile
+    mutationFn: async (data: { name: string; email: string; authorId: string; listIds: string[]; format?: string }) => {
+      // The free-book endpoint only fires when the author has at least one
+      // file format set (legacy `freeBookFile` OR any of the four format
+      // columns). Otherwise we fall back to the plain newsletter endpoint
+      // so authors with mailingListEnabled=true but no gift can still
+      // collect signups.
+      const endpoint = hasFreeBook
         ? `/api/authors/${data.authorId}/free-book/claim`
         : `/api/newsletter`;
       // Best-effort: send the browser's IANA timezone so the per-recipient
@@ -95,8 +101,8 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
       // Always send the active UI locale so subscribers/tokens are tagged
       // with the language they signed up in (used for downstream emails).
       // `consent: true` is required by both endpoints (RGPD).
-      const body = scopedAuthor?.freeBookFile
-        ? { name: data.name, email: data.email, locale, consent: true, listIds: data.listIds, timezone: browserTimezone }
+      const body = hasFreeBook
+        ? { name: data.name, email: data.email, locale, consent: true, listIds: data.listIds, timezone: browserTimezone, format: data.format }
         : { name: data.name, email: data.email, authorId: data.authorId, locale, consent: true, listIds: data.listIds, timezone: browserTimezone };
       const response = await apiRequest("POST", endpoint, body);
       return response.json();
@@ -104,7 +110,7 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
     onSuccess: () => {
       toast({
         title: "¡Suscripción exitosa!",
-        description: scopedAuthor?.freeBookFile
+        description: hasFreeBook
           ? "Revisa tu email para descargar tu libro gratuito."
           : "Te has suscrito correctamente a la newsletter.",
       });
@@ -173,7 +179,27 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
   // The free-book CTA itself is gated separately below: when the author has no
   // free-book file configured we still render the signup form (subscription is
   // a standalone feature) but suppress the gift-themed copy and cover.
-  const hasFreeBook = !!scopedAuthor?.freeBookFile;
+  // The book is considered "available" if any of the legacy generic file or
+  // any of the per-format files is set.
+  const formatOptions: { value: string; label: string; available: boolean }[] = [
+    { value: "epub", label: "EPUB (Kobo, Apple Books, lectores genéricos)", available: !!scopedAuthor?.freeBookFileEpub },
+    { value: "pdf",  label: "PDF (cualquier dispositivo)",                  available: !!scopedAuthor?.freeBookFilePdf },
+    { value: "azw3", label: "AZW3 (Kindle moderno)",                        available: !!scopedAuthor?.freeBookFileAzw3 },
+    { value: "mobi", label: "MOBI (Kindle antiguo)",                        available: !!scopedAuthor?.freeBookFileMobi },
+  ];
+  const availableFormats = formatOptions.filter((f) => f.available);
+  const hasFreeBook = !!scopedAuthor?.freeBookFile || availableFormats.length > 0;
+  const showFormatChooser = availableFormats.length >= 2;
+
+  // Default the radio selection to the first available format when the
+  // author profile loads, so the user doesn't have to pick one when only
+  // a couple are offered (saves a click on mobile).
+  useEffect(() => {
+    if (availableFormats.length > 0 && !selectedFormat) {
+      setSelectedFormat(availableFormats[0].value);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scopedAuthor?.id]);
 
   const freeBookTitle = scopedAuthor?.freeBookTitle || 'Libro digital gratuito';
   const freeBookDescription = scopedAuthor?.freeBookDescription;
@@ -251,6 +277,31 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
                       data-testid="input-email"
                     />
                   </div>
+                  {showFormatChooser && (
+                    <div className="text-left space-y-2 bg-white/10 rounded-lg p-3 border border-white/20" data-testid="format-chooser">
+                      <p className="text-sm font-medium opacity-90">¿En qué formato quieres tu libro?</p>
+                      <div className="space-y-2">
+                        {availableFormats.map((f) => (
+                          <label
+                            key={f.value}
+                            className="flex items-start gap-2 text-sm cursor-pointer"
+                            data-testid={`row-format-${f.value}`}
+                          >
+                            <input
+                              type="radio"
+                              name="freeBookFormat"
+                              value={f.value}
+                              checked={selectedFormat === f.value}
+                              onChange={(e) => setSelectedFormat(e.target.value)}
+                              className="mt-0.5 accent-accent shrink-0"
+                              data-testid={`radio-format-${f.value}`}
+                            />
+                            <span className="opacity-95">{f.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   {lists.length > 0 && (
                     <div className="text-left space-y-2 bg-white/10 rounded-lg p-3 border border-white/20" data-testid="newsletter-lists">
                       <p className="text-sm font-medium opacity-90">Tus intereses (opcional):</p>

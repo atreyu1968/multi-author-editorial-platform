@@ -1053,8 +1053,15 @@ export default function SettingsManagement() {
                             </FormControl>
                             <FileUploader
                               onComplete={(result) => handleFileUploadComplete("freeBookFile", result)}
-                              allowedFileTypes={['application/epub+zip', 'application/vnd.amazon.ebook', 'application/octet-stream']}
-                              maxFileSize={10485760}
+                              allowedFileTypes={[
+                                'application/epub+zip',
+                                'application/vnd.amazon.ebook',
+                                'application/x-mobipocket-ebook',
+                                'application/pdf',
+                                'application/octet-stream',
+                                '.epub', '.azw3', '.mobi', '.pdf',
+                              ]}
+                              maxFileSize={104857600}
                               buttonClassName="shrink-0"
                             >
                               <Upload className="h-4 w-4 mr-2" />
