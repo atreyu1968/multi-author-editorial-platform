@@ -304,14 +304,22 @@ npm install --legacy-peer-deps --include=dev 2>&1 | tail -5
 print_status "Compilando aplicación..."
 BUILD_LOG="/tmp/editorial_build.log"
 
-# Ejecutar build como root (solo genera archivos) y luego corregir permisos
+# Ejecutar build como root (solo genera archivos) y luego corregir permisos.
+# Desactivamos `set -e` alrededor del build porque queremos capturar el
+# código de salida y mostrar el log completo antes de salir; con `set -e`
+# el script terminaba inmediatamente si npm run build fallaba y la línea
+# `BUILD_EXIT=$?` nunca se ejecutaba.
+set +e
 npm run build > "$BUILD_LOG" 2>&1
 BUILD_EXIT=$?
+set -e
 
 if [ $BUILD_EXIT -ne 0 ]; then
-    print_error "Error al compilar la aplicación"
-    echo "Últimas líneas del log de compilación:"
-    tail -20 "$BUILD_LOG"
+    print_error "Error al compilar la aplicación (código de salida: $BUILD_EXIT)"
+    echo ""
+    echo "═══════ LOG DE COMPILACIÓN ═══════"
+    cat "$BUILD_LOG"
+    echo "══════════════════════════════════"
     echo ""
     echo "Log completo en: $BUILD_LOG"
     exit 1

@@ -87,7 +87,25 @@ SHOULD_RESTART=true
 
 # ============================================================
 # ACTUALIZAR CÓDIGO
+#
+# Antes de hacer `git reset --hard` capturamos el hash del propio
+# script en disco. Tras el reset comparamos con el hash nuevo: si
+# cambió, el repo trae una versión más reciente de update.sh y debemos
+# re-ejecutarnos. Bash mantiene el contenido viejo en memoria desde
+# que abrió el fichero, así que sin este `exec` seguiríamos corriendo
+# la lógica antigua aunque el disco ya tenga la nueva.
 # ============================================================
+SCRIPT_PATH=$(realpath "$0" 2>/dev/null || echo "$0")
+REPO_SCRIPT="$APP_DIR/update.sh"
+SCRIPT_HASH_BEFORE=""
+REPO_HASH_BEFORE=""
+if [ -f "$SCRIPT_PATH" ]; then
+    SCRIPT_HASH_BEFORE=$(sha256sum "$SCRIPT_PATH" 2>/dev/null | awk '{print $1}')
+fi
+if [ -f "$REPO_SCRIPT" ]; then
+    REPO_HASH_BEFORE=$(sha256sum "$REPO_SCRIPT" 2>/dev/null | awk '{print $1}')
+fi
+
 print_status "Descargando última versión..."
 cd "$APP_DIR"
 git config --global --add safe.directory "$APP_DIR" 2>/dev/null || true
@@ -99,18 +117,52 @@ print_success "Código actualizado: $CURRENT_COMMIT"
 
 # ============================================================
 # AUTO-ACTUALIZAR ESTE SCRIPT
-# Si el update.sh del repo es más nuevo, copiarlo y reiniciar
+# Si el update.sh del repo cambió tras el reset, copiarlo (cuando
+# el script se está ejecutando desde una copia externa) y reiniciar.
 # ============================================================
-if [ -f "$APP_DIR/update.sh" ]; then
-    SCRIPT_PATH=$(realpath "$0" 2>/dev/null || echo "$0")
-    REPO_SCRIPT="$APP_DIR/update.sh"
-    if ! diff -q "$SCRIPT_PATH" "$REPO_SCRIPT" > /dev/null 2>&1; then
-        print_warning "Se detectó una versión más nueva de update.sh"
-        SHOULD_RESTART=false
+if [ -f "$REPO_SCRIPT" ]; then
+    REPO_HASH_AFTER=$(sha256sum "$REPO_SCRIPT" 2>/dev/null | awk '{print $1}')
+    SCRIPT_HASH_AFTER=""
+    if [ -f "$SCRIPT_PATH" ]; then
+        SCRIPT_HASH_AFTER=$(sha256sum "$SCRIPT_PATH" 2>/dev/null | awk '{print $1}')
+    fi
+
+    NEEDS_RELOAD=false
+    # Caso A: el script se ejecuta desde el propio repo y el fichero en
+    # disco cambió tras el reset -> exec para cargar la versión nueva.
+    if [ -n "$SCRIPT_HASH_BEFORE" ] && [ -n "$SCRIPT_HASH_AFTER" ] && [ "$SCRIPT_HASH_BEFORE" != "$SCRIPT_HASH_AFTER" ]; then
+        NEEDS_RELOAD=true
+    fi
+    # Caso B: el script se ejecuta desde una copia externa (p.ej.
+    # /root/update.sh) y el repo trae una versión distinta -> copiar y exec.
+    if [ "$SCRIPT_PATH" != "$REPO_SCRIPT" ] && [ -n "$REPO_HASH_AFTER" ] && [ "$SCRIPT_HASH_AFTER" != "$REPO_HASH_AFTER" ]; then
         cp "$REPO_SCRIPT" "$SCRIPT_PATH"
         chmod +x "$SCRIPT_PATH"
+        NEEDS_RELOAD=true
+    fi
+    # Caso C (fallback): el repo cambió aunque no hayamos podido
+    # comparar el script local (p.ej. SCRIPT_PATH no existía).
+    if [ -n "$REPO_HASH_BEFORE" ] && [ -n "$REPO_HASH_AFTER" ] && [ "$REPO_HASH_BEFORE" != "$REPO_HASH_AFTER" ] && [ "$NEEDS_RELOAD" = false ]; then
+        # Sólo recargamos si SCRIPT_PATH y REPO_SCRIPT apuntan al mismo fichero
+        # (caso típico: bash /var/www/editorial/update.sh).
+        if [ "$SCRIPT_PATH" = "$REPO_SCRIPT" ]; then
+            NEEDS_RELOAD=true
+        fi
+    fi
+
+    if [ "$NEEDS_RELOAD" = true ]; then
+        print_warning "Se detectó una versión más nueva de update.sh"
         print_status "Reiniciando con la versión actualizada..."
-        exec bash "$SCRIPT_PATH" "$@"
+        SHOULD_RESTART=false
+        # UPDATE_RELOADED evita bucles infinitos si por algún motivo el
+        # hash sigue cambiando entre invocaciones consecutivas.
+        if [ -z "$UPDATE_RELOADED" ]; then
+            export UPDATE_RELOADED=1
+            exec bash "$SCRIPT_PATH" "$@"
+        else
+            print_warning "Ya se reinició una vez; continúo con la versión actual para evitar bucle"
+            SHOULD_RESTART=true
+        fi
     fi
 fi
 
