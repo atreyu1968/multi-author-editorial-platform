@@ -1177,9 +1177,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const configured = emailService.configureForAuthor('newsletter', author, editorialSettings);
 
           if (configured) {
-            const downloadUrl = freeBookFile.startsWith('http')
-              ? freeBookFile
-              : `${baseUrl}${freeBookFile}`;
+            // SECURITY: never email the raw file URL. Mint a one-time,
+            // 7-day expiring token and email the tokenized endpoint —
+            // same flow as /api/authors/:id/free-book/claim. Without
+            // this, the welcome mail leaked a permanent public link
+            // that could be shared/scraped indefinitely.
+            const { randomUUID } = await import('crypto');
+            const token = randomUUID();
+            const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+            // authorId on this legacy endpoint is optional; when the
+            // signup is editorial-global (no author scope) we still need
+            // a valid author reference for the token row. Fall back to
+            // the editorial-default author id so the token row is valid;
+            // the file URL stored on the token is the source of truth.
+            const tokenAuthorId = validatedSubscriber.authorId
+              || author?.id
+              || (await storage.getAuthors())[0]?.id
+              || '';
+            if (tokenAuthorId) {
+              await storage.createFreeBookToken({
+                authorId: tokenAuthorId,
+                email: validatedSubscriber.email,
+                fileUrl: freeBookFile,
+                token,
+                expiresAt,
+              });
+            }
+            const downloadUrl = tokenAuthorId
+              ? `${baseUrl}/api/free-book/download/${token}`
+              // Last-resort fallback: only used when no author exists at
+              // all (fresh editorial install with zero authors). In that
+              // case we cannot generate a token but the editor likely
+              // hasn't published any signup form either.
+              : (freeBookFile.startsWith('http') ? freeBookFile : `${baseUrl}${freeBookFile}`);
 
             const from = emailService.getDefaultFrom();
             await emailService.sendWelcomeEmail(
