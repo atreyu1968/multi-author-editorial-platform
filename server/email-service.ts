@@ -807,15 +807,25 @@ export class EmailService {
     from: { name: string; email: string },
     author?: Author | null,
     unsubscribeUrl?: string,
+    bookCoverUrl?: string | null,
   ): Promise<void> {
     if (!this.provider) {
       throw new Error('Email provider not configured');
     }
 
+    const baseUrl = process.env.PUBLIC_BASE_URL || undefined;
+    // Absolutize the cover URL — relative paths like /objects/... break in
+    // every email client because the message is rendered outside the app.
+    const absoluteCover = absolutize(bookCoverUrl, baseUrl);
+    const coverHtml = absoluteCover
+      ? `<img src="${escapeHtml(absoluteCover)}" alt="${escapeHtml(bookTitle)}" width="160"
+              style="display: block; width: 160px; max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 16px rgba(43,29,16,0.18); margin: 0 auto 16px auto;" />`
+      : '';
+
     const html = renderAuthorBrandedEmail({
       author,
       from,
-      baseUrl: process.env.PUBLIC_BASE_URL || undefined,
+      baseUrl,
       previewText: `Tu libro de regalo "${bookTitle}" te está esperando.`,
       heroTitle: `¡Bienvenido/a, ${escapeHtml(recipientName)}!`,
       heroSubtitle: 'Gracias por suscribirte a la newsletter',
@@ -828,13 +838,14 @@ export class EmailService {
           Como agradecimiento por unirte a la comunidad, te regalo:
         </p>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-               style="background: #ffffff; border: 1px solid #e9dcc4; border-left: 4px solid hsl(40, 65%, 50%); border-radius: 6px; margin: 0 0 24px 0;">
+               style="background: #ffffff; border: 1px solid #e9dcc4; border-left: 4px solid hsl(40, 65%, 50%); border-radius: 8px; margin: 0 0 24px 0;">
           <tr>
-            <td style="padding: 20px;">
-              <h3 style="margin: 0 0 8px 0; font-family: 'Playfair Display', Georgia, 'Times New Roman', serif; font-size: 20px; color: #2b1d10;">
+            <td align="center" style="padding: 24px;">
+              ${coverHtml}
+              <h3 style="margin: 0 0 8px 0; font-family: 'Playfair Display', Georgia, 'Times New Roman', serif; font-size: 22px; color: #2b1d10; text-align: center;">
                 ${escapeHtml(bookTitle)}
               </h3>
-              <p style="margin: 0; color: #6b5a47; line-height: 1.6;">${escapeHtml(bookDescription)}</p>
+              <p style="margin: 0; color: #6b5a47; line-height: 1.6; text-align: center;">${escapeHtml(bookDescription)}</p>
             </td>
           </tr>
         </table>

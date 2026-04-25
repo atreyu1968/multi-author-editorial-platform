@@ -1160,6 +1160,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let freeBookFile: string | undefined = author?.freeBookFile || undefined;
         let freeBookTitle: string = author?.freeBookTitle || 'Libro de Regalo';
         let freeBookDescription: string = author?.freeBookDescription || 'Disfruta de este libro exclusivo como regalo de bienvenida.';
+        let freeBookCover: string | undefined = author?.freeBookCover || undefined;
 
         if (!freeBookFile) {
           const siteSettings = await storage.getSiteSettings();
@@ -1170,6 +1171,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           freeBookFile = settingsMap.freeBookFile;
           if (settingsMap.freeBookTitle) freeBookTitle = settingsMap.freeBookTitle;
           if (settingsMap.freeBookDescription) freeBookDescription = settingsMap.freeBookDescription;
+          if (!freeBookCover && settingsMap.freeBookCover) freeBookCover = settingsMap.freeBookCover;
         }
 
         if (freeBookFile) {
@@ -1221,6 +1223,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               from,
               author,
               unsubscribeUrl,
+              freeBookCover,
             );
           }
         }
@@ -1274,12 +1277,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let freeBookFile: string | undefined = author.freeBookFile || undefined;
       let freeBookTitle: string = author.freeBookTitle || 'Libro de Regalo';
       let freeBookDescription: string = author.freeBookDescription || 'Disfruta de este libro exclusivo como regalo de bienvenida.';
+      let freeBookCover: string | undefined = author.freeBookCover || undefined;
       if (!freeBookFile) {
         const siteSettings = await storage.getSiteSettings();
         const settingsMap = siteSettings.reduce((acc, s) => { acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
         freeBookFile = settingsMap.freeBookFile;
         if (settingsMap.freeBookTitle) freeBookTitle = settingsMap.freeBookTitle;
         if (settingsMap.freeBookDescription) freeBookDescription = settingsMap.freeBookDescription;
+        if (!freeBookCover && settingsMap.freeBookCover) freeBookCover = settingsMap.freeBookCover;
       }
       if (!freeBookFile) {
         res.status(404).json({ message: "No free book configured" });
@@ -1352,7 +1357,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ? `${baseUrl}/api/unsubscribe/${subscriberRow.preferencesToken}`
             : undefined;
           const from = emailService.getDefaultFrom();
-          await emailService.sendWelcomeEmail(email, name, freeBookTitle, freeBookDescription, downloadUrl, from, author, unsubscribeUrl);
+          await emailService.sendWelcomeEmail(email, name, freeBookTitle, freeBookDescription, downloadUrl, from, author, unsubscribeUrl, freeBookCover);
         }
       } catch (emailError) {
         console.error('Failed to send free-book email:', emailError);
