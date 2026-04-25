@@ -32,7 +32,7 @@ Una aplicación web completa diseñada para gestionar hasta 30 autores dentro de
 - **Series** - Organiza libros en series/colecciones multi-autor
 - **Sistema de Blog** - Blog individual para cada autor
 - **Testimonios** - Reseñas y respaldos de clientes
-- **Newsletter** - Sistema de suscripción de boletín integrado
+- **Newsletter** - Sistema de suscripción de boletín integrado, con **consentimiento RGPD explícito** en el formulario (casilla obligatoria, desmarcada por defecto) y **baja en un clic** desde cualquier email
 - **Próximamente** - Marca libros como "próximamente" con páginas promocionales sin opciones de compra
 
 ### Internacionalización (i18n)
@@ -66,6 +66,7 @@ Una aplicación web completa diseñada para gestionar hasta 30 autores dentro de
 - **Limitación de Tasa** - Previene ataques de fuerza bruta
 - **Cabeceras CSP** - Política de Seguridad de Contenido vía Helmet.js
 - **Descargas Seguras** - Entrega de archivos digitales basada en tokens con expiración
+- **Cumplimiento RGPD/GDPR** - Consentimiento explícito guardado con sello de fecha y texto literal mostrado al usuario en el momento de la suscripción (auditable). Todos los emails del autor (bienvenida, regalo, campañas) incluyen un enlace visible de baja en un solo clic, además de las cabeceras `List-Unsubscribe` y `List-Unsubscribe-Post` (RFC 8058) para la baja nativa desde la bandeja de entrada
 
 ## 🚀 Inicio Rápido
 
