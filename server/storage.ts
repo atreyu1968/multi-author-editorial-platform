@@ -486,7 +486,14 @@ export class MemStorage {
         publicationDate: "2024-01-15",
         directSaleEnabled: false,
         directSalePrice: null,
-        directSaleStock: null
+        directSaleStock: null,
+        storeLinks: null,
+        digitalFiles: null,
+        isDigitalProduct: false,
+        saleFormatPhysical: false,
+        saleFormatDigital: false,
+        isComingSoon: false,
+        audiobookUrl: null,
       },
       {
         authorId: authorId,
@@ -528,7 +535,14 @@ export class MemStorage {
         publicationDate: "2024-03-20",
         directSaleEnabled: false,
         directSalePrice: null,
-        directSaleStock: null
+        directSaleStock: null,
+        storeLinks: null,
+        digitalFiles: null,
+        isDigitalProduct: false,
+        saleFormatPhysical: false,
+        saleFormatDigital: false,
+        isComingSoon: false,
+        audiobookUrl: null,
       },
       {
         authorId: authorId,
@@ -570,7 +584,14 @@ export class MemStorage {
         publicationDate: "2024-06-10",
         directSaleEnabled: false,
         directSalePrice: null,
-        directSaleStock: null
+        directSaleStock: null,
+        storeLinks: null,
+        digitalFiles: null,
+        isDigitalProduct: false,
+        saleFormatPhysical: false,
+        saleFormatDigital: false,
+        isComingSoon: false,
+        audiobookUrl: null,
       }
     ];
 
@@ -675,6 +696,7 @@ export class MemStorage {
       id: adminId,
       username: adminUsername,
       password: hashedPassword,
+      email: null,
     };
     this.users.set(adminId, adminUser);
   }
@@ -879,7 +901,14 @@ export class MemStorage {
       publicationDate: insertBook.publicationDate ?? null,
       directSaleEnabled: insertBook.directSaleEnabled ?? null,
       directSalePrice: insertBook.directSalePrice ?? null,
-      directSaleStock: insertBook.directSaleStock ?? null
+      directSaleStock: insertBook.directSaleStock ?? null,
+      storeLinks: insertBook.storeLinks ?? null,
+      digitalFiles: insertBook.digitalFiles ?? null,
+      isDigitalProduct: insertBook.isDigitalProduct ?? null,
+      saleFormatPhysical: insertBook.saleFormatPhysical ?? null,
+      saleFormatDigital: insertBook.saleFormatDigital ?? null,
+      isComingSoon: insertBook.isComingSoon ?? null,
+      audiobookUrl: insertBook.audiobookUrl ?? null,
     };
     this.books.set(id, book);
     return book;
@@ -1033,7 +1062,12 @@ export class MemStorage {
 
   async createSiteSetting(insertSetting: InsertSiteSettings): Promise<SiteSettings> {
     const id = randomUUID();
-    const setting: SiteSettings = { ...insertSetting, id };
+    const setting: SiteSettings = {
+      ...insertSetting,
+      id,
+      defaultLocale: insertSetting.defaultLocale ?? null,
+      autoDetectLocale: insertSetting.autoDetectLocale ?? null,
+    };
     this.siteSettings.set(id, setting);
     return setting;
   }
@@ -1049,7 +1083,14 @@ export class MemStorage {
   async upsertSiteSetting(authorId: string, key: string, value: string): Promise<SiteSettings> {
     const existingSetting = Array.from(this.siteSettings.values()).find(s => s.authorId === authorId && s.key === key);
     const id = existingSetting?.id || randomUUID();
-    const setting: SiteSettings = { id, authorId, key, value };
+    const setting: SiteSettings = {
+      id,
+      authorId,
+      key,
+      value,
+      defaultLocale: existingSetting?.defaultLocale ?? null,
+      autoDetectLocale: existingSetting?.autoDetectLocale ?? null,
+    };
     this.siteSettings.set(id, setting);
     return setting;
   }
@@ -1065,7 +1106,7 @@ export class MemStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
-    const user: User = { ...insertUser, id };
+    const user: User = { ...insertUser, id, email: insertUser.email ?? null };
     this.users.set(id, user);
     return user;
   }

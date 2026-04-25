@@ -323,6 +323,9 @@ export default function BroadcastManagement() {
     // The default fetcher only treats *object* segments as query params, so a
     // hierarchical key like ["/api/authors", id, "broadcasts"] would collapse
     // to "/api/authors". Override here to build the actual nested REST URL.
+    // The default fetcher only assembles ?query=string params from object
+    // segments — it can't build hierarchical paths from string segments —
+    // so we have to spell the URL out explicitly here.
     queryFn: async () => {
       const r = await fetch(`/api/authors/${selectedAuthorId}/broadcasts`, {
         credentials: "include",
@@ -331,14 +334,6 @@ export default function BroadcastManagement() {
       return (await r.json()) as Broadcast[];
     },
     enabled: !!selectedAuthorId,
-    // The default fetcher only assembles ?query=string params from object
-    // segments — it can't build hierarchical paths from string segments —
-    // so we have to spell the URL out explicitly here.
-    queryFn: async () => {
-      const r = await fetch(`/api/authors/${selectedAuthorId}/broadcasts`, { credentials: "include" });
-      if (!r.ok) throw new Error(`Failed to load broadcasts (${r.status})`);
-      return (await r.json()) as Broadcast[];
-    },
   });
 
   const selectedBook = useMemo(

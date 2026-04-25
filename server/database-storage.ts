@@ -263,9 +263,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createBook(insertBook: InsertBook): Promise<Book> {
+    if (!insertBook.authorId) {
+      throw new Error("authorId is required to create a book");
+    }
     const [book] = await db
       .insert(books)
-      .values(insertBook)
+      .values({ ...insertBook, authorId: insertBook.authorId })
       .returning();
     return book;
   }

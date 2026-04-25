@@ -149,7 +149,9 @@ export default function NewsletterListsManagement() {
     if (editing) {
       updateMutation.mutate({ id: editing.id, patch: payload });
     } else {
-      createMutation.mutate({ ...payload, authorId: selectedAuthorId });
+      // The POST endpoint takes :authorId from the URL, so the body is
+      // just the ListDraft.
+      createMutation.mutate(payload);
     }
   };
 
