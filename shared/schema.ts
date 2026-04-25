@@ -161,6 +161,12 @@ export const newsletters = pgTable("newsletters", {
   // this author. Granular per-list opt-outs live in newsletterListSubscriptions.
   unsubscribedAt: text("unsubscribed_at"),
   subscribedAt: text("subscribed_at").default(sql`current_timestamp`),
+  // GDPR / RGPD audit trail. `consentedAt` records when the subscriber
+  // explicitly agreed to receive commercial emails; `consentText` snapshots
+  // the literal disclosure they were shown so we can prove what they
+  // accepted at signup time.
+  consentedAt: text("consented_at"),
+  consentText: text("consent_text"),
 });
 
 // Per-author topical lists subscribers can opt into (e.g. "Histórica",

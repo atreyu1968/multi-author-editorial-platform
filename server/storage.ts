@@ -115,6 +115,10 @@ export interface IStorage {
   getNewsletterSubscriberByEmail(authorId: string, email: string): Promise<Newsletter | undefined>;
   getNewsletterSubscriberByToken(token: string): Promise<Newsletter | undefined>;
   updateNewsletterSubscriber(id: string, patch: Partial<Newsletter>): Promise<Newsletter | undefined>;
+  // Soft-unsubscribe by preferences token (used by the public unsubscribe
+  // page and by RFC 8058 List-Unsubscribe-Post one-click handlers).
+  // Returns the updated subscriber, or undefined when the token doesn't match.
+  unsubscribeNewsletterByToken(token: string): Promise<Newsletter | undefined>;
 
   // Newsletter list (interest topic) methods
   getNewsletterLists(authorId: string, opts?: { activeOnly?: boolean }): Promise<NewsletterList[]>;
@@ -930,12 +934,16 @@ export class MemStorage {
 
   async createNewsletterSubscriber(insertNewsletter: InsertNewsletter): Promise<Newsletter> {
     const id = randomUUID();
-    const newsletter: Newsletter = { 
-      ...insertNewsletter, 
+    const newsletter: Newsletter = {
+      ...insertNewsletter,
       id,
       preferencesToken: randomUUID(),
       unsubscribedAt: null,
-      subscribedAt: new Date().toISOString()
+      subscribedAt: new Date().toISOString(),
+      // Coerce optional consent fields to null so the value matches the
+      // Newsletter row shape (`string | null`, not `... | undefined`).
+      consentedAt: insertNewsletter.consentedAt ?? null,
+      consentText: insertNewsletter.consentText ?? null,
     };
     this.newsletters.set(id, newsletter);
     return newsletter;
@@ -955,6 +963,13 @@ export class MemStorage {
     if (!existing) return undefined;
     const updated = { ...existing, ...patch };
     this.newsletters.set(id, updated);
+    return updated;
+  }
+  async unsubscribeNewsletterByToken(token: string): Promise<Newsletter | undefined> {
+    const found = Array.from(this.newsletters.values()).find(n => n.preferencesToken === token);
+    if (!found) return undefined;
+    const updated = { ...found, unsubscribedAt: new Date().toISOString() };
+    this.newsletters.set(found.id, updated);
     return updated;
   }
   async getNewsletterLists(): Promise<NewsletterList[]> { return []; }

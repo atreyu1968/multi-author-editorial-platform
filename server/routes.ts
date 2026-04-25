@@ -67,6 +67,23 @@ function sanitizeAuthorsForResponse<T extends { emailApiKey?: string | null }>(
   return authors.map(a => sanitizeAuthorForResponse(a, req));
 }
 
+// Server-side canonical RGPD consent text. Stored verbatim on every new
+// subscriber so we have a record of what they explicitly agreed to.
+// IMPORTANT: keep this string in sync with the disclosure shown in the
+// public newsletter form (`client/src/components/newsletter.tsx`).
+const GDPR_CONSENT_TEXT =
+  "Acepto recibir el libro gratuito (cuando aplica) y los correos comerciales del autor o editorial (novedades, ofertas y contenido). Puedo darme de baja en un solo clic desde cualquier email. Mis datos se tratan conforme al RGPD.";
+
+// Lightweight HTML escape used by the unsubscribe confirmation page.
+function escapeHtmlServer(input: string): string {
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // Validation helpers
 function isValidUrl(url: string): boolean {
   if (!url) return true; // Empty strings are allowed (for clearing settings)
@@ -633,7 +650,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/newsletter", newsletterLimiter, async (req, res) => {
     try {
-      const validatedSubscriber = insertNewsletterSchema.parse(req.body);
+      // RGPD: explicit consent is required to receive commercial emails. We
+      // refuse the subscription if the visitor did not tick the consent box,
+      // and stamp `consentedAt` + a server-side snapshot of the disclosure
+      // text so we can prove what they accepted at signup.
+      if (req.body?.consent !== true) {
+        res.status(400).json({ message: "Debes aceptar recibir correos comerciales para suscribirte." });
+        return;
+      }
+      const validatedSubscriber = insertNewsletterSchema.parse({
+        ...req.body,
+        consentedAt: new Date().toISOString(),
+        consentText: GDPR_CONSENT_TEXT,
+      });
 
       // Resolve author (if scoped) and respect mailingListEnabled flag
       let author: Author | undefined;
@@ -646,6 +675,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const subscriber = await storage.createNewsletterSubscriber(validatedSubscriber);
+
+      // Build the one-click unsubscribe URL we'll thread through the
+      // welcome email body and the List-Unsubscribe header.
+      const baseUrl = process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get('host')}`;
+      const unsubscribeUrl = subscriber.preferencesToken
+        ? `${baseUrl}/api/unsubscribe/${subscriber.preferencesToken}`
+        : undefined;
 
       // Try to send welcome email with free book
       try {
@@ -672,8 +708,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const configured = emailService.configureForAuthor('newsletter', author, editorialSettings);
 
           if (configured) {
-            const baseUrl = process.env.PUBLIC_BASE_URL
-              || (process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : 'http://localhost:5000');
             const downloadUrl = freeBookFile.startsWith('http')
               ? freeBookFile
               : `${baseUrl}${freeBookFile}`;
@@ -687,6 +721,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               downloadUrl,
               from,
               author,
+              unsubscribeUrl,
             );
           }
         }
@@ -707,6 +742,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/authors/:id/free-book/claim", newsletterLimiter, async (req, res) => {
     try {
       const { id: authorId } = req.params;
+      // RGPD: visitor must explicitly accept commercial emails before we
+      // ship the gift. The disclosure shown on the form (and the snapshot
+      // we persist on the subscriber row) make it clear that downloading
+      // the book also subscribes them to the author's mailing list.
+      if (req.body?.consent !== true) {
+        res.status(400).json({ message: "Debes aceptar recibir correos comerciales para descargar el libro." });
+        return;
+      }
       const claimSchema = z.object({
         email: z.string().email(),
         name: z.string().min(1).max(120),
@@ -740,17 +783,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      // Subscribe under author scope (idempotent: ignore duplicate errors)
+      // Subscribe under author scope (idempotent: ignore duplicate errors).
+      // We stamp the RGPD consent on the row at creation time. If the row
+      // already exists we still update its consent stamp because the user
+      // just re-confirmed by ticking the box again.
+      const consentedAt = new Date().toISOString();
       const subscriberPayload: InsertNewsletter = insertNewsletterSchema.parse({
         email,
         name,
         authorId,
         locale: locale || 'es-ES',
+        consentedAt,
+        consentText: GDPR_CONSENT_TEXT,
       });
+      let subscriberRow: Awaited<ReturnType<typeof storage.createNewsletterSubscriber>> | undefined;
       try {
-        await storage.createNewsletterSubscriber(subscriberPayload);
+        subscriberRow = await storage.createNewsletterSubscriber(subscriberPayload);
       } catch {
-        // already subscribed - continue with the claim
+        // already subscribed - refresh the consent stamp for the audit trail
+        const existing = await storage.getNewsletterSubscriberByEmail(authorId, email);
+        if (existing) {
+          subscriberRow = await storage.updateNewsletterSubscriber(existing.id, {
+            consentedAt,
+            consentText: GDPR_CONSENT_TEXT,
+            unsubscribedAt: null,
+          });
+        }
       }
 
       // Create a one-time, expiring token (7 days)
@@ -768,8 +826,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const baseUrl = process.env.PUBLIC_BASE_URL
             || `${req.protocol}://${req.get('host')}`;
           const downloadUrl = `${baseUrl}/api/free-book/download/${token}`;
+          const unsubscribeUrl = subscriberRow?.preferencesToken
+            ? `${baseUrl}/api/unsubscribe/${subscriberRow.preferencesToken}`
+            : undefined;
           const from = emailService.getDefaultFrom();
-          await emailService.sendWelcomeEmail(email, name, freeBookTitle, freeBookDescription, downloadUrl, from, author);
+          await emailService.sendWelcomeEmail(email, name, freeBookTitle, freeBookDescription, downloadUrl, from, author, unsubscribeUrl);
         }
       } catch (emailError) {
         console.error('Failed to send free-book email:', emailError);
@@ -809,6 +870,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Free book download error:', error);
       res.status(500).json({ message: "Failed to download file" });
+    }
+  });
+
+  // ----- RGPD unsubscribe + preferences endpoints --------------------
+  // Every transactional or commercial email we ship carries an unsubscribe
+  // link to one of these routes. They accept the per-subscriber
+  // `preferencesToken` so the action does not require the subscriber to
+  // log in.
+
+  // GET /api/preferences/:token - lightweight subscriber summary used by a
+  // future SPA preference page (and by the unsubscribe confirmation page
+  // below). Does NOT leak fields like `emailApiKey` (those live on the
+  // author, not on subscribers).
+  app.get("/api/preferences/:token", async (req, res) => {
+    try {
+      const subscriber = await storage.getNewsletterSubscriberByToken(req.params.token);
+      if (!subscriber) {
+        res.status(404).json({ message: "Suscriptor no encontrado" });
+        return;
+      }
+      res.json({
+        email: subscriber.email,
+        name: subscriber.name,
+        authorId: subscriber.authorId,
+        unsubscribed: !!subscriber.unsubscribedAt,
+        consentedAt: subscriber.consentedAt,
+      });
+    } catch (error) {
+      console.error('Preferences lookup failed:', error);
+      res.status(500).json({ message: "Failed to load preferences" });
+    }
+  });
+
+  // GET /api/unsubscribe/:token - friendly HTML confirmation page. Pressing
+  // the form button POSTs back to this same path. We render server-side
+  // HTML (no SPA round-trip) so it works even when the user is offline
+  // from our app.
+  function renderUnsubscribePage(opts: { token: string; status: 'confirm' | 'done' | 'invalid'; subscriberEmail?: string; authorName?: string }): string {
+    const { token, status, subscriberEmail, authorName } = opts;
+    const safeEmail = subscriberEmail ? escapeHtmlServer(subscriberEmail) : '';
+    const safeAuthor = authorName ? escapeHtmlServer(authorName) : 'la newsletter';
+    const heading = status === 'done'
+      ? '✓ Te has dado de baja'
+      : status === 'invalid'
+        ? 'Enlace no válido'
+        : '¿Quieres darte de baja?';
+    const body = status === 'done'
+      ? `<p>Hemos eliminado <strong>${safeEmail}</strong> de la lista de ${safeAuthor}. No volverás a recibir nuestros correos comerciales.</p>
+         <p>Si fue un error, vuelve a suscribirte desde la página del autor.</p>`
+      : status === 'invalid'
+        ? `<p>El enlace de baja ya no es válido o ha caducado. Si sigues recibiendo correos, por favor responde a uno de ellos para que te demos de baja manualmente.</p>`
+        : `<p>Vas a darte de baja de los correos comerciales de ${safeAuthor}.</p>
+           <p style="color:#6b5a47">Email: <strong>${safeEmail}</strong></p>
+           <form method="POST" action="/api/unsubscribe/${escapeHtmlServer(token)}" style="margin-top: 24px;">
+             <button type="submit" style="background:hsl(28, 50%, 40%);color:#fff;border:none;border-radius:6px;padding:12px 24px;font-size:16px;font-weight:600;cursor:pointer;">Confirmar baja</button>
+           </form>`;
+    return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>${heading}</title><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet"/></head>
+      <body style="margin:0;padding:48px 16px;background:#faf6ee;font-family:Helvetica,Arial,sans-serif;color:#2b1d10;line-height:1.6;">
+        <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:12px;box-shadow:0 4px 24px rgba(43,29,16,0.08);padding:40px 32px;">
+          <h1 style="font-family:'Playfair Display',Georgia,serif;font-size:28px;margin:0 0 16px 0;color:hsl(28, 50%, 40%);">${heading}</h1>
+          ${body}
+        </div>
+      </body></html>`;
+  }
+
+  app.get("/api/unsubscribe/:token", async (req, res) => {
+    try {
+      const subscriber = await storage.getNewsletterSubscriberByToken(req.params.token);
+      if (!subscriber) {
+        res.status(404).type('html').send(renderUnsubscribePage({ token: req.params.token, status: 'invalid' }));
+        return;
+      }
+      const author = subscriber.authorId ? await storage.getAuthorById(subscriber.authorId) : undefined;
+      const status = subscriber.unsubscribedAt ? 'done' : 'confirm';
+      res.type('html').send(renderUnsubscribePage({
+        token: req.params.token,
+        status,
+        subscriberEmail: subscriber.email,
+        authorName: author?.name,
+      }));
+    } catch (error) {
+      console.error('Unsubscribe page failed:', error);
+      res.status(500).send('Internal error');
+    }
+  });
+
+  // POST /api/unsubscribe/:token - performs the actual soft-unsubscribe.
+  // Supports both the "Confirmar baja" form button above and the
+  // RFC 8058 List-Unsubscribe-Post one-click POST mail clients fire
+  // when the user hits the inbox-level "Unsubscribe" button.
+  app.post("/api/unsubscribe/:token", async (req, res) => {
+    try {
+      const updated = await storage.unsubscribeNewsletterByToken(req.params.token);
+      if (!updated) {
+        // Mail clients want a 2xx for one-click; only return 404 to humans.
+        const accept = (req.headers.accept || '').toLowerCase();
+        if (accept.includes('text/html')) {
+          res.status(404).type('html').send(renderUnsubscribePage({ token: req.params.token, status: 'invalid' }));
+        } else {
+          res.status(404).json({ message: "Token no válido" });
+        }
+        return;
+      }
+      const author = updated.authorId ? await storage.getAuthorById(updated.authorId) : undefined;
+      const accept = (req.headers.accept || '').toLowerCase();
+      if (accept.includes('text/html')) {
+        res.type('html').send(renderUnsubscribePage({
+          token: req.params.token,
+          status: 'done',
+          subscriberEmail: updated.email,
+          authorName: author?.name,
+        }));
+      } else {
+        res.json({ success: true });
+      }
+    } catch (error) {
+      console.error('Unsubscribe failed:', error);
+      res.status(500).json({ message: "Failed to unsubscribe" });
     }
   });
 
@@ -966,14 +1145,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let failure = 0;
       for (const subscriber of recipients) {
         try {
-          const preferencesUrl = subscriber.preferencesToken
-            ? `${baseUrl}/preferencias/${subscriber.preferencesToken}`
+          // RGPD: every campaign carries an in-body "darme de baja" link
+          // and the RFC 8058 List-Unsubscribe / List-Unsubscribe-Post
+          // headers, both pointing at the same one-click endpoint.
+          const unsubscribeUrl = subscriber.preferencesToken
+            ? `${baseUrl}/api/unsubscribe/${subscriber.preferencesToken}`
             : undefined;
           await emailService.sendBroadcastEmail({
             to: subscriber.email,
             subject: payload.subject,
             from,
-            listUnsubscribeUrl: preferencesUrl,
+            listUnsubscribeUrl: unsubscribeUrl,
             tags: { broadcast: draft.id, type: payload.type },
             rendererOpts: {
               type: payload.type,
@@ -990,7 +1172,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     endsAt: payload.promoEndsAt,
                   }
                 : undefined,
-              preferencesUrl,
+              unsubscribeUrl,
               baseUrl,
               authorPageUrl,
             },

@@ -74,6 +74,10 @@ interface AuthorBrandedEmailOpts {
   heroSubtitle?: string;
   bodyHtml: string;
   preferencesUrl?: string;
+  // Direct one-click unsubscribe URL. When provided, the footer renders an
+  // explicit "darme de baja" link (not just the wording) so subscribers can
+  // act on it from the body of the email — required for RGPD-style consent.
+  unsubscribeUrl?: string;
   // Used to make relative asset URLs (e.g. `/objects/...`) absolute so they
   // load inside the email client.
   baseUrl?: string;
@@ -87,7 +91,7 @@ function absolutize(url: string | null | undefined, baseUrl?: string): string | 
 }
 
 function renderAuthorBrandedEmail(opts: AuthorBrandedEmailOpts): string {
-  const { author, from, previewText, heroTitle, heroSubtitle, bodyHtml, preferencesUrl, baseUrl } = opts;
+  const { author, from, previewText, heroTitle, heroSubtitle, bodyHtml, preferencesUrl, unsubscribeUrl, baseUrl } = opts;
 
   const displayName = escapeHtml(author?.name || from.name);
   const photoUrl = absolutize(author?.photo, baseUrl);
@@ -111,9 +115,22 @@ function renderAuthorBrandedEmail(opts: AuthorBrandedEmailOpts): string {
     ? `<div style="display: none; max-height: 0px; overflow: hidden; mso-hide: all; font-size: 1px; line-height: 1px; color: ${wallpaper};">${escapeHtml(previewText)}</div>`
     : '';
 
+  // GDPR / RGPD-friendly footer: always render an explicit, clickable
+  // "darme de baja" link when an unsubscribe URL is available, plus an
+  // optional "gestionar tus preferencias" link.
   const preferencesLink = preferencesUrl
-    ? `<a href="${escapeHtml(preferencesUrl)}" style="color: hsl(28, 50%, 40%); text-decoration: underline;">gestionar tus preferencias</a> · `
+    ? `<a href="${escapeHtml(preferencesUrl)}" style="color: hsl(28, 50%, 40%); text-decoration: underline;">gestionar tus preferencias</a>`
     : '';
+  const unsubscribeLink = unsubscribeUrl
+    ? `<a href="${escapeHtml(unsubscribeUrl)}" style="color: hsl(28, 50%, 40%); text-decoration: underline; font-weight: 600;">darme de baja</a>`
+    : '';
+  const footerActionLine = unsubscribeLink && preferencesLink
+    ? `Puedes ${preferencesLink} o ${unsubscribeLink} en cualquier momento.`
+    : unsubscribeLink
+      ? `Puedes ${unsubscribeLink} en un solo clic en cualquier momento.`
+      : preferencesLink
+        ? `Puedes ${preferencesLink} o darte de baja en cualquier momento.`
+        : `Puedes darte de baja en cualquier momento respondiendo a este correo.`;
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -151,7 +168,7 @@ function renderAuthorBrandedEmail(opts: AuthorBrandedEmailOpts): string {
           </tr>
           <tr>
             <td style="padding: 24px 32px 32px 32px; border-top: 1px solid #e9dcc4; color: #8a7560; font-size: 12px; font-family: Helvetica, Arial, sans-serif; line-height: 1.6;">
-              <p style="margin: 0;">Recibes este correo porque te suscribiste a la newsletter de ${displayName}. Puedes ${preferencesLink}darte de baja en cualquier momento.</p>
+              <p style="margin: 0;">Recibes este correo porque diste tu consentimiento expreso para recibir comunicaciones comerciales de ${displayName} (RGPD). ${footerActionLine}</p>
               <p style="margin: 8px 0 0 0;">© ${new Date().getFullYear()} ${displayName}. Todos los derechos reservados.</p>
             </td>
           </tr>
@@ -501,6 +518,8 @@ interface BroadcastEmailOpts {
     endsAt?: string | null;
   };
   preferencesUrl?: string;
+  // RGPD: explicit one-click unsubscribe link rendered in the body footer.
+  unsubscribeUrl?: string;
   baseUrl?: string;
   authorPageUrl?: string;
   // Optional explicit hero copy (defaults derived from `type` + book).
@@ -613,7 +632,7 @@ function renderPreviousBooksGrid(previous: Book[], baseUrl: string | undefined):
 }
 
 function renderBroadcastEmail(opts: BroadcastEmailOpts): string {
-  const { type, author, from, book, previousBooks, customMessage, promo, preferencesUrl, baseUrl, authorPageUrl } = opts;
+  const { type, author, from, book, previousBooks, customMessage, promo, preferencesUrl, unsubscribeUrl, baseUrl, authorPageUrl } = opts;
 
   const heroTitle = opts.heroTitle
     || (type === 'promotion' ? `${book.title} en oferta` : `Nueva publicación: ${book.title}`);
@@ -654,6 +673,7 @@ function renderBroadcastEmail(opts: BroadcastEmailOpts): string {
     heroSubtitle,
     bodyHtml,
     preferencesUrl,
+    unsubscribeUrl,
     baseUrl,
   });
 }
@@ -786,6 +806,7 @@ export class EmailService {
     bookDownloadUrl: string,
     from: { name: string; email: string },
     author?: Author | null,
+    unsubscribeUrl?: string,
   ): Promise<void> {
     if (!this.provider) {
       throw new Error('Email provider not configured');
@@ -798,6 +819,7 @@ export class EmailService {
       previewText: `Tu libro de regalo "${bookTitle}" te está esperando.`,
       heroTitle: `¡Bienvenido/a, ${escapeHtml(recipientName)}!`,
       heroSubtitle: 'Gracias por suscribirte a la newsletter',
+      unsubscribeUrl,
       bodyHtml: `
         <h2 style="margin: 0 0 16px 0; font-family: 'Playfair Display', Georgia, 'Times New Roman', serif; font-size: 24px; color: #2b1d10; font-weight: 700;">
           Tu libro de regalo está listo

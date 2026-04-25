@@ -4,11 +4,18 @@ import { Gift, Check, Users, Mail, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useUiText } from "@/contexts/ui-text-context";
 import { useLocale } from "@/contexts/locale-context";
 import type { Author } from "@shared/schema";
+
+// RGPD: keep this disclosure aligned with the server-side `GDPR_CONSENT_TEXT`
+// constant in server/routes.ts. The exact wording shown here is what the
+// server snapshots on the subscriber row at signup time.
+const GDPR_CONSENT_LABEL =
+  "Acepto recibir el libro gratuito (cuando aplica) y los correos comerciales del autor o editorial (novedades, ofertas y contenido). Puedo darme de baja en un solo clic desde cualquier email. Mis datos se tratan conforme al RGPD.";
 
 interface NewsletterProps {
   authorId?: string;
@@ -20,6 +27,7 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
   
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [consent, setConsent] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { locale } = useLocale();
@@ -51,9 +59,10 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
         : `/api/newsletter`;
       // Always send the active UI locale so subscribers/tokens are tagged
       // with the language they signed up in (used for downstream emails).
+      // `consent: true` is required by both endpoints (RGPD).
       const body = scopedAuthor?.freeBookFile
-        ? { name: data.name, email: data.email, locale }
-        : { name: data.name, email: data.email, authorId: data.authorId, locale };
+        ? { name: data.name, email: data.email, locale, consent: true }
+        : { name: data.name, email: data.email, authorId: data.authorId, locale, consent: true };
       const response = await apiRequest("POST", endpoint, body);
       return response.json();
     },
@@ -85,6 +94,14 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
       });
       return;
     }
+    if (!consent) {
+      toast({
+        title: "Necesitamos tu consentimiento",
+        description: "Marca la casilla de aceptación para suscribirte (RGPD).",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!defaultAuthorId) {
       toast({
         title: "Error",
@@ -93,10 +110,10 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
       });
       return;
     }
-    subscribeMutation.mutate({ 
-      name: name.trim(), 
+    subscribeMutation.mutate({
+      name: name.trim(),
       email: email.trim(),
-      authorId: defaultAuthorId
+      authorId: defaultAuthorId,
     });
   };
 
@@ -189,10 +206,23 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
                       data-testid="input-email"
                     />
                   </div>
-                  <Button 
-                    type="submit" 
-                    disabled={subscribeMutation.isPending}
-                    className="w-full bg-accent text-accent-foreground font-semibold hover:bg-accent/90 transition-all transform hover:scale-105"
+                  <label
+                    htmlFor="newsletter-consent"
+                    className="flex items-start gap-3 text-left text-sm opacity-90 cursor-pointer rounded-md p-2 -mx-2 hover:bg-white/5 transition-colors"
+                  >
+                    <Checkbox
+                      id="newsletter-consent"
+                      checked={consent}
+                      onCheckedChange={(c) => setConsent(c === true)}
+                      className="mt-0.5 border-white/60 data-[state=checked]:bg-accent data-[state=checked]:border-accent shrink-0"
+                      data-testid="checkbox-consent"
+                    />
+                    <span className="leading-snug">{GDPR_CONSENT_LABEL}</span>
+                  </label>
+                  <Button
+                    type="submit"
+                    disabled={subscribeMutation.isPending || !consent}
+                    className="w-full bg-accent text-accent-foreground font-semibold hover:bg-accent/90 transition-all transform hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
                     data-testid="button-subscribe"
                   >
                     {hasFreeBook ? <Gift className="h-4 w-4 mr-2" /> : <Mail className="h-4 w-4 mr-2" />}
@@ -201,8 +231,10 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
                       : (hasFreeBook ? freeBookCtaText : "Suscribirme")}
                   </Button>
                 </form>
-                <p className="text-sm opacity-70 mt-4">
-                  * No spam, solo contenido de calidad. Puedes darte de baja en cualquier momento.
+                <p className="text-xs opacity-70 mt-4 leading-relaxed">
+                  Sin spam. Cada email incluye un enlace para darte de baja en un solo clic.
+                  Responsable: el autor o editorial. Finalidad: enviarte el material gratuito y comunicaciones comerciales.
+                  Derechos: acceso, rectificación y supresión escribiendo al remitente del correo.
                 </p>
               </div>
             </div>

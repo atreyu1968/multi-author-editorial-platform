@@ -397,6 +397,15 @@ export class DatabaseStorage implements IStorage {
     return row;
   }
 
+  async unsubscribeNewsletterByToken(token: string): Promise<Newsletter | undefined> {
+    const [row] = await db
+      .update(newsletters)
+      .set({ unsubscribedAt: new Date().toISOString() })
+      .where(eq(newsletters.preferencesToken, token))
+      .returning();
+    return row;
+  }
+
   // Newsletter list methods
   async getNewsletterLists(authorId: string, opts?: { activeOnly?: boolean }): Promise<NewsletterList[]> {
     const where = opts?.activeOnly
