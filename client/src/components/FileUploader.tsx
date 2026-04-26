@@ -32,9 +32,22 @@ export function FileUploader({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (allowedFileTypes.length > 0 && !allowedFileTypes.includes(file.type)) {
-      setError(`Tipo de archivo no permitido. Tipos permitidos: ${allowedFileTypes.join(", ")}`);
-      return;
+    if (allowedFileTypes.length > 0) {
+      // Validate either by MIME type OR by file extension. Browsers often
+      // report file.type as "" for niche formats like .azw3 / .mobi (there
+      // is no registered MIME), so a strict mime check would always
+      // reject them even when the caller listed ".azw3" as allowed.
+      const ext = file.name.includes(".")
+        ? "." + file.name.split(".").pop()!.toLowerCase()
+        : "";
+      const mimeAllowed = !!file.type && allowedFileTypes.includes(file.type);
+      const extAllowed = !!ext && allowedFileTypes
+        .filter((t) => t.startsWith("."))
+        .some((t) => t.toLowerCase() === ext);
+      if (!mimeAllowed && !extAllowed) {
+        setError(`Tipo de archivo no permitido. Tipos permitidos: ${allowedFileTypes.join(", ")}`);
+        return;
+      }
     }
 
     if (file.size > maxFileSize) {
