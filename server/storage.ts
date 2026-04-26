@@ -130,6 +130,12 @@ export interface IStorage {
   // Subscriber<->List membership methods
   getSubscriberListIds(subscriberId: string): Promise<string[]>;
   setSubscriberLists(subscriberId: string, listIds: string[]): Promise<void>;
+  // Returns every subscriber for the author together with the IDs of the lists
+  // they belong to. Used by the admin "Suscriptores" view to render per-list
+  // badges and offer a per-list filter without N+1 round-trips.
+  getSubscribersWithListsForAuthor(
+    authorId: string,
+  ): Promise<Array<Newsletter & { listIds: string[] }>>;
 
   // Email template methods
   getEmailTemplates(authorId?: string | null): Promise<EmailTemplate[]>;

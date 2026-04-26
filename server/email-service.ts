@@ -809,12 +809,17 @@ export class EmailService {
     unsubscribeUrl?: string,
     bookCoverUrl?: string | null,
     bookFormat?: string | null,
+    publicBaseUrl?: string | null,
   ): Promise<void> {
     if (!this.provider) {
       throw new Error('Email provider not configured');
     }
 
-    const baseUrl = process.env.PUBLIC_BASE_URL || undefined;
+    // Prefer the explicit base URL passed in by the caller (which is
+    // request-aware and survives the operator forgetting to set
+    // PUBLIC_BASE_URL on the server). Fall back to the env var so other
+    // callers that don't know the request still work.
+    const baseUrl = (publicBaseUrl?.replace(/\/$/, '')) || process.env.PUBLIC_BASE_URL || undefined;
     // Absolutize the cover URL — relative paths like /objects/... break in
     // every email client because the message is rendered outside the app.
     const absoluteCover = absolutize(bookCoverUrl, baseUrl);

@@ -460,6 +460,32 @@ export class DatabaseStorage implements IStorage {
     );
   }
 
+  async getSubscribersWithListsForAuthor(
+    authorId: string,
+  ): Promise<Array<Newsletter & { listIds: string[] }>> {
+    const subs = await db
+      .select()
+      .from(newsletters)
+      .where(eq(newsletters.authorId, authorId));
+    if (subs.length === 0) return [];
+    const ids = subs.map((s) => s.id);
+    // Single bulk fetch of all memberships for this author's subscribers.
+    const memberships = await db
+      .select({
+        subscriberId: newsletterListSubscriptions.subscriberId,
+        listId: newsletterListSubscriptions.listId,
+      })
+      .from(newsletterListSubscriptions)
+      .where(inArray(newsletterListSubscriptions.subscriberId, ids));
+    const byId = new Map<string, string[]>();
+    for (const m of memberships) {
+      const arr = byId.get(m.subscriberId) || [];
+      arr.push(m.listId);
+      byId.set(m.subscriberId, arr);
+    }
+    return subs.map((s) => ({ ...s, listIds: byId.get(s.id) || [] }));
+  }
+
   // Email template methods
   async getEmailTemplates(authorId?: string | null): Promise<EmailTemplate[]> {
     if (authorId === undefined) {

@@ -38,6 +38,7 @@ import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { createPaypalOrder, capturePaypalOrder, loadPaypalDefault } from "./paypal";
 // Local storage for non-Replit environments
 import { upload, handleFileUpload, getStorageType } from "./storageService";
+import { getPublicBaseUrl } from "./base-url";
 
 // Authentication middleware to protect admin routes
 function requireAuth(req: any, res: any, next: any) {
@@ -1133,7 +1134,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Build the one-click unsubscribe URL we'll thread through the
       // welcome email body and the List-Unsubscribe header.
-      const baseUrl = process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get('host')}`;
+      const baseUrl = getPublicBaseUrl(req);
       const unsubscribeUrl = subscriber.preferencesToken
         ? `${baseUrl}/api/unsubscribe/${subscriber.preferencesToken}`
         : undefined;
@@ -1411,14 +1412,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { emailService } = await import('./email-service.js');
         const configured = emailService.configureForAuthor('newsletter', author, editorialSettings);
         if (configured) {
-          const baseUrl = process.env.PUBLIC_BASE_URL
-            || `${req.protocol}://${req.get('host')}`;
+          const baseUrl = getPublicBaseUrl(req);
           const downloadUrl = `${baseUrl}/api/free-book/download/${token}`;
           const unsubscribeUrl = subscriberRow?.preferencesToken
             ? `${baseUrl}/api/unsubscribe/${subscriberRow.preferencesToken}`
             : undefined;
           const from = emailService.getDefaultFrom();
-          await emailService.sendWelcomeEmail(email, name, freeBookTitle, freeBookDescription, downloadUrl, from, author, unsubscribeUrl, freeBookCover, resolvedFormat || null);
+          await emailService.sendWelcomeEmail(email, name, freeBookTitle, freeBookDescription, downloadUrl, from, author, unsubscribeUrl, freeBookCover, resolvedFormat || null, baseUrl);
         }
       } catch (emailError) {
         console.error('Failed to send free-book email:', emailError);
@@ -1715,7 +1715,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .sort((a, b) => (a.orderInSeries ?? 0) - (b.orderInSeries ?? 0));
       }
 
-      const baseUrl = process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get('host')}`;
+      const baseUrl = getPublicBaseUrl(req);
       const authorPageUrl = `${baseUrl}/autor/${author.slug}`;
       const { EmailService } = await import('./email-service.js');
       const html = EmailService.renderBroadcast({
@@ -1804,7 +1804,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      const baseUrl = process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get('host')}`;
+      const baseUrl = getPublicBaseUrl(req);
       const authorPageUrl = `${baseUrl}/autor/${author.slug}`;
       const from = emailService.getDefaultFrom();
       const promo = payload.type === 'promotion'
@@ -1917,7 +1917,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      const baseUrl = process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get('host')}`;
+      const baseUrl = getPublicBaseUrl(req);
       const result = await dispatchBroadcast(draft.id, baseUrl);
       res.status(201).json(result);
     } catch (error) {
@@ -1945,6 +1945,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       .replace(/^-+|-+$/g, '')
       .slice(0, 60) || 'lista';
   }
+
+  // Admin report: subscribers for an author together with the IDs of the
+  // lists each one belongs to. Powers the "Suscriptores" admin view's
+  // per-list filter and badge column without N+1 round-trips.
+  app.get("/api/authors/:id/subscribers-with-lists", requireAuth, async (req, res) => {
+    try {
+      const author = await storage.getAuthorById(req.params.id);
+      if (!author) {
+        res.status(404).json({ message: "Author not found" });
+        return;
+      }
+      const rows = await storage.getSubscribersWithListsForAuthor(req.params.id);
+      res.json(rows);
+    } catch (error) {
+      console.error('Failed to fetch subscribers with lists:', error);
+      res.status(500).json({ message: "Failed to fetch subscribers with lists" });
+    }
+  });
 
   app.get("/api/authors/:id/newsletter-lists", async (req, res) => {
     try {
