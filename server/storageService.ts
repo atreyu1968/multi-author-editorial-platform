@@ -31,7 +31,9 @@ const storage: StorageEngine = multer.diskStorage({
 export const upload = multer({
   storage,
   limits: {
-    fileSize: 50 * 1024 * 1024,
+    // Bumped to 100 MB so larger ebooks (especially AZW3 / MOBI exports
+    // from Calibre) fit. Frontend uploader announces the same cap.
+    fileSize: 100 * 1024 * 1024,
   },
   fileFilter: (req: Request, file: Express.Multer.File, cb: FileFilterCallback) => {
     const allowedTypes = [
@@ -42,12 +44,27 @@ export const upload = multer({
       "image/svg+xml",
       "application/pdf",
       "application/epub+zip",
-      "application/x-mobipocket-ebook",
+      "application/vnd.amazon.ebook", // AZW / AZW3
+      "application/x-mobipocket-ebook", // MOBI
+      // Browsers and curl frequently report niche ebook formats with no
+      // registered MIME as `application/octet-stream`. We accept it but
+      // still validate by extension below so we don't open the door to
+      // arbitrary binaries.
+      "application/octet-stream",
     ];
-    if (allowedTypes.includes(file.mimetype) || file.mimetype.startsWith("image/")) {
+    const allowedExts = [
+      ".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg",
+      ".pdf", ".epub", ".azw", ".azw3", ".mobi", ".kfx",
+    ];
+    const ext = (file.originalname.includes(".")
+      ? "." + file.originalname.split(".").pop()!.toLowerCase()
+      : "");
+    const mimeOk = allowedTypes.includes(file.mimetype) || file.mimetype.startsWith("image/");
+    const extOk = ext && allowedExts.includes(ext);
+    if (mimeOk || extOk) {
       cb(null, true);
     } else {
-      cb(new Error("Tipo de archivo no permitido"));
+      cb(new Error(`Tipo de archivo no permitido (${file.mimetype || "desconocido"} / ${ext || "sin extensión"})`));
     }
   },
 });
