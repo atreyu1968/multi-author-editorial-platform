@@ -11,6 +11,10 @@ import {
   newsletterListSubscriptions,
   emailTemplates,
   broadcasts,
+  editorialLists,
+  editorialSubscribers,
+  editorialListSubscriptions,
+  editorialBroadcasts,
   siteSettings,
   users,
   blogPosts,
@@ -48,6 +52,12 @@ import {
   type InsertEmailTemplate,
   type Broadcast,
   type InsertBroadcast,
+  type EditorialList,
+  type InsertEditorialList,
+  type EditorialSubscriber,
+  type InsertEditorialSubscriber,
+  type EditorialBroadcast,
+  type InsertEditorialBroadcast,
   type SiteSettings,
   type InsertSiteSettings,
   type User,
@@ -614,6 +624,173 @@ export class DatabaseStorage implements IStorage {
       .where(inArray(newsletterListSubscriptions.listId, listIds));
     const allowed = new Set(memberships.map(m => m.subscriberId));
     return baseRows.filter(s => allowed.has(s.id));
+  }
+
+  // ────────────────────────────────────────────────────────────────────────
+  // Editorial (cross-author) lists, subscribers, and broadcasts.
+  // ────────────────────────────────────────────────────────────────────────
+
+  async getEditorialLists(opts?: { activeOnly?: boolean }): Promise<EditorialList[]> {
+    const q = db.select().from(editorialLists);
+    const rows = opts?.activeOnly
+      ? await q.where(eq(editorialLists.isActive, true)).orderBy(asc(editorialLists.sortOrder), asc(editorialLists.name))
+      : await q.orderBy(asc(editorialLists.sortOrder), asc(editorialLists.name));
+    return rows;
+  }
+
+  async getEditorialListById(id: string): Promise<EditorialList | undefined> {
+    const [row] = await db.select().from(editorialLists).where(eq(editorialLists.id, id)).limit(1);
+    return row;
+  }
+
+  async createEditorialList(list: InsertEditorialList): Promise<EditorialList> {
+    const [row] = await db.insert(editorialLists).values(list).returning();
+    return row;
+  }
+
+  async updateEditorialList(id: string, patch: Partial<InsertEditorialList>): Promise<EditorialList | undefined> {
+    const [row] = await db.update(editorialLists).set(patch).where(eq(editorialLists.id, id)).returning();
+    return row;
+  }
+
+  async deleteEditorialList(id: string): Promise<boolean> {
+    // Cascade memberships before deleting the list itself.
+    await db.delete(editorialListSubscriptions).where(eq(editorialListSubscriptions.listId, id));
+    const result = await db.delete(editorialLists).where(eq(editorialLists.id, id)).returning();
+    return result.length > 0;
+  }
+
+  async getEditorialSubscribers(): Promise<EditorialSubscriber[]> {
+    return await db.select().from(editorialSubscribers).orderBy(desc(editorialSubscribers.subscribedAt));
+  }
+
+  async getEditorialSubscriberByEmail(email: string): Promise<EditorialSubscriber | undefined> {
+    const [row] = await db
+      .select()
+      .from(editorialSubscribers)
+      .where(eq(editorialSubscribers.email, email))
+      .limit(1);
+    return row;
+  }
+
+  async getEditorialSubscriberByToken(token: string): Promise<EditorialSubscriber | undefined> {
+    const [row] = await db
+      .select()
+      .from(editorialSubscribers)
+      .where(eq(editorialSubscribers.preferencesToken, token))
+      .limit(1);
+    return row;
+  }
+
+  async createEditorialSubscriber(insert: InsertEditorialSubscriber): Promise<EditorialSubscriber> {
+    const { randomUUID } = await import('crypto');
+    const [row] = await db
+      .insert(editorialSubscribers)
+      .values({ ...insert, preferencesToken: randomUUID() })
+      .returning();
+    return row;
+  }
+
+  async updateEditorialSubscriber(id: string, patch: Partial<EditorialSubscriber>): Promise<EditorialSubscriber | undefined> {
+    const [row] = await db.update(editorialSubscribers).set(patch).where(eq(editorialSubscribers.id, id)).returning();
+    return row;
+  }
+
+  async deleteEditorialSubscriber(id: string): Promise<boolean> {
+    await db.delete(editorialListSubscriptions).where(eq(editorialListSubscriptions.subscriberId, id));
+    const result = await db.delete(editorialSubscribers).where(eq(editorialSubscribers.id, id)).returning();
+    return result.length > 0;
+  }
+
+  async unsubscribeEditorialByToken(token: string): Promise<EditorialSubscriber | undefined> {
+    const [row] = await db
+      .update(editorialSubscribers)
+      .set({ unsubscribedAt: new Date().toISOString() })
+      .where(eq(editorialSubscribers.preferencesToken, token))
+      .returning();
+    return row;
+  }
+
+  async getEditorialSubscribersWithLists(): Promise<Array<EditorialSubscriber & { listIds: string[] }>> {
+    const subs = await db.select().from(editorialSubscribers).orderBy(desc(editorialSubscribers.subscribedAt));
+    if (subs.length === 0) return [];
+    const ids = subs.map((s) => s.id);
+    const memberships = await db
+      .select({
+        subscriberId: editorialListSubscriptions.subscriberId,
+        listId: editorialListSubscriptions.listId,
+      })
+      .from(editorialListSubscriptions)
+      .where(inArray(editorialListSubscriptions.subscriberId, ids));
+    const byId = new Map<string, string[]>();
+    for (const m of memberships) {
+      const arr = byId.get(m.subscriberId) || [];
+      arr.push(m.listId);
+      byId.set(m.subscriberId, arr);
+    }
+    return subs.map((s) => ({ ...s, listIds: byId.get(s.id) || [] }));
+  }
+
+  async getEditorialSubscriberListIds(subscriberId: string): Promise<string[]> {
+    const rows = await db
+      .select({ listId: editorialListSubscriptions.listId })
+      .from(editorialListSubscriptions)
+      .where(eq(editorialListSubscriptions.subscriberId, subscriberId));
+    return rows.map((r) => r.listId);
+  }
+
+  async setEditorialSubscriberLists(subscriberId: string, listIds: string[]): Promise<void> {
+    await db.delete(editorialListSubscriptions).where(eq(editorialListSubscriptions.subscriberId, subscriberId));
+    if (listIds.length === 0) return;
+    await db.insert(editorialListSubscriptions).values(
+      listIds.map((listId) => ({ subscriberId, listId })),
+    );
+  }
+
+  async getActiveEditorialSubscribersForBroadcast(listIds?: string[]): Promise<EditorialSubscriber[]> {
+    const baseRows = await db
+      .select()
+      .from(editorialSubscribers)
+      .where(isNull(editorialSubscribers.unsubscribedAt));
+    if (!listIds || listIds.length === 0) return baseRows;
+    const memberships = await db
+      .select({ subscriberId: editorialListSubscriptions.subscriberId })
+      .from(editorialListSubscriptions)
+      .where(inArray(editorialListSubscriptions.listId, listIds));
+    const allowed = new Set(memberships.map((m) => m.subscriberId));
+    return baseRows.filter((s) => allowed.has(s.id));
+  }
+
+  async getEditorialBroadcasts(): Promise<EditorialBroadcast[]> {
+    return await db.select().from(editorialBroadcasts).orderBy(desc(editorialBroadcasts.createdAt));
+  }
+
+  async getEditorialBroadcastById(id: string): Promise<EditorialBroadcast | undefined> {
+    const [row] = await db.select().from(editorialBroadcasts).where(eq(editorialBroadcasts.id, id)).limit(1);
+    return row;
+  }
+
+  async createEditorialBroadcast(insert: InsertEditorialBroadcast): Promise<EditorialBroadcast> {
+    const [row] = await db.insert(editorialBroadcasts).values(insert as any).returning();
+    return row;
+  }
+
+  async updateEditorialBroadcast(id: string, patch: Partial<EditorialBroadcast>): Promise<EditorialBroadcast | undefined> {
+    const [row] = await db.update(editorialBroadcasts).set(patch).where(eq(editorialBroadcasts.id, id)).returning();
+    return row;
+  }
+
+  async getDueScheduledEditorialBroadcasts(nowIso: string): Promise<EditorialBroadcast[]> {
+    return await db
+      .select()
+      .from(editorialBroadcasts)
+      .where(
+        and(
+          eq(editorialBroadcasts.status, "scheduled"),
+          lte(editorialBroadcasts.scheduledFor, nowIso),
+        ),
+      )
+      .orderBy(asc(editorialBroadcasts.scheduledFor));
   }
 
   // Site Settings methods

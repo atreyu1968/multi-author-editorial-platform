@@ -29,7 +29,9 @@ import {
   insertBlogPostTranslationSchema,
   insertNewsletterListSchema,
   insertEmailTemplateSchema,
-  insertBroadcastSchema
+  insertBroadcastSchema,
+  insertEditorialListSchema,
+  insertEditorialBroadcastSchema
 } from "@shared/schema";
 import { z } from "zod";
 // Referenced from blueprint:javascript_object_storage
@@ -480,6 +482,131 @@ export async function dispatchPerRecipientLocal9amTick(
   }
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// Editorial (cross-author) broadcast dispatcher.
+//
+// Mirrors dispatchBroadcast() but: (a) supports multiple featured books that
+// can belong to different authors, (b) sends FROM the chosen senderAuthor
+// (so DKIM/SPF + visual hero match a real author identity), (c) targets the
+// editorial-wide subscriber list (optionally filtered by editorial lists).
+// ────────────────────────────────────────────────────────────────────────────
+export async function dispatchEditorialBroadcast(broadcastId: string, baseUrl: string) {
+  const broadcast = await storage.getEditorialBroadcastById(broadcastId);
+  if (!broadcast) throw new Error(`Editorial broadcast ${broadcastId} not found`);
+
+  const senderAuthor = await storage.getAuthorById(broadcast.senderAuthorId);
+  if (!senderAuthor) {
+    return await storage.updateEditorialBroadcast(broadcastId, {
+      status: 'failed',
+      errorMessage: 'Sender author not found',
+    });
+  }
+
+  const bookIds = broadcast.bookIds || [];
+  if (bookIds.length === 0) {
+    return await storage.updateEditorialBroadcast(broadcastId, {
+      status: 'failed',
+      errorMessage: 'At least one book is required',
+    });
+  }
+
+  // Resolve every featured book + its author in parallel. Missing books are
+  // dropped silently so a deleted book doesn't tank the whole campaign, but
+  // if every book is gone we fail loudly.
+  const bookPairs: Array<{ book: Book; author: Author | null }> = [];
+  for (const bid of bookIds) {
+    const b = await storage.getBookById(bid);
+    if (!b) continue;
+    const a = await storage.getAuthorById(b.authorId);
+    bookPairs.push({ book: b, author: a ?? null });
+  }
+  if (bookPairs.length === 0) {
+    return await storage.updateEditorialBroadcast(broadcastId, {
+      status: 'failed',
+      errorMessage: 'None of the selected books still exist',
+    });
+  }
+
+  const recipients = await storage.getActiveEditorialSubscribersForBroadcast(broadcast.listIds || []);
+
+  await storage.updateEditorialBroadcast(broadcastId, {
+    status: 'sending',
+    recipientCount: recipients.length,
+  });
+
+  const editorialSettings = await storage.getEditorialSettings();
+  const { emailService } = await import('./email-service.js');
+  const configured = emailService.configureForAuthor('newsletter', senderAuthor, editorialSettings);
+  if (!configured) {
+    return await storage.updateEditorialBroadcast(broadcastId, {
+      status: 'failed',
+      errorMessage: 'Email provider not configured for the sender author',
+    });
+  }
+
+  const from = emailService.getDefaultFrom();
+  const rate = broadcast.rateLimitPerMinute ?? 0;
+  const intervalMs = rate > 0 ? Math.ceil(60_000 / rate) : 0;
+  const promo = broadcast.type === 'promotion'
+    && broadcast.promoPriceCents !== null
+    && broadcast.promoPriceCents !== undefined
+    && broadcast.promoCurrency
+      ? {
+          priceCents: broadcast.promoPriceCents,
+          currency: broadcast.promoCurrency,
+          startsAt: broadcast.promoStartsAt,
+          endsAt: broadcast.promoEndsAt,
+        }
+      : undefined;
+
+  let success = 0;
+  let failure = 0;
+
+  for (let i = 0; i < recipients.length; i++) {
+    const subscriber = recipients[i];
+    const startedAt = Date.now();
+    try {
+      const unsubscribeUrl = subscriber.preferencesToken
+        ? `${baseUrl}/api/unsubscribe/${subscriber.preferencesToken}`
+        : undefined;
+      await emailService.sendEditorialBroadcastEmail({
+        to: subscriber.email,
+        subject: broadcast.subject,
+        from,
+        listUnsubscribeUrl: unsubscribeUrl,
+        tags: { editorialBroadcast: broadcast.id, type: broadcast.type },
+        rendererOpts: {
+          type: broadcast.type as 'new_release' | 'promotion',
+          senderAuthor,
+          from,
+          books: bookPairs,
+          customMessage: broadcast.customMessage,
+          promo,
+          unsubscribeUrl,
+          baseUrl,
+        },
+      });
+      success++;
+    } catch (err) {
+      console.error(`Editorial broadcast ${broadcastId} failed for ${subscriber.email}:`, err);
+      failure++;
+    }
+    if (intervalMs > 0 && i < recipients.length - 1) {
+      const elapsed = Date.now() - startedAt;
+      const wait = intervalMs - elapsed;
+      if (wait > 0) await sleep(wait);
+    }
+  }
+
+  return await storage.updateEditorialBroadcast(broadcastId, {
+    status: failure === 0 ? 'sent' : (success === 0 ? 'failed' : 'sent'),
+    successCount: success,
+    failureCount: failure,
+    sentAt: new Date().toISOString(),
+    errorMessage: failure > 0 && success === 0 ? 'All recipients failed' : null,
+  });
+}
+
 // Background tick: every minute, claim any "scheduled" broadcasts whose
 // scheduled_for has passed and dispatch them. For "fixed" mode, each row is
 // flipped to "sending" inside `dispatchBroadcast` so a parallel tick won't
@@ -526,6 +653,23 @@ function startScheduledBroadcastTick() {
         } catch (err) {
           console.error(`Scheduled broadcast ${b.id} dispatch error:`, err);
           await storage.updateBroadcast(b.id, {
+            status: 'failed',
+            errorMessage: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
+
+      // Editorial scheduled broadcasts use the same tick — fixed-mode only
+      // for now (per-recipient local 9am can be added later if requested).
+      const dueEditorial = await storage.getDueScheduledEditorialBroadcasts(new Date().toISOString());
+      for (const b of dueEditorial) {
+        const reserved = await storage.updateEditorialBroadcast(b.id, { status: 'sending' });
+        if (!reserved || reserved.status !== 'sending') continue;
+        try {
+          await dispatchEditorialBroadcast(b.id, baseUrl);
+        } catch (err) {
+          console.error(`Scheduled editorial broadcast ${b.id} dispatch error:`, err);
+          await storage.updateEditorialBroadcast(b.id, {
             status: 'failed',
             errorMessage: err instanceof Error ? err.message : String(err),
           });
@@ -1611,18 +1755,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/unsubscribe/:token", async (req, res) => {
     try {
       const subscriber = await storage.getNewsletterSubscriberByToken(req.params.token);
-      if (!subscriber) {
-        res.status(404).type('html').send(renderUnsubscribePage({ token: req.params.token, status: 'invalid' }));
+      if (subscriber) {
+        const author = subscriber.authorId ? await storage.getAuthorById(subscriber.authorId) : undefined;
+        const status = subscriber.unsubscribedAt ? 'done' : 'confirm';
+        res.type('html').send(renderUnsubscribePage({
+          token: req.params.token,
+          status,
+          subscriberEmail: subscriber.email,
+          authorName: author?.name,
+        }));
         return;
       }
-      const author = subscriber.authorId ? await storage.getAuthorById(subscriber.authorId) : undefined;
-      const status = subscriber.unsubscribedAt ? 'done' : 'confirm';
-      res.type('html').send(renderUnsubscribePage({
-        token: req.params.token,
-        status,
-        subscriberEmail: subscriber.email,
-        authorName: author?.name,
-      }));
+      // Fall through to editorial (cross-author) subscribers — the same
+      // /api/unsubscribe URL handles both audiences so emails only need one
+      // unsubscribe link to think about.
+      const editorialSub = await storage.getEditorialSubscriberByToken(req.params.token);
+      if (editorialSub) {
+        const status = editorialSub.unsubscribedAt ? 'done' : 'confirm';
+        res.type('html').send(renderUnsubscribePage({
+          token: req.params.token,
+          status,
+          subscriberEmail: editorialSub.email,
+        }));
+        return;
+      }
+      res.status(404).type('html').send(renderUnsubscribePage({ token: req.params.token, status: 'invalid' }));
     } catch (error) {
       console.error('Unsubscribe page failed:', error);
       res.status(500).send('Internal error');
@@ -1636,27 +1793,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/unsubscribe/:token", async (req, res) => {
     try {
       const updated = await storage.unsubscribeNewsletterByToken(req.params.token);
-      if (!updated) {
-        // Mail clients want a 2xx for one-click; only return 404 to humans.
+      if (updated) {
+        const author = updated.authorId ? await storage.getAuthorById(updated.authorId) : undefined;
         const accept = (req.headers.accept || '').toLowerCase();
         if (accept.includes('text/html')) {
-          res.status(404).type('html').send(renderUnsubscribePage({ token: req.params.token, status: 'invalid' }));
+          res.type('html').send(renderUnsubscribePage({
+            token: req.params.token,
+            status: 'done',
+            subscriberEmail: updated.email,
+            authorName: author?.name,
+          }));
         } else {
-          res.status(404).json({ message: "Token no válido" });
+          res.json({ success: true });
         }
         return;
       }
-      const author = updated.authorId ? await storage.getAuthorById(updated.authorId) : undefined;
+      // Editorial subscriber fallback — same token namespace, same UX.
+      const editorialUpdated = await storage.unsubscribeEditorialByToken(req.params.token);
+      if (editorialUpdated) {
+        const accept = (req.headers.accept || '').toLowerCase();
+        if (accept.includes('text/html')) {
+          res.type('html').send(renderUnsubscribePage({
+            token: req.params.token,
+            status: 'done',
+            subscriberEmail: editorialUpdated.email,
+          }));
+        } else {
+          res.json({ success: true });
+        }
+        return;
+      }
       const accept = (req.headers.accept || '').toLowerCase();
       if (accept.includes('text/html')) {
-        res.type('html').send(renderUnsubscribePage({
-          token: req.params.token,
-          status: 'done',
-          subscriberEmail: updated.email,
-          authorName: author?.name,
-        }));
+        res.status(404).type('html').send(renderUnsubscribePage({ token: req.params.token, status: 'invalid' }));
       } else {
-        res.json({ success: true });
+        res.status(404).json({ message: "Token no válido" });
       }
     } catch (error) {
       console.error('Unsubscribe failed:', error);
@@ -2037,6 +2208,338 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to delete newsletter list" });
     }
   });
+
+  // ─── Editorial (cross-author) lists, subscribers, and broadcasts ─────────
+  // Lives alongside the per-author equivalents above. Subscribers here are
+  // editorial-wide (one row per email regardless of which author landing
+  // page they signed up from); a campaign chooses a senderAuthor for the
+  // From line and can feature books from any author.
+
+  // GET /api/editorial/lists - public for the signup form, returns active only
+  // when caller is unauthenticated. Admins get every list.
+  app.get("/api/editorial/lists", async (req, res) => {
+    try {
+      const isAdmin = req.isAuthenticated && req.isAuthenticated();
+      const lists = await storage.getEditorialLists(isAdmin ? undefined : { activeOnly: true });
+      res.json(lists);
+    } catch (error) {
+      console.error('Failed to fetch editorial lists:', error);
+      res.status(500).json({ message: "Failed to fetch editorial lists" });
+    }
+  });
+
+  app.post("/api/editorial/lists", requireAuth, async (req, res) => {
+    try {
+      const payload = insertEditorialListSchema.parse(req.body);
+      // Auto-slug if missing so admins don't have to think about it.
+      const slug = payload.slug && payload.slug.trim().length > 0 ? payload.slug : slugify(payload.name);
+      const list = await storage.createEditorialList({ ...payload, slug });
+      res.status(201).json(list);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid list data", errors: error.errors });
+        return;
+      }
+      console.error('Failed to create editorial list:', error);
+      res.status(500).json({ message: "Failed to create editorial list" });
+    }
+  });
+
+  app.patch("/api/editorial/lists/:id", requireAuth, async (req, res) => {
+    try {
+      const payload = insertEditorialListSchema.partial().parse(req.body);
+      const updated = await storage.updateEditorialList(req.params.id, payload);
+      if (!updated) {
+        res.status(404).json({ message: "List not found" });
+        return;
+      }
+      res.json(updated);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid list data", errors: error.errors });
+        return;
+      }
+      console.error('Failed to update editorial list:', error);
+      res.status(500).json({ message: "Failed to update editorial list" });
+    }
+  });
+
+  app.delete("/api/editorial/lists/:id", requireAuth, async (req, res) => {
+    try {
+      const ok = await storage.deleteEditorialList(req.params.id);
+      if (!ok) {
+        res.status(404).json({ message: "List not found" });
+        return;
+      }
+      res.json({ message: "List deleted" });
+    } catch (error) {
+      console.error('Failed to delete editorial list:', error);
+      res.status(500).json({ message: "Failed to delete editorial list" });
+    }
+  });
+
+  // GET /api/editorial/subscribers-with-lists - admin report mirroring the
+  // per-author "subscribers-with-lists" view but for the editorial audience.
+  app.get("/api/editorial/subscribers-with-lists", requireAuth, async (_req, res) => {
+    try {
+      const rows = await storage.getEditorialSubscribersWithLists();
+      res.json(rows);
+    } catch (error) {
+      console.error('Failed to fetch editorial subscribers with lists:', error);
+      res.status(500).json({ message: "Failed to fetch editorial subscribers" });
+    }
+  });
+
+  app.patch("/api/editorial/subscribers/:id", requireAuth, async (req, res) => {
+    try {
+      const schema = z.object({
+        name: z.string().min(1).optional(),
+        email: z.string().email().optional(),
+        unsubscribedAt: z.string().nullable().optional(),
+      });
+      const patch = schema.parse(req.body);
+      const updated = await storage.updateEditorialSubscriber(req.params.id, patch);
+      if (!updated) {
+        res.status(404).json({ message: "Subscriber not found" });
+        return;
+      }
+      res.json(updated);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid subscriber data", errors: error.errors });
+        return;
+      }
+      console.error('Failed to update editorial subscriber:', error);
+      res.status(500).json({ message: "Failed to update editorial subscriber" });
+    }
+  });
+
+  app.delete("/api/editorial/subscribers/:id", requireAuth, async (req, res) => {
+    try {
+      const ok = await storage.deleteEditorialSubscriber(req.params.id);
+      if (!ok) {
+        res.status(404).json({ message: "Subscriber not found" });
+        return;
+      }
+      res.json({ message: "Subscriber deleted" });
+    } catch (error) {
+      console.error('Failed to delete editorial subscriber:', error);
+      res.status(500).json({ message: "Failed to delete editorial subscriber" });
+    }
+  });
+
+  app.post("/api/editorial/subscribers/:id/lists", requireAuth, async (req, res) => {
+    try {
+      const schema = z.object({ listIds: z.array(z.string()) });
+      const { listIds } = schema.parse(req.body);
+      // Confirm the subscriber exists before we wipe + reseed memberships,
+      // otherwise a typo'd id would silently no-op.
+      const subscribers = await storage.getEditorialSubscribers();
+      const target = subscribers.find(s => s.id === req.params.id);
+      if (!target) {
+        res.status(404).json({ message: "Subscriber not found" });
+        return;
+      }
+      await storage.setEditorialSubscriberLists(req.params.id, listIds);
+      res.json({ subscribedListIds: listIds });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid list selection", errors: error.errors });
+        return;
+      }
+      console.error('Failed to update editorial subscriber lists:', error);
+      res.status(500).json({ message: "Failed to update list memberships" });
+    }
+  });
+
+  // POST /api/editorial/subscribe - public signup. Idempotent on email:
+  // resubscribes any soft-unsubscribed row (clearing unsubscribedAt) and
+  // updates the optional list memberships in place. Required: email.
+  // Optional: firstName, listIds, locale, timezone, consentText, source.
+  app.post("/api/editorial/subscribe", newsletterLimiter, async (req, res) => {
+    try {
+      const schema = z.object({
+        email: z.string().email(),
+        name: z.string().min(1).max(120),
+        listIds: z.array(z.string()).optional(),
+        timezone: z.string().min(1).max(64).optional().nullable(),
+        consentText: z.string().max(2000).optional().nullable(),
+      });
+      const data = schema.parse(req.body);
+      const existing = await storage.getEditorialSubscriberByEmail(data.email);
+      let subscriber;
+      if (existing) {
+        subscriber = await storage.updateEditorialSubscriber(existing.id, {
+          name: data.name ?? existing.name,
+          timezone: data.timezone ?? existing.timezone,
+          consentText: data.consentText ?? existing.consentText,
+          consentedAt: data.consentText ? new Date().toISOString() : existing.consentedAt,
+          unsubscribedAt: null,
+        });
+      } else {
+        subscriber = await storage.createEditorialSubscriber({
+          email: data.email,
+          name: data.name,
+          timezone: data.timezone ?? null,
+          consentText: data.consentText ?? null,
+          consentedAt: data.consentText ? new Date().toISOString() : null,
+        });
+      }
+      if (subscriber && Array.isArray(data.listIds)) {
+        await storage.setEditorialSubscriberLists(subscriber.id, data.listIds);
+      }
+      res.status(201).json({ success: true });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid subscription data", errors: error.errors });
+        return;
+      }
+      console.error('Editorial subscribe failed:', error);
+      res.status(500).json({ message: "Failed to subscribe" });
+    }
+  });
+
+  // ----- Editorial broadcast (cross-author campaign) routes ---------------
+  app.get("/api/editorial/broadcasts", requireAuth, async (_req, res) => {
+    try {
+      const rows = await storage.getEditorialBroadcasts();
+      res.json(rows);
+    } catch (error) {
+      console.error('Failed to fetch editorial broadcasts:', error);
+      res.status(500).json({ message: "Failed to fetch editorial broadcasts" });
+    }
+  });
+
+  // Render the campaign HTML without persisting or sending. Mirrors the
+  // per-author preview endpoint so the admin can iterate live.
+  app.post("/api/editorial/broadcasts/preview", requireAuth, async (req, res) => {
+    try {
+      const payload = insertEditorialBroadcastSchema.parse(req.body);
+      const senderAuthor = await storage.getAuthorById(payload.senderAuthorId);
+      if (!senderAuthor) {
+        res.status(404).json({ message: "Sender author not found" });
+        return;
+      }
+      const bookPairs: Array<{ book: Book; author: Author | null }> = [];
+      for (const bid of payload.bookIds) {
+        const b = await storage.getBookById(bid);
+        if (!b) continue;
+        const a = await storage.getAuthorById(b.authorId);
+        bookPairs.push({ book: b, author: a ?? null });
+      }
+      if (bookPairs.length === 0) {
+        res.status(400).json({ message: "No valid books selected" });
+        return;
+      }
+
+      const baseUrl = getPublicBaseUrl(req);
+      const editorialSettings = await storage.getEditorialSettings();
+      const { emailService, EmailService } = await import('./email-service.js');
+      // Configure once just so getDefaultFrom returns something sensible
+      // for the preview header. Failure is non-fatal — the preview only
+      // needs the rendered HTML, not actual delivery.
+      emailService.configureForAuthor('newsletter', senderAuthor, editorialSettings);
+      const from = emailService.getDefaultFrom();
+      const promo = payload.type === 'promotion'
+        && payload.promoPriceCents !== null
+        && payload.promoPriceCents !== undefined
+        && payload.promoCurrency
+          ? {
+              priceCents: payload.promoPriceCents,
+              currency: payload.promoCurrency,
+              startsAt: payload.promoStartsAt ?? null,
+              endsAt: payload.promoEndsAt ?? null,
+            }
+          : undefined;
+      const html = EmailService.renderEditorialBroadcast({
+        type: payload.type as 'new_release' | 'promotion',
+        senderAuthor,
+        from,
+        books: bookPairs,
+        customMessage: payload.customMessage ?? null,
+        promo,
+        baseUrl,
+      });
+      const recipients = await storage.getActiveEditorialSubscribersForBroadcast(payload.listIds || []);
+      res.json({ subject: payload.subject, html, recipientCount: recipients.length });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid broadcast data", errors: error.errors });
+        return;
+      }
+      console.error('Editorial broadcast preview failed:', error);
+      res.status(500).json({ message: "Failed to render preview" });
+    }
+  });
+
+  // Create + dispatch (or schedule) an editorial campaign.
+  app.post("/api/editorial/broadcasts", requireAuth, async (req, res) => {
+    try {
+      const payload = insertEditorialBroadcastSchema.parse(req.body);
+
+      const senderAuthor = await storage.getAuthorById(payload.senderAuthorId);
+      if (!senderAuthor) {
+        res.status(404).json({ message: "Sender author not found" });
+        return;
+      }
+      if (payload.type === 'promotion') {
+        if (payload.promoPriceCents === null || payload.promoPriceCents === undefined || !payload.promoCurrency) {
+          res.status(400).json({ message: "Promotions require promoPriceCents and promoCurrency" });
+          return;
+        }
+      }
+
+      // Editorial campaigns currently support fixed scheduling only. The
+      // per-recipient local-9am rollout is per-author for now; we can
+      // extend it later if requested.
+      const scheduledIso = payload.scheduledFor ? new Date(payload.scheduledFor).toISOString() : null;
+      const isFuture = scheduledIso !== null && new Date(scheduledIso).getTime() > Date.now() + 5_000;
+
+      const draft = await storage.createEditorialBroadcast({
+        ...payload,
+        scheduledFor: scheduledIso,
+        scheduleMode: 'fixed',
+        localDeliveryDate: null,
+      });
+      if (isFuture) {
+        const scheduled = await storage.updateEditorialBroadcast(draft.id, { status: 'scheduled' });
+        res.status(201).json(scheduled ?? draft);
+        return;
+      }
+
+      const baseUrl = getPublicBaseUrl(req);
+      const result = await dispatchEditorialBroadcast(draft.id, baseUrl);
+      res.status(201).json(result);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid broadcast data", errors: error.errors });
+        return;
+      }
+      console.error('Editorial broadcast send error:', error);
+      res.status(500).json({ message: "Failed to send editorial broadcast" });
+    }
+  });
+
+  const cancelEditorialBroadcastHandler = async (req: any, res: any) => {
+    try {
+      const existing = await storage.getEditorialBroadcastById(req.params.id);
+      if (!existing) {
+        res.status(404).json({ message: "Broadcast not found" });
+        return;
+      }
+      if (existing.status !== 'scheduled') {
+        res.status(409).json({ message: "Solo se pueden cancelar campañas programadas." });
+        return;
+      }
+      const updated = await storage.updateEditorialBroadcast(req.params.id, { status: 'cancelled' });
+      res.json(updated);
+    } catch (error) {
+      console.error('Editorial broadcast cancel error:', error);
+      res.status(500).json({ message: "Failed to cancel editorial broadcast" });
+    }
+  };
+  app.post("/api/editorial/broadcasts/:id/cancel", requireAuth, cancelEditorialBroadcastHandler);
+  app.delete("/api/editorial/broadcasts/:id", requireAuth, cancelEditorialBroadcastHandler);
 
   // ----- Admin subscriber CRUD --------------------------------------
   // The admin panel needs a per-subscriber edit / delete / list-membership

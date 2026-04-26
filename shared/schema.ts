@@ -300,6 +300,94 @@ export const broadcasts = pgTable("broadcasts", {
   createdAt: text("created_at").default(sql`current_timestamp`),
 });
 
+// ────────────────────────────────────────────────────────────────────────────
+// EDITORIAL (cross-author) lists, subscribers, and campaigns.
+// ────────────────────────────────────────────────────────────────────────────
+//
+// Mirrors the per-author newsletter / broadcast model but lives one level
+// up: subscribers belong to the EDITORIAL (no `authorId`), and a campaign
+// can feature books from multiple authors. Each campaign picks a
+// `senderAuthorId` whose configured email provider + sender identity is
+// used as the From line, so admins can decide on a per-campaign basis
+// which author "presents" the cross-author release / promo.
+// ────────────────────────────────────────────────────────────────────────────
+
+// Cross-author topical lists (e.g. "Thriller", "Histórica", "Novedades de
+// la editorial"). No `authorId`, intentionally — subscribers are a single
+// editorial-wide audience.
+export const editorialLists = pgTable("editorial_lists", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  description: text("description"),
+  isDefault: boolean("is_default").default(false),
+  isActive: boolean("is_active").default(true),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: text("created_at").default(sql`current_timestamp`),
+});
+
+// Editorial-wide subscribers. Email is unique across the table so we never
+// store duplicate editorial contacts. GDPR fields mirror per-author
+// `newsletters` (consent snapshot + soft-unsubscribe + preferences token).
+export const editorialSubscribers = pgTable("editorial_subscribers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  preferencesToken: varchar("preferences_token").unique(),
+  unsubscribedAt: text("unsubscribed_at"),
+  subscribedAt: text("subscribed_at").default(sql`current_timestamp`),
+  consentedAt: text("consented_at"),
+  consentText: text("consent_text"),
+  timezone: text("timezone"),
+});
+
+// M2M: which editorial lists a subscriber is opted into.
+export const editorialListSubscriptions = pgTable("editorial_list_subscriptions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  subscriberId: varchar("subscriber_id").notNull(),
+  listId: varchar("list_id").notNull(),
+  subscribedAt: text("subscribed_at").default(sql`current_timestamp`),
+});
+
+// Editorial campaigns. Same lifecycle / scheduling model as `broadcasts`
+// but: no authorId at the row level, multiple `bookIds` (from any author),
+// `listIds` references `editorialLists`, and `senderAuthorId` picks which
+// author's configured mail provider + sender identity is used as the From.
+export const editorialBroadcasts = pgTable("editorial_broadcasts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  // Which author's email configuration is used as the From line. Required:
+  // the editorial doesn't (yet) have its own provider config — it always
+  // borrows one author's setup so DKIM / SPF / Reply-To stay valid.
+  senderAuthorId: varchar("sender_author_id").notNull(),
+  type: text("type").notNull(), // "new_release" | "promotion"
+  // One or more featured books from any author. Stored as text[] of book ids;
+  // the renderer fetches each book + its author for per-book card display.
+  bookIds: text("book_ids").array(),
+  subject: text("subject").notNull(),
+  previewText: text("preview_text"),
+  customMessage: text("custom_message"),
+  promoPriceCents: integer("promo_price_cents"),
+  promoCurrency: text("promo_currency"),
+  promoStartsAt: text("promo_starts_at"),
+  promoEndsAt: text("promo_ends_at"),
+  // Targeting: editorialLists.id array. NULL/empty = every active editorial subscriber.
+  listIds: text("list_ids").array(),
+  // Scheduling — identical semantics to per-author `broadcasts`.
+  scheduledFor: text("scheduled_for"),
+  timezone: text("timezone"),
+  scheduleMode: text("schedule_mode").notNull().default("fixed"),
+  localDeliveryDate: text("local_delivery_date"),
+  completedTimezones: text("completed_timezones").array(),
+  rateLimitPerMinute: integer("rate_limit_per_minute"),
+  status: text("status").notNull().default("draft"),
+  recipientCount: integer("recipient_count").default(0),
+  successCount: integer("success_count").default(0),
+  failureCount: integer("failure_count").default(0),
+  errorMessage: text("error_message"),
+  sentAt: text("sent_at"),
+  createdAt: text("created_at").default(sql`current_timestamp`),
+});
+
 // Customers - registered users with billing information
 export const customers = pgTable("customers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -753,6 +841,47 @@ export const insertBroadcastSchema = createInsertSchema(broadcasts).omit({
   completedTimezones: z.array(z.string()).optional().nullable(),
 });
 
+export const insertEditorialListSchema = createInsertSchema(editorialLists).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertEditorialSubscriberSchema = createInsertSchema(editorialSubscribers).omit({
+  id: true,
+  subscribedAt: true,
+  preferencesToken: true,
+  unsubscribedAt: true,
+}).extend({
+  timezone: z.string().min(1).max(64).optional().nullable(),
+});
+
+export const insertEditorialListSubscriptionSchema = createInsertSchema(editorialListSubscriptions).omit({
+  id: true,
+  subscribedAt: true,
+});
+
+export const insertEditorialBroadcastSchema = createInsertSchema(editorialBroadcasts).omit({
+  id: true,
+  createdAt: true,
+  sentAt: true,
+  status: true,
+  recipientCount: true,
+  successCount: true,
+  failureCount: true,
+  errorMessage: true,
+}).extend({
+  type: z.enum(["new_release", "promotion"]),
+  bookIds: z.array(z.string().uuid()).min(1),
+  listIds: z.array(z.string().uuid()).optional().nullable(),
+  promoPriceCents: z.number().int().nonnegative().optional().nullable(),
+  scheduledFor: z.string().datetime().optional().nullable(),
+  timezone: z.string().min(1).max(64).optional().nullable(),
+  rateLimitPerMinute: z.number().int().positive().max(10000).optional().nullable(),
+  scheduleMode: z.enum(["fixed", "per_recipient_local_9am"]).optional(),
+  localDeliveryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+  completedTimezones: z.array(z.string()).optional().nullable(),
+});
+
 export const insertCustomerSchema = createInsertSchema(customers).omit({
   id: true,
   createdAt: true,
@@ -809,6 +938,18 @@ export type InsertEmailTemplate = z.infer<typeof insertEmailTemplateSchema>;
 
 export type Broadcast = typeof broadcasts.$inferSelect;
 export type InsertBroadcast = z.infer<typeof insertBroadcastSchema>;
+
+export type EditorialList = typeof editorialLists.$inferSelect;
+export type InsertEditorialList = z.infer<typeof insertEditorialListSchema>;
+
+export type EditorialSubscriber = typeof editorialSubscribers.$inferSelect;
+export type InsertEditorialSubscriber = z.infer<typeof insertEditorialSubscriberSchema>;
+
+export type EditorialListSubscription = typeof editorialListSubscriptions.$inferSelect;
+export type InsertEditorialListSubscription = z.infer<typeof insertEditorialListSubscriptionSchema>;
+
+export type EditorialBroadcast = typeof editorialBroadcasts.$inferSelect;
+export type InsertEditorialBroadcast = z.infer<typeof insertEditorialBroadcastSchema>;
 
 export type Customer = typeof customers.$inferSelect;
 export type InsertCustomer = z.infer<typeof insertCustomerSchema>;

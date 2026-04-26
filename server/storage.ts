@@ -17,6 +17,12 @@ import {
   type InsertEmailTemplate,
   type Broadcast,
   type InsertBroadcast,
+  type EditorialList,
+  type InsertEditorialList,
+  type EditorialSubscriber,
+  type InsertEditorialSubscriber,
+  type EditorialBroadcast,
+  type InsertEditorialBroadcast,
   type SiteSettings,
   type InsertSiteSettings,
   type User,
@@ -159,6 +165,38 @@ export interface IStorage {
   // of those lists are returned. When empty/omitted, returns every active
   // subscriber for that author regardless of list membership.
   getActiveSubscribersForBroadcast(authorId: string, listIds?: string[]): Promise<Newsletter[]>;
+
+  // Editorial (cross-author) lists CRUD.
+  getEditorialLists(opts?: { activeOnly?: boolean }): Promise<EditorialList[]>;
+  getEditorialListById(id: string): Promise<EditorialList | undefined>;
+  createEditorialList(list: InsertEditorialList): Promise<EditorialList>;
+  updateEditorialList(id: string, patch: Partial<InsertEditorialList>): Promise<EditorialList | undefined>;
+  deleteEditorialList(id: string): Promise<boolean>;
+
+  // Editorial subscribers CRUD + bulk reporting view.
+  getEditorialSubscribers(): Promise<EditorialSubscriber[]>;
+  getEditorialSubscriberByEmail(email: string): Promise<EditorialSubscriber | undefined>;
+  getEditorialSubscriberByToken(token: string): Promise<EditorialSubscriber | undefined>;
+  createEditorialSubscriber(subscriber: InsertEditorialSubscriber): Promise<EditorialSubscriber>;
+  updateEditorialSubscriber(id: string, patch: Partial<EditorialSubscriber>): Promise<EditorialSubscriber | undefined>;
+  deleteEditorialSubscriber(id: string): Promise<boolean>;
+  unsubscribeEditorialByToken(token: string): Promise<EditorialSubscriber | undefined>;
+  // Returns every editorial subscriber together with the IDs of the
+  // editorial lists they belong to. Powers the "Suscriptores editoriales"
+  // admin view's per-list filter and badge column without N+1.
+  getEditorialSubscribersWithLists(): Promise<Array<EditorialSubscriber & { listIds: string[] }>>;
+  getEditorialSubscriberListIds(subscriberId: string): Promise<string[]>;
+  setEditorialSubscriberLists(subscriberId: string, listIds: string[]): Promise<void>;
+  // Active editorial subscribers for a broadcast: optionally filtered to
+  // those opted into at least one of `listIds`. Used by the dispatcher.
+  getActiveEditorialSubscribersForBroadcast(listIds?: string[]): Promise<EditorialSubscriber[]>;
+
+  // Editorial broadcasts CRUD + due-job picker.
+  getEditorialBroadcasts(): Promise<EditorialBroadcast[]>;
+  getEditorialBroadcastById(id: string): Promise<EditorialBroadcast | undefined>;
+  createEditorialBroadcast(broadcast: InsertEditorialBroadcast): Promise<EditorialBroadcast>;
+  updateEditorialBroadcast(id: string, patch: Partial<EditorialBroadcast>): Promise<EditorialBroadcast | undefined>;
+  getDueScheduledEditorialBroadcasts(nowIso: string): Promise<EditorialBroadcast[]>;
 
   // Site Settings methods
   getSiteSettings(authorId?: string): Promise<SiteSettings[]>;
@@ -1061,6 +1099,30 @@ export class MemStorage {
   async updateBroadcast(): Promise<Broadcast | undefined> { return undefined; }
   async getDueScheduledBroadcasts(): Promise<Broadcast[]> { return []; }
   async getActiveSubscribersForBroadcast(): Promise<Newsletter[]> { return []; }
+
+  // Editorial stubs — MemStorage isn't used in production; the real
+  // implementation lives in DatabaseStorage.
+  async getEditorialLists(): Promise<EditorialList[]> { return []; }
+  async getEditorialListById(): Promise<EditorialList | undefined> { return undefined; }
+  async createEditorialList(): Promise<EditorialList> { throw new Error("not implemented"); }
+  async updateEditorialList(): Promise<EditorialList | undefined> { return undefined; }
+  async deleteEditorialList(): Promise<boolean> { return false; }
+  async getEditorialSubscribers(): Promise<EditorialSubscriber[]> { return []; }
+  async getEditorialSubscriberByEmail(): Promise<EditorialSubscriber | undefined> { return undefined; }
+  async getEditorialSubscriberByToken(): Promise<EditorialSubscriber | undefined> { return undefined; }
+  async createEditorialSubscriber(): Promise<EditorialSubscriber> { throw new Error("not implemented"); }
+  async updateEditorialSubscriber(): Promise<EditorialSubscriber | undefined> { return undefined; }
+  async deleteEditorialSubscriber(): Promise<boolean> { return false; }
+  async unsubscribeEditorialByToken(): Promise<EditorialSubscriber | undefined> { return undefined; }
+  async getEditorialSubscribersWithLists(): Promise<Array<EditorialSubscriber & { listIds: string[] }>> { return []; }
+  async getEditorialSubscriberListIds(): Promise<string[]> { return []; }
+  async setEditorialSubscriberLists(): Promise<void> { /* no-op */ }
+  async getActiveEditorialSubscribersForBroadcast(): Promise<EditorialSubscriber[]> { return []; }
+  async getEditorialBroadcasts(): Promise<EditorialBroadcast[]> { return []; }
+  async getEditorialBroadcastById(): Promise<EditorialBroadcast | undefined> { return undefined; }
+  async createEditorialBroadcast(): Promise<EditorialBroadcast> { throw new Error("not implemented"); }
+  async updateEditorialBroadcast(): Promise<EditorialBroadcast | undefined> { return undefined; }
+  async getDueScheduledEditorialBroadcasts(): Promise<EditorialBroadcast[]> { return []; }
 
   // Site Settings methods
   async getSiteSettings(): Promise<SiteSettings[]> {

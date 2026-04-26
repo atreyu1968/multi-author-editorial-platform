@@ -678,6 +678,137 @@ function renderBroadcastEmail(opts: BroadcastEmailOpts): string {
   });
 }
 
+// ─── Editorial (cross-author) broadcast renderer ────────────────────────────
+//
+// An editorial campaign is sent FROM a chosen author (so the From: name + DKIM
+// match an existing author identity) but features books that may belong to
+// any author in the editorial. Each book card therefore shows its own author
+// label so readers know who wrote what. We reuse the same wallpaper + hero +
+// footer chrome as the per-author renderer to keep brand parity.
+
+interface EditorialBroadcastBookEntry {
+  book: Book;
+  author: Author | null | undefined;
+}
+
+interface EditorialBroadcastEmailOpts {
+  type: 'new_release' | 'promotion';
+  senderAuthor: Author | null | undefined;
+  from: { name: string; email: string };
+  books: EditorialBroadcastBookEntry[];
+  customMessage?: string | null;
+  promo?: {
+    priceCents: number;
+    currency: string;
+    startsAt?: string | null;
+    endsAt?: string | null;
+  };
+  preferencesUrl?: string;
+  unsubscribeUrl?: string;
+  baseUrl?: string;
+  heroTitle?: string;
+  heroSubtitle?: string;
+  previewText?: string;
+}
+
+function renderEditorialBookCard(entry: EditorialBroadcastBookEntry, baseUrl: string | undefined): string {
+  const { book, author } = entry;
+  const cover = absolutize(book.coverImage, baseUrl);
+  const coverHtml = cover
+    ? `<img src="${escapeHtml(cover)}" alt="${escapeHtml(book.title)}" width="140"
+            style="display: block; width: 140px; height: auto; border-radius: 8px; box-shadow: 0 4px 16px rgba(43,29,16,0.18); margin: 0 auto 12px auto;" />`
+    : '';
+  const description = book.description
+    ? `<p style="margin: 8px 0 0 0; color: #6b5a47; line-height: 1.6; font-size: 14px;">${escapeHtml(book.description)}</p>`
+    : '';
+  const authorLabel = author?.name
+    ? `<p style="margin: 4px 0 0 0; color: hsl(28, 50%, 35%); font-family: 'Playfair Display', Georgia, 'Times New Roman', serif; font-size: 14px; font-style: italic;">por ${escapeHtml(author.name)}</p>`
+    : '';
+  const ctaHref = book.amazonUrl || (author?.slug && baseUrl ? `${baseUrl.replace(/\/$/, '')}/autor/${author.slug}` : '');
+  const ctaBlock = ctaHref
+    ? `<p style="margin: 14px 0 0 0;"><a href="${escapeHtml(ctaHref)}" style="display: inline-block; background: linear-gradient(135deg, hsl(40, 65%, 50%) 0%, hsl(28, 50%, 40%) 100%); color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-family: 'Playfair Display', Georgia, 'Times New Roman', serif; font-size: 14px;">${book.amazonUrl ? 'Ver en Amazon' : 'Saber más'}</a></p>`
+    : '';
+  return `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+           style="background: #ffffff; border: 1px solid #e9dcc4; border-left: 4px solid hsl(40, 65%, 50%); border-radius: 8px; margin: 0 0 20px 0;">
+      <tr>
+        <td align="center" style="padding: 22px;">
+          ${coverHtml}
+          <h3 style="margin: 0; font-family: 'Playfair Display', Georgia, 'Times New Roman', serif; font-size: 20px; color: #2b1d10; text-align: center;">
+            ${escapeHtml(book.title)}
+          </h3>
+          ${authorLabel}
+          ${description}
+          ${ctaBlock}
+        </td>
+      </tr>
+    </table>
+  `;
+}
+
+function renderEditorialPromoBlock(promo: NonNullable<EditorialBroadcastEmailOpts['promo']>): string {
+  const now = formatPrice(promo.priceCents, promo.currency);
+  const validity = (promo.startsAt || promo.endsAt)
+    ? `<p style="margin: 8px 0 0 0; color: #6b5a47; font-size: 14px;">Oferta válida ${promo.startsAt ? `del <strong>${escapeHtml(formatDateEs(promo.startsAt))}</strong> ` : ''}${promo.endsAt ? `hasta el <strong>${escapeHtml(formatDateEs(promo.endsAt))}</strong>` : ''}.</p>`
+    : '';
+  return `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+           style="background: #fff8e6; border: 1px solid #f0d68c; border-radius: 8px; margin: 0 0 24px 0;">
+      <tr>
+        <td align="center" style="padding: 20px 16px;">
+          <p style="margin: 0; font-family: 'Playfair Display', Georgia, 'Times New Roman', serif; font-size: 14px; color: hsl(28, 50%, 40%); letter-spacing: 0.12em; text-transform: uppercase;">Oferta especial</p>
+          <p style="margin: 6px 0 0 0;">
+            <strong style="color: hsl(28, 50%, 30%); font-size: 28px; font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;">${escapeHtml(now)}</strong>
+          </p>
+          ${validity}
+        </td>
+      </tr>
+    </table>
+  `;
+}
+
+function renderEditorialBroadcastEmail(opts: EditorialBroadcastEmailOpts): string {
+  const { type, senderAuthor, from, books, customMessage, promo, preferencesUrl, unsubscribeUrl, baseUrl } = opts;
+
+  const firstBook = books[0]?.book;
+  const heroTitle = opts.heroTitle
+    || (type === 'promotion'
+      ? (firstBook ? `${firstBook.title} en oferta` : 'Ofertas especiales')
+      : (books.length > 1 ? 'Novedades editoriales' : (firstBook ? `Nueva publicación: ${firstBook.title}` : 'Novedades editoriales')));
+  const heroSubtitle = opts.heroSubtitle
+    || (type === 'promotion' ? 'Una oportunidad por tiempo limitado' : 'Selección de nuestras últimas publicaciones');
+  const previewText = opts.previewText
+    || (type === 'promotion'
+      ? `Oferta especial${firstBook ? ` en "${firstBook.title}"` : ''} — solo por tiempo limitado.`
+      : (firstBook ? `Te recomendamos "${firstBook.title}".` : 'Novedades de nuestra editorial.'));
+
+  const intro = customMessage && customMessage.trim().length > 0
+    ? `<p style="margin: 0 0 16px 0; color: #4a3a2a; white-space: pre-wrap;">${escapeHtml(customMessage)}</p>`
+    : '';
+
+  const promoBlock = type === 'promotion' && promo ? renderEditorialPromoBlock(promo) : '';
+
+  const bookCards = books.map((entry) => renderEditorialBookCard(entry, baseUrl)).join('\n');
+
+  const bodyHtml = `
+    ${intro}
+    ${promoBlock}
+    ${bookCards}
+  `;
+
+  return renderAuthorBrandedEmail({
+    author: senderAuthor,
+    from,
+    previewText,
+    heroTitle,
+    heroSubtitle,
+    bodyHtml,
+    preferencesUrl,
+    unsubscribeUrl,
+    baseUrl,
+  });
+}
+
 export class EmailService {
   private provider: EmailProvider | null = null;
   private fromName: string = '';
@@ -889,6 +1020,42 @@ export class EmailService {
    */
   static renderBroadcast(opts: BroadcastEmailOpts): string {
     return renderBroadcastEmail(opts);
+  }
+
+  /**
+   * Renders an EDITORIAL (cross-author) campaign email. The hero is
+   * branded with the sender author so DKIM/SPF + visual identity match
+   * the From header; the body lists every featured book with its own
+   * author label so subscribers know who wrote what.
+   */
+  static renderEditorialBroadcast(opts: EditorialBroadcastEmailOpts): string {
+    return renderEditorialBroadcastEmail(opts);
+  }
+
+  /**
+   * Sends a single editorial broadcast email. Mirrors `sendBroadcastEmail`
+   * but uses the editorial renderer so multi-author book cards render correctly.
+   */
+  async sendEditorialBroadcastEmail(opts: {
+    to: string;
+    subject: string;
+    from: { name: string; email: string };
+    rendererOpts: EditorialBroadcastEmailOpts;
+    listUnsubscribeUrl?: string;
+    tags?: Record<string, string>;
+  }): Promise<void> {
+    if (!this.provider) {
+      throw new Error('Email provider not configured');
+    }
+    const html = renderEditorialBroadcastEmail(opts.rendererOpts);
+    await this.provider.send({
+      to: opts.to,
+      subject: opts.subject,
+      html,
+      from: opts.from,
+      listUnsubscribeUrl: opts.listUnsubscribeUrl,
+      tags: opts.tags,
+    });
   }
 
   /**

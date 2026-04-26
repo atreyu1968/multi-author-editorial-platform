@@ -23,10 +23,13 @@ import BroadcastManagement from "@/components/admin/broadcast-management";
 import SubscribersManagement from "@/components/admin/subscribers-management";
 import NewsletterListsManagement from "@/components/admin/newsletter-lists-management";
 import UsersManagement from "@/components/admin/users-management";
+import EditorialListsManagement from "@/components/admin/editorial-lists-management";
+import EditorialSubscribersManagement from "@/components/admin/editorial-subscribers-management";
+import EditorialBroadcastManagement from "@/components/admin/editorial-broadcast-management";
 import { AdminAuthorProvider, useAdminAuthor } from "@/contexts/admin-author-context";
 import { useUiText } from "@/contexts/ui-text-context";
 
-type AdminSection = 'dashboard' | 'books' | 'series' | 'authors' | 'bio' | 'testimonials' | 'blog' | 'settings' | 'ui-texts' | 'translations' | 'editorial-settings' | 'analytics' | 'orders' | 'broadcasts' | 'subscribers' | 'newsletter-lists' | 'users' | 'help';
+type AdminSection = 'dashboard' | 'books' | 'series' | 'authors' | 'bio' | 'testimonials' | 'blog' | 'settings' | 'ui-texts' | 'translations' | 'editorial-settings' | 'analytics' | 'orders' | 'broadcasts' | 'subscribers' | 'newsletter-lists' | 'users' | 'editorial-lists' | 'editorial-subscribers' | 'editorial-broadcasts' | 'help';
 
 function AdminContent() {
   const [currentSection, setCurrentSection] = useState<AdminSection>('dashboard');
@@ -92,6 +95,12 @@ function AdminContent() {
         return <NewsletterListsManagement />;
       case 'users':
         return <UsersManagement />;
+      case 'editorial-lists':
+        return <EditorialListsManagement />;
+      case 'editorial-subscribers':
+        return <EditorialSubscribersManagement />;
+      case 'editorial-broadcasts':
+        return <EditorialBroadcastManagement />;
       case 'help':
         return <HelpInstructions />;
       default:
@@ -380,6 +389,42 @@ function AdminContent() {
                 >
                   <Mail className="h-5 w-5" />
                   Campañas
+                </button>
+                <button
+                  onClick={() => setCurrentSection('editorial-subscribers')}
+                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
+                    currentSection === 'editorial-subscribers'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'hover:bg-primary hover:text-primary-foreground'
+                  }`}
+                  data-testid="nav-editorial-subscribers"
+                >
+                  <Inbox className="h-5 w-5" />
+                  Suscriptores editoriales
+                </button>
+                <button
+                  onClick={() => setCurrentSection('editorial-lists')}
+                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
+                    currentSection === 'editorial-lists'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'hover:bg-primary hover:text-primary-foreground'
+                  }`}
+                  data-testid="nav-editorial-lists"
+                >
+                  <ListChecks className="h-5 w-5" />
+                  Listas editoriales
+                </button>
+                <button
+                  onClick={() => setCurrentSection('editorial-broadcasts')}
+                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
+                    currentSection === 'editorial-broadcasts'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'hover:bg-primary hover:text-primary-foreground'
+                  }`}
+                  data-testid="nav-editorial-broadcasts"
+                >
+                  <Mail className="h-5 w-5" />
+                  Campañas editoriales
                 </button>
                 <button
                   onClick={() => setCurrentSection('users')}
