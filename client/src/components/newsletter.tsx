@@ -168,19 +168,19 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
     });
   }
 
-  // Hide while loading the author so we never flash a form for an opted-out author.
-  if (defaultAuthorId && (isAuthorLoading || !scopedAuthor)) {
-    return null;
-  }
-  // Hide newsletter section entirely if this author opted out of mailing list
-  if (scopedAuthor && scopedAuthor.mailingListEnabled === false) {
-    return null;
-  }
   // The free-book CTA itself is gated separately below: when the author has no
   // free-book file configured we still render the signup form (subscription is
   // a standalone feature) but suppress the gift-themed copy and cover.
   // The book is considered "available" if any of the legacy generic file or
   // any of the per-format files is set.
+  //
+  // IMPORTANT: this block — including the `useEffect` that auto-selects the
+  // default format — must run BEFORE the early `return null` guards below.
+  // Otherwise the hook count changes across renders (the effect is skipped
+  // while the author query is loading and then appears once data arrives),
+  // which is React's "rendered more hooks than during the previous render"
+  // (error #310) — in a minified production build that turns the whole page
+  // blank, even though dev builds usually show the helpful overlay.
   const formatOptions: { value: string; label: string; available: boolean }[] = [
     { value: "epub", label: "EPUB (Kobo, Apple Books, lectores genéricos)", available: !!scopedAuthor?.freeBookFileEpub },
     { value: "pdf",  label: "PDF (cualquier dispositivo)",                  available: !!scopedAuthor?.freeBookFilePdf },
@@ -200,6 +200,15 @@ export default function Newsletter({ authorId }: NewsletterProps = {}) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scopedAuthor?.id]);
+
+  // Hide while loading the author so we never flash a form for an opted-out author.
+  if (defaultAuthorId && (isAuthorLoading || !scopedAuthor)) {
+    return null;
+  }
+  // Hide newsletter section entirely if this author opted out of mailing list
+  if (scopedAuthor && scopedAuthor.mailingListEnabled === false) {
+    return null;
+  }
 
   const freeBookTitle = scopedAuthor?.freeBookTitle || 'Libro digital gratuito';
   const freeBookDescription = scopedAuthor?.freeBookDescription;
