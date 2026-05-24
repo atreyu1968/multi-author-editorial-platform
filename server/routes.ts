@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import rateLimit from "express-rate-limit";
 import express from "express";
 import path from "path";
+import crypto from "crypto";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import type { Book, Author, InsertNewsletter } from "@shared/schema";
@@ -41,6 +42,8 @@ import { createPaypalOrder, capturePaypalOrder, loadPaypalDefault } from "./payp
 // Local storage for non-Replit environments
 import { upload, handleFileUpload, getStorageType } from "./storageService";
 import { getPublicBaseUrl } from "./base-url";
+import { amazonAttributionService, AmazonAttributionDisabledError } from "./services/amazonAttribution";
+import { startAmazonAttributionTick, syncReports as runAttributionSync } from "./jobs/amazonAttribution";
 
 // Authentication middleware to protect admin routes
 function requireAuth(req: any, res: any, next: any) {
@@ -4720,9 +4723,310 @@ ${sitemapRefs}`;
     }
   });
 
+  // ===========================================================================
+  // Amazon Attribution
+  // ===========================================================================
+  //
+  // Two public endpoints power the redirect flow on the landing pages:
+  //   POST /api/attribution/generate  — called by the "Comprar en Amazon"
+  //                                     button to obtain (or reuse) an
+  //                                     Attribution tag for (session × ASIN).
+  //   GET  /api/attribution/click/:id — opened by the browser; logs the click
+  //                                     and 302-redirects to Amazon.
+  // The admin endpoints below let editorial staff connect / disconnect the
+  // editorial-wide Amazon Ads account, kick off a manual sync, and read
+  // the dashboard / export CSV.
+
+  const generateSchema = z.object({
+    landingType: z.enum(["autor", "serie", "libro"]),
+    authorId: z.string().optional(),
+    seriesId: z.string().optional(),
+    bookId: z.string().optional(),
+    sessionId: z.string().min(1),
+    subToken: z.string().optional(), // ?sub= from email links
+  });
+
+  app.post("/api/attribution/generate", async (req, res) => {
+    try {
+      const parsed = generateSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid input", errors: parsed.error.errors });
+      }
+      const { landingType, authorId, seriesId, bookId, sessionId, subToken } = parsed.data;
+
+      // Resolve the ASIN according to the landing-page hierarchy.
+      // libro → book.asin → fallback null
+      // serie → seriesById.referenceAsin → first book's asin
+      // autor → authorById.referenceAsin → first published book's asin
+      let asin: string | null = null;
+      let resolvedBookId: string | undefined = bookId;
+      let amazonFallbackUrl: string | undefined;
+
+      if (landingType === "libro" && bookId) {
+        const b = await storage.getBookById(bookId);
+        asin = b?.asin ?? null;
+        amazonFallbackUrl = b?.amazonUrl ?? undefined;
+      } else if (landingType === "serie" && seriesId) {
+        const s = await storage.getBookSeriesById(seriesId);
+        asin = s?.referenceAsin ?? null;
+        amazonFallbackUrl = s?.amazonUrl ?? undefined;
+        if (!asin) {
+          const seriesBooks = await storage.getBooksBySeriesId(seriesId).catch(() => [] as Book[]);
+          const firstWithAsin = (seriesBooks as any[]).find((b) => b.asin);
+          asin = firstWithAsin?.asin ?? null;
+          resolvedBookId = firstWithAsin?.id;
+          if (!amazonFallbackUrl) amazonFallbackUrl = firstWithAsin?.amazonUrl;
+        }
+      } else if (landingType === "autor" && authorId) {
+        const a = await storage.getAuthorById(authorId);
+        asin = a?.referenceAsin ?? null;
+        amazonFallbackUrl = a?.amazonUrl ?? undefined;
+        if (!asin) {
+          const authorBooks = await storage.getBooks(authorId).catch(() => [] as Book[]);
+          const firstPub = (authorBooks as any[]).find((b) => b.isPublished && b.asin);
+          asin = firstPub?.asin ?? null;
+          resolvedBookId = firstPub?.id;
+          if (!amazonFallbackUrl) amazonFallbackUrl = firstPub?.amazonUrl;
+        }
+      }
+
+      // If we have an ASIN but no explicit Amazon URL, synthesize a
+      // deterministic detail-page URL so the client always has something
+      // sensible to fall back to when attribution is disabled.
+      if (!amazonFallbackUrl && asin) {
+        amazonFallbackUrl = `https://www.amazon.com/dp/${asin}`;
+      }
+
+      // When Amazon Attribution is disabled or we couldn't resolve an ASIN
+      // the caller falls back to the plain Amazon URL on the book.
+      const enabled = await amazonAttributionService.isEnabled();
+      if (!enabled || !asin) {
+        return res.json({
+          mode: "fallback",
+          fallbackUrl: amazonFallbackUrl || null,
+        });
+      }
+
+      // Reuse an existing tag for the same (session, asin, landing) tuple
+      // so re-clicks during the same session don't burn a fresh tag each
+      // time (and so Amazon's reports stay clean).
+      const existing = await storage.findAttributionLink(sessionId, asin, landingType);
+      if (existing) {
+        return res.json({
+          mode: "attribution",
+          id: existing.id,
+          clickUrl: `/api/attribution/click/${existing.id}`,
+        });
+      }
+
+      // Resolve the optional newsletter subscriber from `?sub=`. We accept
+      // both per-author and editorial-wide preference tokens.
+      let newsletterId: string | undefined;
+      let editorialSubscriberId: string | undefined;
+      if (subToken) {
+        try {
+          const nl = await storage.getNewsletterSubscriberByToken(subToken).catch(() => undefined);
+          if (nl) newsletterId = nl.id;
+          if (!newsletterId) {
+            const ed = await storage.getEditorialSubscriberByToken(subToken).catch(() => undefined);
+            if (ed) editorialSubscriberId = ed.id;
+          }
+        } catch {
+          // tokens that don't resolve are non-fatal — attribution still works.
+        }
+      }
+
+      // Ask Amazon for a fresh tag. The "publisher" segments traffic per
+      // landing type in Amazon's UI; the "campaign" identifies the entity.
+      const campaign = resolvedBookId || seriesId || authorId || asin;
+      const tag = await amazonAttributionService.createTag({
+        asin,
+        publisher: `landing_${landingType}`,
+        campaign: String(campaign),
+      });
+
+      const link = await storage.createAttributionLink({
+        landingType,
+        authorId: authorId || null,
+        seriesId: seriesId || null,
+        bookId: resolvedBookId || null,
+        asin,
+        sessionId,
+        newsletterId: newsletterId || null,
+        editorialSubscriberId: editorialSubscriberId || null,
+        tagId: tag.tagId,
+        clickUrl: tag.clickUrl,
+        expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+      } as any);
+
+      return res.json({
+        mode: "attribution",
+        id: link.id,
+        clickUrl: `/api/attribution/click/${link.id}`,
+      });
+    } catch (err) {
+      if (err instanceof AmazonAttributionDisabledError) {
+        return res.json({ mode: "fallback", fallbackUrl: null });
+      }
+      console.error("attribution/generate error:", err);
+      res.status(500).json({ message: "Failed to generate attribution link" });
+    }
+  });
+
+  app.get("/api/attribution/click/:id", async (req, res) => {
+    try {
+      const link = await storage.getAttributionLinkById(req.params.id);
+      if (!link) return res.status(404).send("Not found");
+
+      // Fire-and-forget audit + counter update. Don't await — keep redirect
+      // latency below ~10ms so the user gets to Amazon as fast as possible.
+      void storage.recordAttributionClick(link.id, {
+        sessionId: link.sessionId,
+        userAgent: req.headers["user-agent"]?.toString().slice(0, 500) ?? null,
+        ipAddress: (req.headers["x-forwarded-for"]?.toString().split(",")[0] || req.ip || "").slice(0, 64),
+        referrer: req.headers.referer?.toString().slice(0, 500) ?? null,
+      } as any).catch(() => {});
+
+      return res.redirect(302, link.clickUrl);
+    } catch (err) {
+      console.error("attribution/click error:", err);
+      res.status(500).send("Failed to process click");
+    }
+  });
+
+  // --- Admin: settings ------------------------------------------------------
+
+  app.get("/api/admin/attribution/settings", requireAuth, async (_req, res) => {
+    const s = await storage.getAmazonAttributionSettings();
+    // Mask secrets so they never reach the browser, even for an admin.
+    res.json({
+      isEnabled: !!s?.isEnabled,
+      hasCredentials: !!(s?.clientId && s?.clientSecret && s?.refreshToken),
+      clientId: s?.clientId ?? null,
+      profileId: s?.profileId ?? null,
+      marketplace: s?.marketplace ?? "www.amazon.es",
+      lastSyncAt: s?.lastSyncAt ?? null,
+      lastSyncStatus: s?.lastSyncStatus ?? null,
+    });
+  });
+
+  app.put("/api/admin/attribution/settings", requireAuth, async (req, res) => {
+    const schema = z.object({
+      clientId: z.string().optional(),
+      clientSecret: z.string().optional(),
+      refreshToken: z.string().optional(),
+      profileId: z.string().optional(),
+      marketplace: z.string().optional(),
+      isEnabled: z.boolean().optional(),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: "Invalid input", errors: parsed.error.errors });
+    }
+    // Only forward fields that were actually provided — empty strings would
+    // wipe a stored credential by mistake.
+    const patch: any = {};
+    for (const [k, v] of Object.entries(parsed.data)) {
+      if (v === undefined) continue;
+      if (typeof v === "string" && v.trim() === "" && k !== "marketplace") continue;
+      patch[k] = v;
+    }
+    const updated = await storage.updateAmazonAttributionSettings(patch);
+    res.json({ ok: true, isEnabled: !!updated.isEnabled });
+  });
+
+  // --- Admin: OAuth flow ----------------------------------------------------
+
+  app.get("/api/admin/attribution/oauth/start", requireAuth, async (req, res) => {
+    const s = await storage.getAmazonAttributionSettings();
+    if (!s?.clientId) {
+      return res.status(400).json({ message: "Set Client ID before connecting" });
+    }
+    const redirectUri = `${getPublicBaseUrl(req)}/api/admin/attribution/oauth/callback`;
+    // Generate a one-shot CSRF token and stash it in the user's session so we
+    // can verify the callback came from the same browser that started the flow.
+    const state = crypto.randomBytes(24).toString("hex");
+    (req.session as any).amazonAttributionOAuthState = state;
+    const url = amazonAttributionService.buildAuthorizationUrl({
+      clientId: s.clientId,
+      redirectUri,
+      state,
+    });
+    res.json({ url, redirectUri });
+  });
+
+  app.get("/api/admin/attribution/oauth/callback", requireAuth, async (req, res) => {
+    try {
+      const code = String(req.query.code || "");
+      const incomingState = String(req.query.state || "");
+      const expectedState = (req.session as any)?.amazonAttributionOAuthState;
+      if (!code) return res.status(400).send("Missing code");
+      if (!expectedState || incomingState !== expectedState) {
+        return res.status(400).send("Invalid OAuth state");
+      }
+      // Single-use token: clear it as soon as we've validated it.
+      delete (req.session as any).amazonAttributionOAuthState;
+      const s = await storage.getAmazonAttributionSettings();
+      if (!s?.clientId || !s?.clientSecret) {
+        return res.status(400).send("Set Client ID and Client Secret before connecting");
+      }
+      const redirectUri = `${getPublicBaseUrl(req)}/api/admin/attribution/oauth/callback`;
+      await amazonAttributionService.exchangeCodeForRefreshToken({
+        code,
+        redirectUri,
+        clientId: s.clientId,
+        clientSecret: s.clientSecret,
+      });
+      // Redirect back into the admin panel so the SPA picks up the new state.
+      res.redirect("/admin?section=amazon-attribution&connected=1");
+    } catch (err) {
+      console.error("attribution oauth callback error:", err);
+      res.redirect("/admin?section=amazon-attribution&connected=0");
+    }
+  });
+
+  app.post("/api/admin/attribution/sync", requireAuth, async (_req, res) => {
+    const result = await runAttributionSync();
+    if (!result) {
+      return res.status(400).json({ message: "Amazon Attribution is not enabled or sync failed" });
+    }
+    res.json({ ok: true, rowsUpserted: result.rowsUpserted });
+  });
+
+  // --- Admin: dashboard + CSV export ---------------------------------------
+
+  app.get("/api/admin/attribution/dashboard", requireAuth, async (req, res) => {
+    const end = (req.query.end as string) || new Date().toISOString().slice(0, 10);
+    const startDefault = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const start = (req.query.start as string) || startDefault;
+    const rows = await storage.getAttributionDashboard(start, end);
+    res.json({ start, end, rows });
+  });
+
+  app.get("/api/admin/attribution/export", requireAuth, async (req, res) => {
+    const end = (req.query.end as string) || new Date().toISOString().slice(0, 10);
+    const startDefault = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const start = (req.query.start as string) || startDefault;
+    const rows = await storage.getAttributionDashboard(start, end);
+    const header = "landingType,authorId,seriesId,bookId,sessions,clicks,detailPageViews,addToCart,purchases,salesAmount";
+    const csv = [header]
+      .concat(
+        rows.map((r) =>
+          [r.landingType, r.authorId ?? "", r.seriesId ?? "", r.bookId ?? "", r.sessions, r.clicks, r.detailPageViews, r.addToCart, r.purchases, r.salesAmount].join(","),
+        ),
+      )
+      .join("\n");
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="attribution_${start}_${end}.csv"`);
+    res.send(csv);
+  });
+
   // Kick off the background worker that polls for due scheduled broadcasts
   // and dispatches them. Idempotent — safe to call from re-registrations.
   startScheduledBroadcastTick();
+  // Amazon Attribution daily jobs: report sync (3 AM), conversion flags
+  // (4 AM), expired-links cleanup (Sunday 5 AM).
+  startAmazonAttributionTick();
 
   const httpServer = createServer(app);
   return httpServer;

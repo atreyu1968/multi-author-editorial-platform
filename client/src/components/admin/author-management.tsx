@@ -677,6 +677,25 @@ export default function AuthorManagement() {
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="referenceAsin"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>ASIN de referencia (Amazon Attribution)</FormLabel>
+                      <FormControl>
+                        <Input {...field} value={field.value || ""} placeholder="B0XXXXXXXX" data-testid="input-author-reference-asin" />
+                      </FormControl>
+                      <p className="text-xs text-muted-foreground">
+                        ASIN del libro insignia del autor. Se usa cuando alguien hace clic en
+                        "Comprar en Amazon" desde la página del autor. Si lo dejas vacío, se usará
+                        el primer libro publicado con ASIN.
+                      </p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
               <div className="space-y-4 border-t pt-6 mt-6">

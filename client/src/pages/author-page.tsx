@@ -18,6 +18,7 @@ import { useUiText } from "@/contexts/ui-text-context";
 import { useLocale } from "@/contexts/locale-context";
 import { getAllLocalizedUrls } from "@/lib/localized-routes";
 import { AVAILABLE_LOCALES } from "@/contexts/locale-context";
+import { resolveAttributionHref } from "@/lib/attribution";
 
 // Wouter passes `{ params, ... }` when used as `<Route component={AuthorPage} />`,
 // but we also render this component manually from CustomDomainRedirect with a
@@ -358,13 +359,28 @@ export default function AuthorPage(props: AuthorPageProps = {}) {
                             {t.buttonViewSeries}
                           </Button>
                         </Link>
-                        {serie.amazonUrl && (
-                          <Button 
+                        {(serie.amazonUrl || serie.referenceAsin) && (
+                          <Button
                             className="bg-primary text-primary-foreground hover:bg-primary/90 transition-all transform hover:scale-105"
                             asChild
                             data-testid={`button-amazon-${serie.id}`}
                           >
-                            <a href={serie.amazonUrl} target="_blank" rel="noopener noreferrer">
+                            <a
+                              href={serie.amazonUrl || (serie.referenceAsin ? `https://www.amazon.com/dp/${serie.referenceAsin}` : "#")}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={async (e) => {
+                                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || (e as any).button) return;
+                                e.preventDefault();
+                                const href = await resolveAttributionHref({
+                                  landingType: "serie",
+                                  seriesId: serie.id,
+                                  authorId: serie.authorId ?? undefined,
+                                  fallbackUrl: serie.amazonUrl,
+                                });
+                                if (href) window.open(href, "_blank", "noopener,noreferrer");
+                              }}
+                            >
                               <ShoppingCart className="h-4 w-4 mr-2" />
                               {t.buttonAmazon}
                             </a>

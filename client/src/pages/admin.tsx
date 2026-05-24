@@ -26,10 +26,11 @@ import UsersManagement from "@/components/admin/users-management";
 import EditorialListsManagement from "@/components/admin/editorial-lists-management";
 import EditorialSubscribersManagement from "@/components/admin/editorial-subscribers-management";
 import EditorialBroadcastManagement from "@/components/admin/editorial-broadcast-management";
+import AmazonAttributionManagement from "@/components/admin/amazon-attribution-management";
 import { AdminAuthorProvider, useAdminAuthor } from "@/contexts/admin-author-context";
 import { useUiText } from "@/contexts/ui-text-context";
 
-type AdminSection = 'dashboard' | 'books' | 'series' | 'authors' | 'bio' | 'testimonials' | 'blog' | 'settings' | 'ui-texts' | 'translations' | 'editorial-settings' | 'analytics' | 'orders' | 'broadcasts' | 'subscribers' | 'newsletter-lists' | 'users' | 'editorial-lists' | 'editorial-subscribers' | 'editorial-broadcasts' | 'help';
+type AdminSection = 'dashboard' | 'books' | 'series' | 'authors' | 'bio' | 'testimonials' | 'blog' | 'settings' | 'ui-texts' | 'translations' | 'editorial-settings' | 'analytics' | 'orders' | 'broadcasts' | 'subscribers' | 'newsletter-lists' | 'users' | 'editorial-lists' | 'editorial-subscribers' | 'editorial-broadcasts' | 'amazon-attribution' | 'help';
 
 function AdminContent() {
   const [currentSection, setCurrentSection] = useState<AdminSection>('dashboard');
@@ -101,6 +102,8 @@ function AdminContent() {
         return <EditorialSubscribersManagement />;
       case 'editorial-broadcasts':
         return <EditorialBroadcastManagement />;
+      case 'amazon-attribution':
+        return <AmazonAttributionManagement />;
       case 'help':
         return <HelpInstructions />;
       default:
@@ -437,6 +440,18 @@ function AdminContent() {
                 >
                   <KeyRound className="h-5 w-5" />
                   Usuarios
+                </button>
+                <button
+                  onClick={() => setCurrentSection('amazon-attribution')}
+                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
+                    currentSection === 'amazon-attribution'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'hover:bg-primary hover:text-primary-foreground'
+                  }`}
+                  data-testid="nav-amazon-attribution"
+                >
+                  <ShoppingCart className="h-5 w-5" />
+                  Amazon Attribution
                 </button>
                 <button 
                   onClick={() => setCurrentSection('help')}

@@ -59,7 +59,15 @@ import {
   type TestimonialTranslation,
   type InsertTestimonialTranslation,
   type BlogPostTranslation,
-  type InsertBlogPostTranslation
+  type InsertBlogPostTranslation,
+  type AmazonAttributionSettings,
+  type InsertAmazonAttributionSettings,
+  type AttributionLink,
+  type InsertAttributionLink,
+  type AttributionReport,
+  type InsertAttributionReport,
+  type AttributionClick,
+  type InsertAttributionClick,
 } from "@shared/schema";
 import { randomUUID, scrypt, randomBytes, scryptSync } from "crypto";
 import { promisify } from "util";
@@ -325,6 +333,36 @@ export interface IStorage {
   // Blog post translations
   getBlogPostTranslations(blogPostId: string): Promise<BlogPostTranslation[]>;
   upsertBlogPostTranslation(translation: InsertBlogPostTranslation): Promise<BlogPostTranslation>;
+
+  // Amazon Attribution methods
+  getAmazonAttributionSettings(): Promise<AmazonAttributionSettings | undefined>;
+  updateAmazonAttributionSettings(settings: Partial<InsertAmazonAttributionSettings>): Promise<AmazonAttributionSettings>;
+
+  createAttributionLink(link: InsertAttributionLink): Promise<AttributionLink>;
+  getAttributionLinkById(id: string): Promise<AttributionLink | undefined>;
+  // Look up an existing tag for the same (sessionId, asin, landing) tuple so
+  // repeated clicks during a single session reuse the same Amazon tag.
+  findAttributionLink(sessionId: string, asin: string, landingType: string): Promise<AttributionLink | undefined>;
+  recordAttributionClick(linkId: string, click: Omit<InsertAttributionClick, "attributionLinkId">): Promise<void>;
+  markAttributionLinksPurchased(tagIds: string[]): Promise<number>;
+  deleteExpiredAttributionLinks(beforeIso: string): Promise<number>;
+
+  upsertAttributionReport(report: InsertAttributionReport): Promise<AttributionReport>;
+  getAttributionReportsRange(startDate: string, endDate: string): Promise<AttributionReport[]>;
+  // Aggregated dashboard view: joins links + reports and groups per
+  // (landingType, authorId). Date range inclusive.
+  getAttributionDashboard(startDate: string, endDate: string): Promise<Array<{
+    landingType: string;
+    authorId: string | null;
+    seriesId: string | null;
+    bookId: string | null;
+    clicks: number;
+    detailPageViews: number;
+    addToCart: number;
+    purchases: number;
+    salesAmount: number;
+    sessions: number;
+  }>>;
 
   // Search methods
   searchAuthors(query: string): Promise<Author[]>;

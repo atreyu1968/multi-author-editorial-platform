@@ -34,6 +34,17 @@ import {
   seriesTranslations,
   testimonialTranslations,
   blogPostTranslations,
+  amazonAttributionSettings,
+  attributionLinks,
+  attributionReports,
+  attributionClicks,
+  type AmazonAttributionSettings,
+  type InsertAmazonAttributionSettings,
+  type AttributionLink,
+  type InsertAttributionLink,
+  type AttributionReport,
+  type InsertAttributionReport,
+  type InsertAttributionClick,
   type Author,
   type InsertAuthor,
   type BookSeries,
@@ -1731,6 +1742,184 @@ export class DatabaseStorage implements IStorage {
         ilike(bookSeries.title, `%${query}%`)
       ))
       .limit(20);
+  }
+
+  // ===========================================================================
+  // Amazon Attribution
+  // ===========================================================================
+
+  async getAmazonAttributionSettings(): Promise<AmazonAttributionSettings | undefined> {
+    const rows = await db.select().from(amazonAttributionSettings).where(eq(amazonAttributionSettings.id, "default")).limit(1);
+    return rows[0];
+  }
+
+  async updateAmazonAttributionSettings(
+    settings: Partial<InsertAmazonAttributionSettings>,
+  ): Promise<AmazonAttributionSettings> {
+    // Upsert the singleton row keyed by `id = 'default'`. Explicit existence
+    // check (rather than INSERT ... ON CONFLICT) avoids having to mirror
+    // every nullable column in a typed SET payload.
+    const existing = await this.getAmazonAttributionSettings();
+    if (!existing) {
+      const [created] = await db
+        .insert(amazonAttributionSettings)
+        .values({ id: "default", ...settings })
+        .returning();
+      return created;
+    }
+    const [updated] = await db
+      .update(amazonAttributionSettings)
+      .set(settings)
+      .where(eq(amazonAttributionSettings.id, "default"))
+      .returning();
+    return updated;
+  }
+
+  async createAttributionLink(link: InsertAttributionLink): Promise<AttributionLink> {
+    const [created] = await db.insert(attributionLinks).values(link).returning();
+    return created;
+  }
+
+  async getAttributionLinkById(id: string): Promise<AttributionLink | undefined> {
+    const rows = await db.select().from(attributionLinks).where(eq(attributionLinks.id, id)).limit(1);
+    return rows[0];
+  }
+
+  async findAttributionLink(
+    sessionId: string,
+    asin: string,
+    landingType: string,
+  ): Promise<AttributionLink | undefined> {
+    const rows = await db
+      .select()
+      .from(attributionLinks)
+      .where(
+        and(
+          eq(attributionLinks.sessionId, sessionId),
+          eq(attributionLinks.asin, asin),
+          eq(attributionLinks.landingType, landingType),
+        ),
+      )
+      .orderBy(desc(attributionLinks.createdAt))
+      .limit(1);
+    return rows[0];
+  }
+
+  async recordAttributionClick(
+    linkId: string,
+    click: Omit<InsertAttributionClick, "attributionLinkId">,
+  ): Promise<void> {
+    // Insert audit row + bump counters on the parent link in parallel. The
+    // dashboard reads counters from the link row directly — the audit table
+    // is for spot-checks during the validation phase.
+    await Promise.all([
+      db.insert(attributionClicks).values({ attributionLinkId: linkId, ...click }),
+      db
+        .update(attributionLinks)
+        .set({
+          clickCount: sql`${attributionLinks.clickCount} + 1`,
+          lastClickAt: sql`current_timestamp`,
+        })
+        .where(eq(attributionLinks.id, linkId)),
+    ]);
+  }
+
+  async markAttributionLinksPurchased(tagIds: string[]): Promise<number> {
+    if (tagIds.length === 0) return 0;
+    const updated = await db
+      .update(attributionLinks)
+      .set({
+        purchaseDetected: true,
+        purchaseDetectedAt: sql`current_timestamp`,
+      })
+      .where(
+        and(
+          inArray(attributionLinks.tagId, tagIds),
+          eq(attributionLinks.purchaseDetected, false),
+        ),
+      )
+      .returning({ id: attributionLinks.id });
+    return updated.length;
+  }
+
+  async deleteExpiredAttributionLinks(beforeIso: string): Promise<number> {
+    const deleted = await db
+      .delete(attributionLinks)
+      .where(lte(attributionLinks.createdAt, beforeIso))
+      .returning({ id: attributionLinks.id });
+    return deleted.length;
+  }
+
+  async upsertAttributionReport(report: InsertAttributionReport): Promise<AttributionReport> {
+    // Unique key is (attributionTagId, reportDate). On conflict refresh
+    // every metric — Amazon reports are cumulative-to-date per day so the
+    // latest snapshot always wins.
+    const [row] = await db
+      .insert(attributionReports)
+      .values(report)
+      .onConflictDoUpdate({
+        target: [attributionReports.attributionTagId, attributionReports.reportDate],
+        set: {
+          clicks: report.clicks ?? 0,
+          detailPageViews: report.detailPageViews ?? 0,
+          addToCart: report.addToCart ?? 0,
+          purchases: report.purchases ?? 0,
+          salesAmount: report.salesAmount ?? 0,
+          lastUpdated: sql`current_timestamp`,
+        },
+      })
+      .returning();
+    return row;
+  }
+
+  async getAttributionReportsRange(startDate: string, endDate: string): Promise<AttributionReport[]> {
+    return await db
+      .select()
+      .from(attributionReports)
+      .where(
+        and(
+          sql`${attributionReports.reportDate} >= ${startDate}`,
+          sql`${attributionReports.reportDate} <= ${endDate}`,
+        ),
+      )
+      .orderBy(asc(attributionReports.reportDate));
+  }
+
+  async getAttributionDashboard(startDate: string, endDate: string) {
+    // Join reports → links via tagId to attribute Amazon-side metrics back
+    // to the landing page / author / book that originated each tag.
+    const rows = await db.execute(sql`
+      SELECT
+        l.landing_type        AS "landingType",
+        l.author_id           AS "authorId",
+        l.series_id           AS "seriesId",
+        l.book_id             AS "bookId",
+        COALESCE(SUM(r.clicks), 0)::int             AS "clicks",
+        COALESCE(SUM(r.detail_page_views), 0)::int  AS "detailPageViews",
+        COALESCE(SUM(r.add_to_cart), 0)::int        AS "addToCart",
+        COALESCE(SUM(r.purchases), 0)::int          AS "purchases",
+        COALESCE(SUM(r.sales_amount), 0)::float     AS "salesAmount",
+        COUNT(DISTINCT l.session_id)::int           AS "sessions"
+      FROM ${attributionLinks} l
+      LEFT JOIN ${attributionReports} r
+        ON r.attribution_tag_id = l.tag_id
+       AND r.report_date >= ${startDate}
+       AND r.report_date <= ${endDate}
+      GROUP BY l.landing_type, l.author_id, l.series_id, l.book_id
+      ORDER BY "salesAmount" DESC, "clicks" DESC
+    `);
+    return (rows.rows as any[]).map((r) => ({
+      landingType: String(r.landingType),
+      authorId: r.authorId ?? null,
+      seriesId: r.seriesId ?? null,
+      bookId: r.bookId ?? null,
+      clicks: Number(r.clicks ?? 0),
+      detailPageViews: Number(r.detailPageViews ?? 0),
+      addToCart: Number(r.addToCart ?? 0),
+      purchases: Number(r.purchases ?? 0),
+      salesAmount: Number(r.salesAmount ?? 0),
+      sessions: Number(r.sessions ?? 0),
+    }));
   }
 
   async searchBooks(query: string): Promise<Book[]> {

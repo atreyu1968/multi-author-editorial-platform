@@ -12,6 +12,7 @@ import { SEOHead, generateStructuredData } from "@/components/seo/seo-head";
 import { buildBackgroundStyle } from "@/lib/utils";
 import type { BookSeries, Book } from "@shared/schema";
 import SharedFooter from "@/components/shared-footer";
+import { resolveAttributionHref } from "@/lib/attribution";
 
 function getYouTubeEmbedUrl(url: string): string {
   try {
@@ -148,9 +149,24 @@ export default function SeriesLanding() {
               </div>
             </div>
 
-            {series.amazonUrl && (
+            {(series.amazonUrl || series.referenceAsin) && (
               <Button asChild size="lg" className="text-lg px-10 py-6">
-                <a href={series.amazonUrl} target="_blank" rel="noopener noreferrer">
+                <a
+                  href={series.amazonUrl || (series.referenceAsin ? `https://www.amazon.com/dp/${series.referenceAsin}` : "#")}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={async (e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || (e as any).button) return;
+                    e.preventDefault();
+                    const href = await resolveAttributionHref({
+                      landingType: "serie",
+                      seriesId: series.id,
+                      authorId: series.authorId ?? undefined,
+                      fallbackUrl: series.amazonUrl,
+                    });
+                    if (href) window.open(href, "_blank", "noopener,noreferrer");
+                  }}
+                >
                   <ExternalLink className="mr-2 h-5 w-5" />
                   Ver serie en Amazon
                 </a>
@@ -276,9 +292,24 @@ export default function SeriesLanding() {
                         Ver detalles
                       </Button>
                     </Link>
-                    {book.amazonUrl && !book.isComingSoon && (
+                    {(book.amazonUrl || book.asin) && !book.isComingSoon && (
                       <Button asChild className="flex-1">
-                        <a href={book.amazonUrl} target="_blank" rel="noopener noreferrer">
+                        <a
+                          href={book.amazonUrl || (book.asin ? `https://www.amazon.com/dp/${book.asin}` : "#")}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={async (e) => {
+                            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || (e as any).button) return;
+                            e.preventDefault();
+                            const href = await resolveAttributionHref({
+                              landingType: "libro",
+                              bookId: book.id,
+                              authorId: book.authorId,
+                              fallbackUrl: book.amazonUrl,
+                            });
+                            if (href) window.open(href, "_blank", "noopener,noreferrer");
+                          }}
+                        >
                           <ExternalLink className="mr-2 h-4 w-4" />
                           Comprar
                         </a>

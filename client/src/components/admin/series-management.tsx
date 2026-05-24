@@ -528,6 +528,29 @@ export default function SeriesManagement() {
                         </FormItem>
                       )}
                     />
+
+                    <FormField
+                      control={form.control}
+                      name="referenceAsin"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>ASIN de referencia (Amazon Attribution)</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="B0XXXXXXXX"
+                              data-testid="input-series-reference-asin"
+                              {...field}
+                              value={field.value || ""}
+                            />
+                          </FormControl>
+                          <p className="text-xs text-muted-foreground">
+                            ASIN del libro insignia de la serie. Si lo dejas vacío, se usará el ASIN
+                            del primer libro de la serie.
+                          </p>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
 
                   <FormField

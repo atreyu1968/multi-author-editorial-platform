@@ -50,6 +50,10 @@ export const authors = pgTable("authors", {
   freeBookTitle: text("free_book_title"),
   freeBookDescription: text("free_book_description"),
   freeBookCtaText: text("free_book_cta_text"),
+  // Reference ASIN used by the Amazon Attribution integration when the
+  // landing page is the author page itself (no specific book selected). When
+  // null we fall back to the first published book of the author.
+  referenceAsin: text("reference_asin"),
 });
 
 export const bookSeries = pgTable("book_series", {
@@ -84,6 +88,10 @@ export const bookSeries = pgTable("book_series", {
   // Background customization
   backgroundImageUrl: text("background_image_url"),
   backgroundColor: text("background_color"),
+  // Reference ASIN used by the Amazon Attribution integration when the
+  // landing page is the series page (e.g. the saga's flagship book). When
+  // null we fall back to the first book of the series.
+  referenceAsin: text("reference_asin"),
 });
 
 export const books = pgTable("books", {
@@ -145,6 +153,10 @@ export const books = pgTable("books", {
   isComingSoon: boolean("is_coming_soon").default(false),
   // Audiobook link (e.g. Audivia platform)
   audiobookUrl: text("audiobook_url"),
+  // Amazon Standard Identification Number — used by the Amazon Attribution
+  // integration to generate trackable "Buy on Amazon" links per visitor.
+  // Optional: when null, the legacy `amazonUrl` is used as a plain fallback.
+  asin: text("asin"),
 });
 
 export const testimonials = pgTable("testimonials", {
@@ -1063,3 +1075,146 @@ export type InsertTestimonialTranslation = z.infer<typeof insertTestimonialTrans
 
 export type BlogPostTranslation = typeof blogPostTranslations.$inferSelect;
 export type InsertBlogPostTranslation = z.infer<typeof insertBlogPostTranslationSchema>;
+
+// ===========================================================================
+// Amazon Attribution integration
+// ===========================================================================
+//
+// The platform integrates with Amazon Ads' Attribution API so that every
+// "Buy on Amazon" click on a landing page is tracked back to a session (and
+// optionally to a newsletter subscriber, when the visitor arrived from an
+// author-branded email). Amazon then reports clicks/purchases/sales per
+// "tag" daily and the editorial gets:
+//   1. The Brand Referral Bonus (~10% of the sale) on external traffic.
+//   2. A 3x organic-ranking multiplier for A10/COSMO on those sales.
+//
+// Architecture for this codebase:
+//   - One central editorial Amazon Ads account (singleton settings row).
+//   - Credentials live in DB (editable from the admin panel), NOT in env
+//     vars — that's why we cache the access token here too.
+//   - Each generated tag is linked to a sessionId from our analytics
+//     system, plus an optional newsletterId (when the visitor arrived from
+//     an email carrying `?sub=<preferencesToken>`).
+
+// Singleton row holding the editorial-wide Amazon Ads credentials and the
+// cached short-lived access token. Always queried by `id = 'default'`.
+export const amazonAttributionSettings = pgTable("amazon_attribution_settings", {
+  id: varchar("id").primaryKey().default("default"),
+  // OAuth-issued credentials. The refresh token is long-lived; the access
+  // token is renewed every ~50 minutes by the service.
+  clientId: text("client_id"),
+  clientSecret: text("client_secret"),
+  refreshToken: text("refresh_token"),
+  // Amazon Ads "profile" the credentials operate on. Required for every
+  // Attribution call via the `Amazon-Advertising-API-Scope` header.
+  profileId: text("profile_id"),
+  // Amazon marketplace (e.g. "www.amazon.com", "www.amazon.es"). Used to
+  // build the destination URL when Amazon's response does not include one.
+  marketplace: text("marketplace").default("www.amazon.es"),
+  // Master switch. When false the service short-circuits and "Buy on
+  // Amazon" buttons fall back to the plain `amazonUrl` field.
+  isEnabled: boolean("is_enabled").default(false),
+  // Cached access token + expiry. Renewed lazily by the service.
+  accessToken: text("access_token"),
+  accessTokenExpiresAt: text("access_token_expires_at"),
+  // Bookkeeping for the daily sync job.
+  lastSyncAt: text("last_sync_at"),
+  lastSyncStatus: text("last_sync_status"), // "ok" | "error: <msg>"
+});
+
+// One row per (visitor session, landing page) combination. Each row owns
+// one Amazon Attribution tag plus the redirect URL we hand to the browser.
+// Rows older than 90 days are garbage-collected by the weekly cleanup job.
+export const attributionLinks = pgTable("attribution_links", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  // What the visitor was looking at when the tag was generated. Used by
+  // the dashboard to break down conversion per landing type / per author.
+  landingType: text("landing_type").notNull(), // "autor" | "serie" | "libro"
+  authorId: varchar("author_id"),
+  seriesId: varchar("series_id"),
+  bookId: varchar("book_id"),
+  // ASIN we asked Amazon to attribute purchases to. Snapshotted so a
+  // later change to the book's ASIN doesn't break historical reports.
+  asin: text("asin").notNull(),
+  // Identity of the visitor. `sessionId` always set (from analytics);
+  // newsletterId/editorialSubscriberId set when the URL carried `?sub=`.
+  sessionId: text("session_id").notNull(),
+  newsletterId: varchar("newsletter_id"),
+  editorialSubscriberId: varchar("editorial_subscriber_id"),
+  // Amazon's response. `tagId` is the join key with the daily reports.
+  tagId: text("tag_id").notNull(),
+  clickUrl: text("click_url").notNull(),
+  // Lifecycle.
+  createdAt: text("created_at").default(sql`current_timestamp`),
+  expiresAt: text("expires_at"), // soft expiry, default = createdAt + 90 days
+  lastClickAt: text("last_click_at"),
+  clickCount: integer("click_count").default(0),
+  // Populated by the segment-update job when at least one purchase has
+  // been reported by Amazon for this tag.
+  purchaseDetected: boolean("purchase_detected").default(false),
+  purchaseDetectedAt: text("purchase_detected_at"),
+});
+
+// Daily metrics returned by Amazon for each tag. Uniquely keyed by
+// (tagId, reportDate) — the sync job upserts on this pair.
+export const attributionReports = pgTable("attribution_reports", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  reportDate: text("report_date").notNull(), // YYYY-MM-DD
+  attributionTagId: text("attribution_tag_id").notNull(),
+  clicks: integer("clicks").default(0),
+  detailPageViews: integer("detail_page_views").default(0),
+  addToCart: integer("add_to_cart").default(0),
+  purchases: integer("purchases").default(0),
+  salesAmount: real("sales_amount").default(0),
+  syncedAt: text("synced_at").default(sql`current_timestamp`),
+  lastUpdated: text("last_updated").default(sql`current_timestamp`),
+}, (table) => ({
+  uniqueTagDate: unique("attribution_reports_tag_date").on(table.attributionTagId, table.reportDate),
+}));
+
+// Lightweight click audit log. One row per click on `/api/attribution/click/:id`.
+// Useful for verifying matching during the validation phase; we keep it
+// pruned to ~90 days alongside the links.
+export const attributionClicks = pgTable("attribution_clicks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  attributionLinkId: varchar("attribution_link_id").notNull(),
+  sessionId: text("session_id"),
+  clickedAt: text("clicked_at").default(sql`current_timestamp`),
+  userAgent: text("user_agent"),
+  ipAddress: text("ip_address"),
+  referrer: text("referrer"),
+});
+
+export const insertAmazonAttributionSettingsSchema = createInsertSchema(amazonAttributionSettings);
+
+export const insertAttributionLinkSchema = createInsertSchema(attributionLinks).omit({
+  id: true,
+  createdAt: true,
+  lastClickAt: true,
+  clickCount: true,
+  purchaseDetected: true,
+  purchaseDetectedAt: true,
+});
+
+export const insertAttributionReportSchema = createInsertSchema(attributionReports).omit({
+  id: true,
+  syncedAt: true,
+  lastUpdated: true,
+});
+
+export const insertAttributionClickSchema = createInsertSchema(attributionClicks).omit({
+  id: true,
+  clickedAt: true,
+});
+
+export type AmazonAttributionSettings = typeof amazonAttributionSettings.$inferSelect;
+export type InsertAmazonAttributionSettings = z.infer<typeof insertAmazonAttributionSettingsSchema>;
+
+export type AttributionLink = typeof attributionLinks.$inferSelect;
+export type InsertAttributionLink = z.infer<typeof insertAttributionLinkSchema>;
+
+export type AttributionReport = typeof attributionReports.$inferSelect;
+export type InsertAttributionReport = z.infer<typeof insertAttributionReportSchema>;
+
+export type AttributionClick = typeof attributionClicks.$inferSelect;
+export type InsertAttributionClick = z.infer<typeof insertAttributionClickSchema>;

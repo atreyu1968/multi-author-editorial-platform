@@ -1155,6 +1155,30 @@ export default function BookManagement() {
 
                   <FormField
                     control={form.control}
+                    name="asin"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>ASIN de Amazon</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="B0XXXXXXXX"
+                            data-testid="input-book-asin"
+                            {...field}
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <p className="text-xs text-muted-foreground">
+                          Identificador del producto en Amazon. Cuando esté configurado, los botones
+                          "Comprar en Amazon" usarán Amazon Attribution para rastrear ventas y obtener
+                          el Brand Referral Bonus.
+                        </p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
                     name="audiobookUrl"
                     render={({ field }) => (
                       <FormItem>

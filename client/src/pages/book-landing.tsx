@@ -21,6 +21,7 @@ import { useLocale } from "@/contexts/locale-context";
 import { getAllLocalizedUrls } from "@/lib/localized-routes";
 import { SiInstagram, SiX, SiFacebook, SiAmazon } from "react-icons/si";
 import { getTranslatedField } from "@shared/utils";
+import { resolveAttributionHref } from "@/lib/attribution";
 
 // Helper functions for embedding
 function getYouTubeEmbedUrl(url: string): string {
@@ -387,9 +388,27 @@ export default function BookLanding() {
                     </Button>
                   ) : null}
                   
-                  {book.amazonUrl && (
+                  {(book.amazonUrl || book.asin) && (
                     <Button asChild size="lg" variant={book.directSaleEnabled ? "outline" : "default"} className="text-lg px-8 py-6" data-testid="button-amazon">
-                      <a href={book.amazonUrl} target="_blank" rel="noopener noreferrer">
+                      <a
+                        href={book.amazonUrl || (book.asin ? `https://www.amazon.com/dp/${book.asin}` : "#")}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={async (e) => {
+                          // Intercept plain left-clicks so we can swap in the
+                          // trackable Attribution URL; let modifier-clicks fall
+                          // through to the browser's default behaviour.
+                          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || (e as any).button) return;
+                          e.preventDefault();
+                          const href = await resolveAttributionHref({
+                            landingType: "libro",
+                            bookId: book.id,
+                            authorId: book.authorId,
+                            fallbackUrl: book.amazonUrl,
+                          });
+                          if (href) window.open(href, "_blank", "noopener,noreferrer");
+                        }}
+                      >
                         <ExternalLink className="mr-2 h-5 w-5" />
                         {book.landingCTA || t.comprarAmazon}
                       </a>
